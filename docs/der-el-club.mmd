@@ -1,0 +1,61 @@
+%% El Club — modelo inicial (15/11/2026).
+%% App multi-club: cada club personaliza su marca; las funcionalidades son las mismas para todos.
+%% El primer caso es Los Cardos Rugby Club (Tandil).
+%% copa-raices queda como base y ejemplo: https://github.com/jvallelunga/copa-raices
+erDiagram
+    CLUB ||--o{ CATEGORIA : tiene
+    CLUB ||--o{ EQUIPO : agrupa
+    CLUB ||--o{ TORNEO : organiza
+    CATEGORIA ||--o{ EQUIPO : clasifica
+    CATEGORIA ||--o{ TORNEO : clasifica
+    TORNEO ||--o{ PARTIDO : incluye
+    EQUIPO |o--o{ PARTIDO : local
+    EQUIPO |o--o{ PARTIDO : visitante
+
+    CLUB {
+        uuid id PK
+        string nombre
+        string slug UK
+        string escudo "logo o escudo del club"
+        string logo_png "PNG para tablero, PWA y compartir"
+        jsonb paleta "colores del tema"
+        string dominio "dominio propio del club"
+        string pwa_nombre
+        string pwa_icono
+    }
+
+    CATEGORIA {
+        uuid id PK
+        uuid club_id FK
+        string nombre "p.ej. M16, M18, Staff M17 y M19, Plantel Superior"
+    }
+
+    EQUIPO {
+        uuid id PK
+        string nombre
+        uuid club_id FK
+        uuid categoria_id FK
+        uuid acceso_token UK "link fijo del manager"
+        uuid lectura_token UK "link fijo de jugadores"
+    }
+
+    TORNEO {
+        uuid id PK
+        uuid club_id FK
+        uuid categoria_id FK
+        string nombre
+        string logo "logo propio del torneo"
+        string logo_png
+        int edicion "anio, p.ej. 2026"
+        int wo_tantos_ganador "default 28"
+        int wo_tries_ganador "default 4"
+    }
+
+    PARTIDO {
+        uuid id PK
+        uuid torneo_id FK
+        uuid local_id FK
+        uuid visitante_id FK
+        string estado "programado, en_juego, finalizado, no_jugado, wo"
+        string wo_lado "local o visitante, solo si wo"
+    }
