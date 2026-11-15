@@ -4,7 +4,7 @@ App del club para organizar torneos y, más adelante, el día a día del club. L
 
 Este repo arranca de cero. [copa-raices](https://github.com/jvallelunga/copa-raices) queda congelado como base y ejemplo: el código se copia de ahí cuando haga falta.
 
-El mapa de features, punto de entrada para el trabajo, está en [features/README.md](features/README.md). El modelo inicial está en el [DER](docs/der-el-club.mmd) ([imagen](docs/der-el-club.png)).
+El mapa de features, punto de entrada para el trabajo, está en [features/README.md](features/README.md). El modelo está en el [DER](docs/der-el-club.mmd) ([imagen](docs/der-el-club.png)).
 
 ## Visión
 
@@ -22,36 +22,47 @@ Cada club define lo suyo, sin cambiar las funcionalidades:
 - **Dominio** propio.
 - **Nombre e ícono de la PWA** (En vivo, equipo, mesa, admin).
 
-El primer club es Los Cardos. Hasta que haya más de uno, la app y el tablero en vivo llevan su nombre y su escudo.
+El primer club es Los Cardos. Hasta que haya más de uno, la app lleva su nombre y su escudo.
+
+## Cómo levantarla en local
+
+Hace falta Node 22 (`nvm use` lee `.nvmrc`).
+
+```bash
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+La app arranca en [http://localhost:3000](http://localhost:3000) y muestra «El Club App». Las variables de Supabase en `.env.local` se completan cuando exista un proyecto (todavía no hay: se crea con el OK de Jerónimo). Sin esas claves, la home sigue andando; los helpers de `src/datos/supabase.ts` solo fallan si alguna ruta los llama.
+
+Para la base en local, cuando esté la CLI de Supabase: `supabase start` (usa `supabase/config.toml`) aplica la migración de `club`.
+
+Scripts: `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm test`. `npm run tipos` regenera `src/datos/tipos.ts` desde un Supabase local.
+
+Los ambientes separados de desarrollo y producción (proyectos de Supabase y de Vercel) **quedan para después**, con el OK de Jerónimo. No se crean en este ítem.
 
 ## Roadmap
 
 Se trabaja **de a una cosa**. No se arranca el siguiente ítem hasta que el anterior esté aprobado y mergeado (o descartado). Los mocks de UI se aprueban antes de tocar el código. Un cambio de modelo lleva, en el mismo commit, la migración idempotente y el DER.
 
-### Paso 1 — App del club
+### Paso 1
 
-Convertir la app del torneo en una app del club que organiza torneos. Todavía no entran socios, carnet, gym, cuotas ni entrenamientos.
-
-1. [Base del proyecto](features/base-del-proyecto.md): copiar el stack Next.js + Supabase desde copa-raices. Los ambientes separados de desarrollo y producción quedan para después.
-2. [Personalización por club](features/personalizacion-por-club.md): paleta, escudo, nombre y PWA, con Los Cardos como primer club.
-3. [App del club](features/app-del-club.md): el club es dueño de los torneos; el tablero en vivo es del club; cada torneo tiene nombre y logo.
-4. [Equipos fijos](features/equipos-fijos.md): equipos por categoría, con link fijo.
-5. [Estados de partido](features/estados-de-partido.md): no jugado, W.O. y dar por terminado el torneo.
-6. [Descalificar](features/descalificar.md): solo el admin, con motivo obligatorio y auditoría.
-7. [Adaptar un torneo](features/adaptar-torneo.md): reorganizar a menos equipos desde el admin.
-8. [Mesa por partido](features/mesa-por-partido.md): acceso único que vence al cerrar el partido.
-9. [Dominio](features/dominio.md): dominio propio del club; el link viejo de copa-raices redirige.
+1. [Base del proyecto](features/base-del-proyecto.md) ([#1](https://github.com/jvallelunga/el-club-app/issues/1)): copiar el stack Next.js + Supabase desde copa-raices. Los ambientes separados de desarrollo y producción quedan para después.
+2. [Roles y permisos por club](features/roles-y-permisos.md) ([#15](https://github.com/jvallelunga/el-club-app/issues/15)): un Super Admin con acceso a todo, y un Admin por club con acceso a todo lo de su club.
+3. [Personalización por club](features/personalizacion-por-club.md) ([#2](https://github.com/jvallelunga/el-club-app/issues/2)): paleta, escudo, nombre y PWA, con Los Cardos como primer club.
+4. [Dominio](features/dominio.md) ([#9](https://github.com/jvallelunga/el-club-app/issues/9)): dominio propio del club; el link viejo de copa-raices redirige.
 
 ### Paso 2
 
-10. [Categorías, entrenamientos, asistencia, lesionados y próximos partidos](features/paso-2-categorias-y-entrenamientos.md). Acá entran también las [cuentas de manager](features/cuentas-de-manager.md). Quedan afuera socios, carnet digital, gym y cuotas.
+5. [Categorías, entrenamientos, asistencia, lesionados y próximos partidos](features/paso-2-categorias-y-entrenamientos.md) ([#10](https://github.com/jvallelunga/el-club-app/issues/10)). Acá entran también las [cuentas de manager](features/cuentas-de-manager.md) ([#14](https://github.com/jvallelunga/el-club-app/issues/14)). Quedan afuera socios, carnet digital, gym y cuotas.
 
 ### Deuda (traída de copa-raices)
 
-- [Servidor MCP](features/servidor-mcp.md) (copa-raices #77 y #78).
-- [CI con pgTAP](features/calidad-y-ci.md) (copa-raices #82).
-- [Modalidad 15 y Seven](features/modalidad-15-y-seven.md) (copa-raices #146).
-- [Cuentas de manager](features/cuentas-de-manager.md) (copa-raices #171), en el paso 2.
+- [Servidor MCP](features/servidor-mcp.md) ([#11](https://github.com/jvallelunga/el-club-app/issues/11); copa-raices #77 y #78).
+- [CI con pgTAP](features/calidad-y-ci.md) ([#12](https://github.com/jvallelunga/el-club-app/issues/12); copa-raices #82).
+- [Modalidad 15 y Seven](features/modalidad-15-y-seven.md) ([#13](https://github.com/jvallelunga/el-club-app/issues/13); copa-raices #146).
+- [Cuentas de manager](features/cuentas-de-manager.md) ([#14](https://github.com/jvallelunga/el-club-app/issues/14); copa-raices #171), en el paso 2.
 
 ## Decisiones
 
@@ -64,12 +75,30 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 - [copa-raices](https://github.com/jvallelunga/copa-raices) queda como base y ejemplo. El código se copia de ahí cuando haga falta.
 - Se trabaja **de a una cosa**.
 
+### Base del proyecto
+
+- Se copia el stack de copa-raices (Next.js 16.4.3, React 19.3.1, TypeScript, Tailwind 4, Supabase, Vitest, ESLint con reglas de capas, `src/dominio` y `src/datos`).
+- No se copian las features del torneo (mesa, tablero, acceso por equipos, admin, push, analítica, Clerk, Storybook, lector de DNI, plantillas).
+- La migración inicial solo crea `club` (`id`, `slug`, `nombre`, `creado_en`). El nombre `creado_en` sigue el criterio de copa-raices (español).
+- Los tokens de tema quedan como una paleta neutra provisional, lista para el ítem 2. No se usa la marca de Copa Raíces.
+- Los roles no se implementan acá: van en el [#15](https://github.com/jvallelunga/el-club-app/issues/15).
+- No se crean proyectos de Supabase ni de Vercel en este ítem: hace falta el OK de Jerónimo. Los nombres quedan abiertos (propuesta: `el-club-app-desarrollo` / `el-club-app-produccion` en Supabase, y `el-club-app` en Vercel, con `desarrollo` y `main`).
+
 ### Personalización por club
 
 - Cada club tiene nombre, escudo o logo, paleta, dominio, y nombre e ícono de la PWA.
 - Hasta que exista el ítem de personalización, Los Cardos es el club con el que se prueba todo.
 
+### Roles y permisos
+
+- Van después de la base y antes de la personalización ([#15](https://github.com/jvallelunga/el-club-app/issues/15)).
+- **Super Admin**: acceso a todo.
+- **Admin del club**: acceso a todo lo de su club.
+- No se implementan en la base del proyecto.
+
 ### App del club
+
+**A redefinir** (15/11/2026: los ítems #3 a #8 se sacaron del backlog y se van a definir de a poco).
 
 - La app y el tablero en vivo son del club, no de un torneo.
 - El club es el dueño de los torneos: los crea y los administra desde el admin.
@@ -84,11 +113,15 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 
 ### Estados de partido y W.O.
 
+**A redefinir** (15/11/2026: el ítem #5 se sacó del backlog y se va a definir más adelante).
+
 - Un W.O. le da **4 puntos** al ganador, con un tanteo fijo de **28–0 y 4 tries**, configurable por torneo.
 - «No jugado / suspendido» no cuenta en la tabla.
 - «Dar por terminado el torneo» lo cierra el admin a mano.
 
 ### Descalificar
+
+**A redefinir** (15/11/2026: el ítem #6 se sacó del backlog y se va a definir más adelante).
 
 - Los partidos que le quedan a un equipo descalificado se tratan como W.O. a favor del rival. Los ya finalizados se mantienen.
 - Solo el admin puede descalificar, con motivo obligatorio y un registro que no se borra.

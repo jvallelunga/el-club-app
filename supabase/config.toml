@@ -1,0 +1,32 @@
+# Configuración local de Supabase para El Club.
+# No apunta a un proyecto hospedado. Los de desarrollo y producción
+# se crean después, con el OK de Jerónimo.
+
+project_id = "el-club-app"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
