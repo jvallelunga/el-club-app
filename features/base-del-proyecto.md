@@ -41,3 +41,7 @@ Dejar en este repo el stack que ya funcionó en [copa-raices](https://github.com
 - La columna de alta se llama `creado_en`, como en copa-raices, no `created_at` (15/11/2026).
 - No se siembra Los Cardos todavía: eso entra con la personalización del ítem 2.
 - Tipografía de arranque: solo Inter. Bodoni y Montserrat eran de la identidad de Copa Raíces.
+
+## Decisión: admin mobile first
+
+- 15/11/2026 22:23 (hora de Argentina): el admin es responsive y se diseña **mobile first**. Cada pantalla del admin se piensa primero para el celular y después se adapta a tablet y escritorio. Los mocks del admin se presentan primero en tamaño celular.
