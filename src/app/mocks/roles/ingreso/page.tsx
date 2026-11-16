@@ -46,7 +46,7 @@ export default function PaginaIngreso() {
               La app del club.
             </p>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              El primer caso es Los Cardos Rugby Club (Tandil).
+              Para el administrador del club y, más adelante, el día a día.
             </p>
           </div>
         </div>

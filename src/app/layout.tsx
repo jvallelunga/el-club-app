@@ -13,7 +13,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "El Club App",
-  description: "App del club. El primer caso es Los Cardos Rugby Club (Tandil).",
+  description: "App del club para organizar torneos y el día a día del club.",
   other: { google: "notranslate" },
 };
 

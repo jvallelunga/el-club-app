@@ -2,13 +2,33 @@ import Link from "next/link";
 import { ChevronLeft, LogOut } from "lucide-react";
 import { Button } from "@/ui/nativos/button";
 import { cn } from "@/lib/utils";
-import type { ClubEjemplo } from "./datos-ejemplo";
 import { RUTAS_MOCK } from "./datos-ejemplo";
-import { EscudoClub } from "./escudo-club";
+import { EscudoClub, type ClubConEscudo } from "./escudo-club";
 import { PieMock } from "./marco-mock";
 
 export type RolShell = "super-admin" | "admin";
 export type ActivoShell = "clubes" | "inicio" | "admins";
+
+export type RutasShell = {
+  inicioClub: (slug: string) => string;
+  superAdmin: string;
+  elegirClub: string;
+  admins: (slug: string) => string;
+};
+
+const RUTAS_SHELL_MOCK: RutasShell = {
+  inicioClub: RUTAS_MOCK.inicioClub,
+  superAdmin: RUTAS_MOCK.superAdmin,
+  elegirClub: RUTAS_MOCK.elegirClub,
+  admins: RUTAS_MOCK.admins,
+};
+
+export const RUTAS_SHELL_APP: RutasShell = {
+  inicioClub: (slug) => `/c/${slug}/admin`,
+  superAdmin: "/super-admin",
+  elegirClub: "/elegir-club",
+  admins: (slug) => `/super-admin/clubes/${slug}/admins`,
+};
 
 type ItemNav = {
   etiqueta: string;
@@ -22,12 +42,14 @@ function itemsNav({
   activo,
   como,
   esMultiClub,
+  rutas,
 }: {
-  club?: ClubEjemplo;
+  club?: ClubConEscudo & { slug: string };
   rol: RolShell;
   activo?: ActivoShell;
   como?: string;
   esMultiClub?: boolean;
+  rutas: RutasShell;
 }): ItemNav[] {
   const items: ItemNav[] = [];
 
@@ -35,7 +57,7 @@ function itemsNav({
     const query = como ? `?como=${como}` : "";
     items.push({
       etiqueta: "Inicio",
-      href: `${RUTAS_MOCK.inicioClub(club.slug)}${query}`,
+      href: `${rutas.inicioClub(club.slug)}${query}`,
       activo: activo === "inicio",
     });
   }
@@ -43,13 +65,13 @@ function itemsNav({
   if (rol === "super-admin") {
     items.push({
       etiqueta: "Clubes",
-      href: RUTAS_MOCK.superAdmin,
+      href: rutas.superAdmin,
       activo: activo === "clubes",
     });
   } else if (esMultiClub) {
     items.push({
       etiqueta: "Clubes",
-      href: RUTAS_MOCK.elegirClub,
+      href: rutas.elegirClub,
       activo: false,
     });
   }
@@ -57,7 +79,7 @@ function itemsNav({
   if (club && rol === "super-admin") {
     items.push({
       etiqueta: "Admins",
-      href: RUTAS_MOCK.admins(club.slug),
+      href: rutas.admins(club.slug),
       activo: activo === "admins",
     });
   }
@@ -78,7 +100,10 @@ export function ShellAdmin({
   como,
   esMultiClub,
   accion,
+  salirHref = RUTAS_MOCK.ingreso,
   salirEnMobile = true,
+  rutas = RUTAS_SHELL_MOCK,
+  pie = <PieMock />,
 }: {
   children: React.ReactNode;
   titulo: string;
@@ -86,15 +111,18 @@ export function ShellAdmin({
   subtitulo?: string;
   subtituloMobile?: string;
   atras?: { href: string; etiqueta?: string };
-  club?: ClubEjemplo;
+  club?: ClubConEscudo & { slug: string };
   rol: RolShell;
   activo?: ActivoShell;
   como?: string;
   esMultiClub?: boolean;
   accion?: React.ReactNode;
+  salirHref?: string;
   salirEnMobile?: boolean;
+  rutas?: RutasShell;
+  pie?: React.ReactNode;
 }) {
-  const items = itemsNav({ club, rol, activo, como, esMultiClub });
+  const items = itemsNav({ club, rol, activo, como, esMultiClub, rutas });
 
   return (
     <div className="flex min-h-svh flex-col bg-background">
@@ -125,7 +153,7 @@ export function ShellAdmin({
           {accion ? <div className="hidden md:block">{accion}</div> : null}
           {salirEnMobile ? (
             <Button asChild variant="ghost" className="h-11 px-3 text-sm">
-              <Link href={RUTAS_MOCK.ingreso}>Salir</Link>
+              <Link href={salirHref}>Salir</Link>
             </Button>
           ) : (
             <Button
@@ -133,7 +161,7 @@ export function ShellAdmin({
               variant="ghost"
               className="hidden h-11 px-3 text-sm md:inline-flex lg:hidden"
             >
-              <Link href={RUTAS_MOCK.ingreso}>Salir</Link>
+              <Link href={salirHref}>Salir</Link>
             </Button>
           )}
         </div>
@@ -199,7 +227,7 @@ export function ShellAdmin({
           </nav>
           <div className="border-t border-border p-3">
             <Link
-              href={RUTAS_MOCK.ingreso}
+              href={salirHref}
               className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted/60 hover:text-foreground"
             >
               <LogOut className="size-4" />
@@ -227,7 +255,7 @@ export function ShellAdmin({
           <main className="flex flex-1 flex-col px-5 py-6 md:px-8 md:py-8">
             {children}
           </main>
-          <PieMock />
+          {pie}
         </div>
       </div>
     </div>

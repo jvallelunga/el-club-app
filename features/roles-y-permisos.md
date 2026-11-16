@@ -1,6 +1,6 @@
 # Roles y permisos por club
 
-Segundo ítem del paso 1, después de la [base del proyecto](base-del-proyecto.md). [#15](https://github.com/jvallelunga/el-club-app/issues/15). Todavía no implementado: estos mocks son para aprobar las pantallas, el ingreso y el modelo antes de tocar login, RLS o migraciones.
+Segundo ítem del paso 1, después de la [base del proyecto](base-del-proyecto.md). [#15](https://github.com/jvallelunga/el-club-app/issues/15). Implementado el 16/11/2026. Las pantallas reales están en `/ingreso`, `/super-admin`, `/c/<slug>/admin` y rutas vecinas. Los mocks de `/mocks/roles` quedan como referencia visual.
 
 ## Objetivo
 
@@ -20,13 +20,18 @@ No entra ningún otro rol en este ítem. Otros que figuraron como propuesta en e
 - Si alguien entra con Google y su email no está como Super Admin ni como Admin de un club, ve la pantalla de sin acceso.
 - El email del Super Admin no va en el repo, porque el repo es público: el alta se hace directo en la base.
 
-## Modelo propuesto
+## Modelo
 
-Todavía no hay migración. El [DER oficial](../docs/der-el-club.mmd) solo refleja lo ya migrado (`club`). El modelo de esta feature está en el [DER propuesto](roles-y-permisos-der-propuesto.mmd) ([imagen](roles-y-permisos-der-propuesto.png)). Cuando se implemente, la migración idempotente y la actualización del DER oficial van en el mismo commit.
+El [DER oficial](../docs/der-el-club.mmd) ([imagen](../docs/der-el-club.png)) refleja lo migrado. La migración es idempotente (`supabase/migrations/20261116204500_roles_y_dominio_base.sql`).
 
-- `usuario`: `id` (el mismo que en Supabase Auth), `nombre`, `email` (único) y `creado_en`.
+- `usuario`: `id` (el mismo que en Supabase Auth), `nombre`, `email` (único, minúsculas) y `creado_en`.
 - `super_admin`: `usuario_id` (clave y referencia a `usuario`) y `creado_en`.
+- `super_admin_invitacion`: email invitado a Super Admin, para vincularlo en el primer login con Google si todavía no tiene perfil.
 - `club_miembro`: `id`, `club_id`, `usuario_id`, `rol` y `creado_en`. El `rol` es un enum (`rol_club`) que por ahora solo tiene el valor `admin`, para poder sumar roles más adelante sin rehacer tablas. Un mismo usuario puede ser Admin de más de un club. La pareja club–usuario es única.
+- `club_invitacion`: email invitado a un club, con `aceptada_en` cuando se vincula (de inmediato si el perfil ya existe, o en el primer login con Google).
+- `club.dominio_base`: ver [dominio](dominio.md).
+
+Las funciones `interno.es_super_admin()` e `interno.es_admin_club(club_id)` son `SECURITY DEFINER` con `search_path` fijo, en un esquema que no se expone por la API. Las políticas RLS las usan: el Super Admin ve y escribe todo; un Admin solo opera sobre su club; el resto no accede.
 
 ## Pantallas (mocks)
 
@@ -53,10 +58,11 @@ Flujos:
 
 ## Criterios de aceptación
 
-- Quedan definidos el Super Admin y el Admin del club, documentados en esta feature y en el DER propuesto.
+- Quedan definidos el Super Admin y el Admin del club, documentados en esta feature y en el DER oficial.
 - Un Super Admin opera sobre cualquier club. Un Admin del club opera solo sobre el suyo, con acceso a todo lo de ese club.
-- Los mocks de las pantallas se aprueban antes de implementar el login, las políticas RLS y la migración.
+- El ingreso es con Google. Una invitación por email se vincula en el primer login, o de inmediato si la persona ya tiene perfil.
 - Si cambia el modelo, la migración idempotente y el DER van en el mismo commit.
+- Los mocks de `/mocks/roles` se mantienen como referencia visual.
 
 ## Decisiones
 
@@ -69,3 +75,5 @@ Flujos:
 - El DER oficial sigue mostrando solo lo migrado. El modelo de roles se documenta en un DER propuesto hasta que haya migración (16/11/2026).
 - Las pantallas del admin se diseñan mobile first (15/11/2026 22:23; aplica también a estos mocks).
 - Toda la app es mobile first y se optimiza para tablet y desktop: no se deja una columna de celular en pantallas grandes (16/11/2026 17:31 y 17:32).
+- Se implementó el modelo, la migración (con invitaciones y `club.dominio_base`), las políticas RLS, el ingreso con Google vía Supabase Auth y las pantallas reales con la misma cáscara responsive (16/11/2026 18:00).
+- El email del Super Admin se siembra directo en la base de desarrollo, con la plantilla `scripts/sembrar-super-admin.sql` (sin el email en el repo) (16/11/2026 18:00).

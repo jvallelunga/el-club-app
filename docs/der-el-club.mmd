@@ -1,18 +1,56 @@
-%% El Club — modelo aplicado (15/11/2026).
-%% Esta migración solo crea `club` (id, slug, nombre, creado_en).
-%% La marca del club (escudo, paleta, dominio, PWA) se suma en el ítem 2.
-%% El resto del modelo previsto (categoría, equipo, torneo, partido) se
-%% redefine más adelante: los ítems #3–#8 salieron del backlog.
-%% App multi-club: cada club personaliza su marca; las funcionalidades son las mismas.
-%% El primer caso es Los Cardos Rugby Club (Tandil).
+%% El Club — modelo aplicado (16/11/2026).
+%% Tablas migradas: club (con dominio_base), usuario, super_admin,
+%% super_admin_invitacion, club_miembro, club_invitacion.
+%% usuario.id coincide con el usuario de Supabase Auth.
+%% rol_club es un enum que por ahora solo tiene el valor admin.
+%%
+%% El dominio raíz del club (club.dominio_base, ej. loscardosrc.com.ar)
+%% es el SITIO WEB del club. La app vive en subdominios por superficie
+%% (admin.<dominio_base>, vivo.<dominio_base>), resueltos en código.
+%% Sin dominio propio, el fallback es /c/<slug>/<superficie>.
+%%
+%% El email del Super Admin no se guarda en el repo: el alta se hace
+%% directo en la base (ver scripts/sembrar-super-admin.sql).
 %% copa-raices queda como base y ejemplo: https://github.com/jvallelunga/copa-raices
-%% El modelo de roles (usuario, super_admin, club_miembro) está propuesto
-%% en features/roles-y-permisos-der-propuesto.mmd. Se suma a este DER
-%% cuando se aplique la migración, en el mismo commit.
 erDiagram
     CLUB {
         uuid id PK
         string slug UK
         string nombre
+        string dominio_base UK
         timestamptz creado_en
     }
+    USUARIO {
+        uuid id PK
+        string nombre
+        string email UK
+        timestamptz creado_en
+    }
+    SUPER_ADMIN {
+        uuid usuario_id PK
+        timestamptz creado_en
+    }
+    SUPER_ADMIN_INVITACION {
+        uuid id PK
+        string email UK
+        timestamptz creado_en
+    }
+    CLUB_MIEMBRO {
+        uuid id PK
+        uuid club_id FK
+        uuid usuario_id FK
+        rol_club rol
+        timestamptz creado_en
+    }
+    CLUB_INVITACION {
+        uuid id PK
+        uuid club_id FK
+        string email
+        rol_club rol
+        timestamptz creado_en
+        timestamptz aceptada_en
+    }
+    CLUB ||--o{ CLUB_MIEMBRO : tiene
+    USUARIO ||--o{ CLUB_MIEMBRO : integra
+    USUARIO ||--o| SUPER_ADMIN : es
+    CLUB ||--o{ CLUB_INVITACION : invita

@@ -35,9 +35,11 @@ export function MarcoPagina({
 export function MarcoAcceso({
   children,
   panel,
+  pie = <PieMock />,
 }: {
   children: React.ReactNode;
   panel?: React.ReactNode;
+  pie?: React.ReactNode;
 }) {
   return (
     <div className="flex min-h-svh flex-col bg-background">
@@ -66,7 +68,7 @@ export function MarcoAcceso({
           </div>
         </div>
       </div>
-      <PieMock />
+      {pie}
     </div>
   );
 }

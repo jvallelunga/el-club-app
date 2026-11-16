@@ -1,11 +1,17 @@
 import { cn } from "@/lib/utils";
-import type { ClubEjemplo } from "./datos-ejemplo";
+import { inicialesDesdeNombre } from "@/dominio/slug";
+
+export type ClubConEscudo = {
+  nombre: string;
+  escudo?: string | null;
+  iniciales?: string;
+};
 
 export function EscudoClub({
   club,
   tamano = "md",
 }: {
-  club: ClubEjemplo;
+  club: ClubConEscudo;
   tamano?: "sm" | "md" | "lg" | "xl";
 }) {
   const medida =
@@ -49,7 +55,7 @@ export function EscudoClub({
             texto,
           )}
         >
-          {club.iniciales}
+          {club.iniciales ?? inicialesDesdeNombre(club.nombre)}
         </span>
       )}
     </div>
