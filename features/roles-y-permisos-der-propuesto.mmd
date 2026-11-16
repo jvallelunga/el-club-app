@@ -1,0 +1,39 @@
+%% El Club — modelo propuesto de roles y permisos (16/11/2026).
+%% Todavía no hay migración: este DER es la propuesta para aprobar,
+%% no el modelo aplicado. El DER oficial (docs/der-el-club.mmd) solo
+%% refleja lo que ya está migrado (hoy, la tabla club).
+%% Cuando se implemente, la migración idempotente y la actualización
+%% de docs/der-el-club.mmd/.png van en el mismo commit.
+%%
+%% usuario.id coincide con el usuario de Supabase Auth.
+%% rol_club es un enum que por ahora solo tiene el valor admin,
+%% para poder sumar roles más adelante sin rehacer tablas.
+%% El email del Super Admin no se guarda en el repo: el alta
+%% se hace directo en la base.
+erDiagram
+    CLUB {
+        uuid id PK
+        string slug UK
+        string nombre
+        timestamptz creado_en
+    }
+    USUARIO {
+        uuid id PK
+        string nombre
+        string email UK
+        timestamptz creado_en
+    }
+    SUPER_ADMIN {
+        uuid usuario_id PK
+        timestamptz creado_en
+    }
+    CLUB_MIEMBRO {
+        uuid id PK
+        uuid club_id FK
+        uuid usuario_id FK
+        rol_club rol
+        timestamptz creado_en
+    }
+    USUARIO ||--|| SUPER_ADMIN : es
+    CLUB ||--o{ CLUB_MIEMBRO : tiene
+    USUARIO ||--o{ CLUB_MIEMBRO : integra

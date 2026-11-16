@@ -93,9 +93,14 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 ### Roles y permisos
 
 - Van después de la base y antes de la personalización ([#15](https://github.com/jvallelunga/el-club-app/issues/15)).
-- **Super Admin**: acceso a todo.
-- **Admin del club**: acceso a todo lo de su club.
-- No se implementan en la base del proyecto.
+- **Super Admin**: acceso a todo, en todos los clubes. Crea clubes, los personaliza, entra a cualquiera y nombra a sus Admin. Al principio es solo Jerónimo.
+- **Admin del club**: acceso a todo lo de su club. Una persona puede ser Admin de más de un club.
+- El ingreso es con Google, vía Supabase Auth (16/11/2026).
+- Para nombrar a un Admin, el Super Admin carga su email. Cuando esa persona entra con Google por primera vez, ya tiene el club asignado (16/11/2026).
+- El modelo propuesto: `usuario` (nombre, email), `super_admin` y `club_miembro` (club, usuario, rol). El rol es un enum que por ahora solo tiene `admin`, para poder sumar roles después sin rehacer tablas (16/11/2026).
+- El email del Super Admin no va en el repo, porque es público: el alta se hace directo en la base (16/11/2026).
+- El DER oficial solo refleja lo migrado. El modelo de roles está en [features/roles-y-permisos-der-propuesto.mmd](features/roles-y-permisos-der-propuesto.mmd) hasta que haya migración (16/11/2026).
+- Los mocks de las pantallas están en `/mocks/roles`, para aprobarlos antes de implementar el login y la migración.
 
 ### App del club
 

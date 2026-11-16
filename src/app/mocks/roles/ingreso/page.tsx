@@ -1,0 +1,88 @@
+import Link from "next/link";
+import { Button } from "@/ui/nativos/button";
+import { Separator } from "@/ui/nativos/separator";
+import {
+  CLUB_CARDOS,
+  PERSONA_LUCIA,
+  RUTAS_MOCK,
+} from "@/ui/features/mocks-roles/datos-ejemplo";
+import { IconoGoogle } from "@/ui/features/mocks-roles/icono-google";
+import {
+  ContenidoMock,
+  MarcoMock,
+  PieMock,
+} from "@/ui/features/mocks-roles/marco-mock";
+
+const CASOS = [
+  {
+    href: RUTAS_MOCK.superAdmin,
+    etiqueta: "Entrar como Super Admin",
+  },
+  {
+    href: `${RUTAS_MOCK.inicioClub(CLUB_CARDOS.slug)}?como=${PERSONA_LUCIA.id}`,
+    etiqueta: "Entrar como Admin de un club",
+  },
+  {
+    href: RUTAS_MOCK.elegirClub,
+    etiqueta: "Entrar como Admin de dos clubes",
+  },
+  {
+    href: RUTAS_MOCK.sinAcceso,
+    etiqueta: "Entrar sin acceso",
+  },
+];
+
+export default function PaginaIngreso() {
+  return (
+    <MarcoMock>
+      <ContenidoMock className="justify-center gap-8 py-10">
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-medium tracking-wide text-muted-foreground">
+            El Club App
+          </p>
+          <h1 className="text-3xl font-medium tracking-tight">Ingresá</h1>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Entrá con tu cuenta de Google. El Super Admin te da de alta con tu
+            email: la primera vez que entres, ya tenés el club asignado.
+          </p>
+        </div>
+
+        <Button
+          asChild
+          variant="outline"
+          className="h-12 w-full rounded-xl border-border bg-white text-base text-foreground hover:bg-muted"
+        >
+          <Link href={RUTAS_MOCK.superAdmin}>
+            <IconoGoogle className="size-5" />
+            Continuar con Google
+          </Link>
+        </Button>
+
+        <Separator />
+
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            Recorridos de ejemplo
+          </p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            En la app real, Google te lleva directo según tu rol. Acá podés
+            elegir un caso para recorrer el mock.
+          </p>
+          <ul className="flex flex-col">
+            {CASOS.map((caso) => (
+              <li key={caso.href}>
+                <Link
+                  href={caso.href}
+                  className="flex h-11 items-center text-sm font-medium underline-offset-4 hover:underline"
+                >
+                  {caso.etiqueta}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </ContenidoMock>
+      <PieMock />
+    </MarcoMock>
+  );
+}
