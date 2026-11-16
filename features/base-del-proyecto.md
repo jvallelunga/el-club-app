@@ -42,6 +42,10 @@ Dejar en este repo el stack que ya funcionó en [copa-raices](https://github.com
 - No se siembra Los Cardos todavía: eso entra con la personalización del ítem 2.
 - Tipografía de arranque: solo Inter. Bodoni y Montserrat eran de la identidad de Copa Raíces.
 
-## Decisión: admin mobile first
+## Decisión: mobile first, y optimizado para tablet y desktop
+
+Criterio de desarrollo de toda la app, no solo del admin:
 
 - 15/11/2026 22:23 (hora de Argentina): el admin es responsive y se diseña **mobile first**. Cada pantalla del admin se piensa primero para el celular y después se adapta a tablet y escritorio. Los mocks del admin se presentan primero en tamaño celular.
+- 16/11/2026 17:31: en la versión desktop el sistema tiene que verse optimizado para desktop, no como una columna de celular.
+- 16/11/2026 17:32: es una decisión de desarrollo para **toda la app**: mobile first, y optimizada para tablet y desktop.

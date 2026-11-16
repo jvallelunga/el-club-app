@@ -7,7 +7,11 @@ import {
   PERSONA_MARTIN,
   RUTAS_MOCK,
 } from "@/ui/features/mocks-roles/datos-ejemplo";
-import { ContenidoMock, MarcoMock } from "@/ui/features/mocks-roles/marco-mock";
+import {
+  ContenidoMock,
+  MarcoPagina,
+  PieMock,
+} from "@/ui/features/mocks-roles/marco-mock";
 
 const RECORRIDOS = [
   {
@@ -63,9 +67,9 @@ const PANTALLAS = [
 
 export default function IndiceMocksRoles() {
   return (
-    <MarcoMock>
+    <MarcoPagina>
       <ContenidoMock className="gap-8">
-        <header className="flex flex-col gap-2">
+        <header className="flex flex-col gap-2 md:max-w-2xl">
           <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             Mocks de aprobación
           </p>
@@ -79,45 +83,48 @@ export default function IndiceMocksRoles() {
           </p>
         </header>
 
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium">Recorridos</h2>
-          <ul className="overflow-hidden rounded-xl border border-border bg-card">
-            {RECORRIDOS.map((item) => (
-              <li key={item.href} className="border-b border-border last:border-b-0">
-                <Link
-                  href={item.href}
-                  className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-muted/60"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{item.titulo}</p>
-                    <p className="text-xs leading-relaxed text-muted-foreground">
-                      {item.detalle}
-                    </p>
-                  </div>
-                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:items-start">
+          <section className="flex flex-col gap-3">
+            <h2 className="text-sm font-medium">Recorridos</h2>
+            <ul className="overflow-hidden rounded-xl border border-border bg-card">
+              {RECORRIDOS.map((item) => (
+                <li key={item.href} className="border-b border-border last:border-b-0">
+                  <Link
+                    href={item.href}
+                    className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-muted/60"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{item.titulo}</p>
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        {item.detalle}
+                      </p>
+                    </div>
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
 
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium">Todas las pantallas</h2>
-          <ul className="overflow-hidden rounded-xl border border-border bg-card">
-            {PANTALLAS.map((item) => (
-              <li key={item.href} className="border-b border-border last:border-b-0">
-                <Link
-                  href={item.href}
-                  className="flex items-center gap-3 px-4 py-3.5 text-sm transition-colors hover:bg-muted/60"
-                >
-                  <span className="min-w-0 flex-1">{item.nombre}</span>
-                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
+          <section className="flex flex-col gap-3">
+            <h2 className="text-sm font-medium">Todas las pantallas</h2>
+            <ul className="overflow-hidden rounded-xl border border-border bg-card">
+              {PANTALLAS.map((item) => (
+                <li key={item.href} className="border-b border-border last:border-b-0">
+                  <Link
+                    href={item.href}
+                    className="flex items-center gap-3 px-4 py-3.5 text-sm transition-colors hover:bg-muted/60"
+                  >
+                    <span className="min-w-0 flex-1">{item.nombre}</span>
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
       </ContenidoMock>
-    </MarcoMock>
+      <PieMock />
+    </MarcoPagina>
   );
 }

@@ -6,14 +6,8 @@ import {
   RUTAS_MOCK,
 } from "@/ui/features/mocks-roles/datos-ejemplo";
 import { EscudoClub } from "@/ui/features/mocks-roles/escudo-club";
-import {
-  BotonPrincipal,
-  CabeceraMock,
-  ContenidoMock,
-  EtiquetaEjemplo,
-  MarcoMock,
-  PieMock,
-} from "@/ui/features/mocks-roles/marco-mock";
+import { EtiquetaEjemplo, BotonPrincipal } from "@/ui/features/mocks-roles/marco-mock";
+import { ShellAdmin } from "@/ui/features/mocks-roles/shell-admin";
 import { Button } from "@/ui/nativos/button";
 
 function textoAdmins(cantidad: number): string {
@@ -22,36 +16,48 @@ function textoAdmins(cantidad: number): string {
   return `${cantidad} Admins`;
 }
 
+const botonCrear = (
+  <Button asChild className="h-10 rounded-lg px-3 text-sm">
+    <Link href={RUTAS_MOCK.nuevoClub}>
+      <Plus className="size-4" />
+      Crear club
+    </Link>
+  </Button>
+);
+
 export default function PaginaSuperAdmin() {
   return (
-    <MarcoMock>
-      <CabeceraMock
-        titulo="Super Admin"
-        subtitulo="Todos los clubes"
-        accion={
-          <Button asChild variant="ghost" className="h-11 px-3 text-sm">
-            <Link href={RUTAS_MOCK.ingreso}>Salir</Link>
-          </Button>
-        }
-      />
-      <ContenidoMock className="gap-6">
+    <ShellAdmin
+      titulo="Clubes"
+      subtitulo="Super Admin"
+      tituloMobile="Super Admin"
+      subtituloMobile="Todos los clubes"
+      rol="super-admin"
+      activo="clubes"
+      accion={botonCrear}
+    >
+      <div className="flex flex-col gap-6">
         <div className="flex items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-medium tracking-tight">Clubes</h1>
+            <h1 className="text-2xl font-medium tracking-tight lg:hidden">
+              Clubes
+            </h1>
             <p className="text-sm text-muted-foreground">
               {CLUBES_EJEMPLO.length} clubes
             </p>
           </div>
         </div>
 
-        <BotonPrincipal asChild>
-          <Link href={RUTAS_MOCK.nuevoClub}>
-            <Plus className="size-4" />
-            Crear club
-          </Link>
-        </BotonPrincipal>
+        <div className="md:hidden">
+          <BotonPrincipal asChild>
+            <Link href={RUTAS_MOCK.nuevoClub}>
+              <Plus className="size-4" />
+              Crear club
+            </Link>
+          </BotonPrincipal>
+        </div>
 
-        <ul className="flex flex-col gap-3">
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {CLUBES_EJEMPLO.map((club) => {
             const admins = ADMINS_POR_CLUB[club.slug] ?? [];
             return (
@@ -98,8 +104,7 @@ export default function PaginaSuperAdmin() {
             );
           })}
         </ul>
-      </ContenidoMock>
-      <PieMock />
-    </MarcoMock>
+      </div>
+    </ShellAdmin>
   );
 }

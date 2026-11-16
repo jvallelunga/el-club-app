@@ -74,7 +74,10 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 - Es **multi-club** a futuro: cada club personaliza nombre, escudo o logo, paleta de colores, dominio y PWA. Las funcionalidades son las mismas para todos. Los Cardos Rugby Club (Tandil) es el primer caso.
 - [copa-raices](https://github.com/jvallelunga/copa-raices) queda como base y ejemplo. El código se copia de ahí cuando haga falta.
 - Se trabaja **de a una cosa**.
-- El **admin es responsive y se diseña mobile first**: se piensa primero para el celular y después se adapta a pantallas grandes (decisión de Jerónimo, 15/11/2026 22:23).
+
+### Desarrollo
+
+- Toda la app se diseña **mobile first** y se **optimiza para tablet y desktop**: no se deja una columna de celular en el medio de una pantalla grande. Se piensa primero para el celular y, en cada breakpoint, se aprovecha el ancho (grilla, cáscara de admin, formularios con un máximo). El 15/11/2026 22:23 esta regla se acordó para el admin; el 16/11/2026 17:31 Jerónimo pidió que en desktop se viera optimizado para desktop; el 16/11/2026 17:32 lo confirmó como criterio de desarrollo de todo el sistema, también para tablet.
 
 ### Base del proyecto
 

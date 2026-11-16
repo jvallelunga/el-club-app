@@ -11,7 +11,7 @@ import {
   CabeceraMock,
   ContenidoMock,
   EtiquetaEjemplo,
-  MarcoMock,
+  MarcoPagina,
   PieMock,
 } from "@/ui/features/mocks-roles/marco-mock";
 import { Button } from "@/ui/nativos/button";
@@ -20,26 +20,30 @@ const CLUBES_DE_MARTIN = [CLUB_CARDOS, CLUB_EJEMPLO];
 
 export default function PaginaElegirClub() {
   return (
-    <MarcoMock>
-      <CabeceraMock
-        titulo="El Club App"
-        accion={
-          <Button asChild variant="ghost" className="h-11 px-3 text-sm">
-            <Link href={RUTAS_MOCK.ingreso}>Salir</Link>
-          </Button>
-        }
-      />
-      <ContenidoMock className="gap-6">
+    <MarcoPagina
+      ancho="completo"
+      cabecera={
+        <CabeceraMock
+          titulo="El Club App"
+          accion={
+            <Button asChild variant="ghost" className="h-11 px-3 text-sm">
+              <Link href={RUTAS_MOCK.ingreso}>Salir</Link>
+            </Button>
+          }
+        />
+      }
+    >
+      <ContenidoMock className="mx-auto w-full max-w-5xl gap-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-medium tracking-tight">
             Hola, {PERSONA_MARTIN.nombre.split(" ")[0]}
           </h1>
-          <p className="text-sm leading-relaxed text-muted-foreground">
+          <p className="max-w-lg text-sm leading-relaxed text-muted-foreground">
             Estás como Admin en más de un club. Elegí a cuál querés entrar.
           </p>
         </div>
 
-        <ul className="flex flex-col gap-3">
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {CLUBES_DE_MARTIN.map((club) => (
             <li key={club.slug}>
               <Link
@@ -61,6 +65,6 @@ export default function PaginaElegirClub() {
         </ul>
       </ContenidoMock>
       <PieMock />
-    </MarcoMock>
+    </MarcoPagina>
   );
 }

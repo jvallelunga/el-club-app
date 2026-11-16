@@ -3,12 +3,10 @@ import { CircleCheck } from "lucide-react";
 import { RUTAS_MOCK, slugDesdeNombre } from "@/ui/features/mocks-roles/datos-ejemplo";
 import {
   BotonPrincipal,
-  CabeceraMock,
-  ContenidoMock,
   EtiquetaEjemplo,
-  MarcoMock,
-  PieMock,
+  TarjetaFormulario,
 } from "@/ui/features/mocks-roles/marco-mock";
+import { ShellAdmin } from "@/ui/features/mocks-roles/shell-admin";
 import { Button } from "@/ui/nativos/button";
 
 export default async function PaginaClubCreado({
@@ -21,12 +19,14 @@ export default async function PaginaClubCreado({
   const slug = params.slug?.trim() || slugDesdeNombre(nombre) || "club-nuevo-ejemplo";
 
   return (
-    <MarcoMock>
-      <CabeceraMock
-        atras={{ href: RUTAS_MOCK.superAdmin, etiqueta: "Volver a clubes" }}
-        titulo="Club creado"
-      />
-      <ContenidoMock className="gap-6">
+    <ShellAdmin
+      titulo="Club creado"
+      atras={{ href: RUTAS_MOCK.superAdmin, etiqueta: "Volver a clubes" }}
+      rol="super-admin"
+      activo="clubes"
+      salirEnMobile={false}
+    >
+      <TarjetaFormulario>
         <div className="flex size-14 items-center justify-center rounded-full bg-muted">
           <CircleCheck className="size-6" />
         </div>
@@ -52,8 +52,7 @@ export default async function PaginaClubCreado({
             <Link href={RUTAS_MOCK.superAdmin}>Ir a clubes</Link>
           </Button>
         </div>
-      </ContenidoMock>
-      <PieMock />
-    </MarcoMock>
+      </TarjetaFormulario>
+    </ShellAdmin>
   );
 }

@@ -30,7 +30,7 @@ Todavía no hay migración. El [DER oficial](../docs/der-el-club.mmd) solo refle
 
 ## Pantallas (mocks)
 
-Pensadas primero para celular. Viven en `/mocks/roles` y se recorren desde el [índice](/mocks/roles). Usan datos de ejemplo (nombres y emails ficticios, rotulados como ejemplo). No hay login real.
+Pensadas primero para celular y optimizadas para tablet y desktop (mismo markup, por breakpoints). Viven en `/mocks/roles` y se recorren desde el [índice](/mocks/roles). En escritorio, el ingreso va en una tarjeta centrada (con un panel del club a partir de `lg`); las listas de clubes usan una grilla; el admin entra en una cáscara reutilizable (barra superior en tablet, sidebar en desktop). Usan datos de ejemplo (nombres y emails ficticios, rotulados como ejemplo). No hay login real.
 
 | Pantalla | Ruta |
 | --- | --- |
@@ -67,4 +67,5 @@ Flujos:
 - El modelo se apoya en `usuario`, `super_admin` y `club_miembro`, con un enum de rol extensible que hoy solo tiene `admin` (16/11/2026).
 - El email del Super Admin no se guarda en el repo; el alta se hace directo en la base (16/11/2026).
 - El DER oficial sigue mostrando solo lo migrado. El modelo de roles se documenta en un DER propuesto hasta que haya migración (16/11/2026).
-- Las pantallas del admin se diseñan mobile first (15/11/2026; aplica también a estos mocks).
+- Las pantallas del admin se diseñan mobile first (15/11/2026 22:23; aplica también a estos mocks).
+- Toda la app es mobile first y se optimiza para tablet y desktop: no se deja una columna de celular en pantallas grandes (16/11/2026 17:31 y 17:32).

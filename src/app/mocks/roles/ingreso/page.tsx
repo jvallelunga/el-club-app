@@ -7,10 +7,10 @@ import {
   RUTAS_MOCK,
 } from "@/ui/features/mocks-roles/datos-ejemplo";
 import { IconoGoogle } from "@/ui/features/mocks-roles/icono-google";
+import { EscudoClub } from "@/ui/features/mocks-roles/escudo-club";
 import {
   ContenidoMock,
-  MarcoMock,
-  PieMock,
+  MarcoAcceso,
 } from "@/ui/features/mocks-roles/marco-mock";
 
 const CASOS = [
@@ -34,10 +34,27 @@ const CASOS = [
 
 export default function PaginaIngreso() {
   return (
-    <MarcoMock>
-      <ContenidoMock className="justify-center gap-8 py-10">
+    <MarcoAcceso
+      panel={
+        <div className="flex max-w-sm flex-col gap-8">
+          <EscudoClub club={CLUB_CARDOS} tamano="xl" />
+          <div className="flex flex-col gap-3">
+            <p className="text-sm font-medium tracking-wide text-muted-foreground">
+              El Club App
+            </p>
+            <p className="text-4xl font-medium tracking-tight">
+              La app del club.
+            </p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              El primer caso es Los Cardos Rugby Club (Tandil).
+            </p>
+          </div>
+        </div>
+      }
+    >
+      <ContenidoMock className="justify-center gap-8 py-10 md:px-0 md:py-0">
         <div className="flex flex-col gap-3">
-          <p className="text-sm font-medium tracking-wide text-muted-foreground">
+          <p className="text-sm font-medium tracking-wide text-muted-foreground lg:hidden">
             El Club App
           </p>
           <h1 className="text-3xl font-medium tracking-tight">Ingresá</h1>
@@ -82,7 +99,6 @@ export default function PaginaIngreso() {
           </ul>
         </div>
       </ContenidoMock>
-      <PieMock />
-    </MarcoMock>
+    </MarcoAcceso>
   );
 }

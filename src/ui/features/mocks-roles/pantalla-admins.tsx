@@ -14,9 +14,10 @@ import {
   DialogTitle,
 } from "@/ui/nativos/dialog";
 import type { ClubEjemplo, PersonaEjemplo } from "./datos-ejemplo";
-import { BotonPrincipal, CabeceraMock, ContenidoMock, EtiquetaEjemplo, MarcoMock, PieMock } from "./marco-mock";
+import { BotonPrincipal, EtiquetaEjemplo } from "./marco-mock";
 import { EscudoClub } from "./escudo-club";
 import { RUTAS_MOCK } from "./datos-ejemplo";
+import { ShellAdmin } from "./shell-admin";
 
 function iniciales(nombre: string): string {
   return nombre
@@ -97,17 +98,23 @@ export function PantallaAdmins({
     };
     setAdmins((actuales) => [...actuales, nuevo]);
     setEmail("");
-    setAviso(`Agregamos a ${nuevo.nombre}. Cuando entre con Google, ya tiene el club.`);
+    setAviso(
+      `Agregamos a ${nuevo.nombre}. Cuando entre con Google, ya tiene el club.`,
+    );
   }
 
   return (
-    <MarcoMock>
-      <CabeceraMock
-        atras={{ href: RUTAS_MOCK.superAdmin, etiqueta: "Volver a clubes" }}
-        titulo="Admins"
-        subtitulo={club.nombre}
-      />
-      <ContenidoMock className="gap-6">
+    <ShellAdmin
+      titulo="Admins"
+      subtitulo={club.nombre}
+      atras={{ href: RUTAS_MOCK.superAdmin, etiqueta: "Volver a clubes" }}
+      club={club}
+      rol="super-admin"
+      activo="admins"
+      como="super-admin"
+      salirEnMobile={false}
+    >
+      <div className="flex max-w-3xl flex-col gap-6">
         <div className="flex items-center gap-3">
           <EscudoClub club={club} />
           <div className="min-w-0">
@@ -129,27 +136,33 @@ export function PantallaAdmins({
         </div>
 
         <form onSubmit={agregar} className="flex flex-col gap-3">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email-admin">Agregar por email</Label>
-            <Input
-              id="email-admin"
-              type="email"
-              name="email"
-              value={email}
-              onChange={(evento) => setEmail(evento.target.value)}
-              placeholder="email@ejemplo.com"
-              autoComplete="off"
-              className="h-12 rounded-xl px-3 text-base"
-              required
-            />
+          <div className="flex flex-col gap-3 md:flex-row md:items-end">
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <Label htmlFor="email-admin">Agregar por email</Label>
+              <Input
+                id="email-admin"
+                type="email"
+                name="email"
+                value={email}
+                onChange={(evento) => setEmail(evento.target.value)}
+                placeholder="email@ejemplo.com"
+                autoComplete="off"
+                className="h-12 rounded-xl px-3 text-base"
+                required
+              />
+            </div>
+            <BotonPrincipal
+              type="submit"
+              disabled={!email.trim()}
+              className="md:w-auto md:px-5"
+            >
+              Agregar Admin
+            </BotonPrincipal>
           </div>
           <p className="text-sm leading-relaxed text-muted-foreground">
             Cuando esa persona entre con Google por primera vez, ya tiene el
             club asignado.
           </p>
-          <BotonPrincipal type="submit" disabled={!email.trim()}>
-            Agregar Admin
-          </BotonPrincipal>
         </form>
 
         {aviso ? (
@@ -201,8 +214,7 @@ export function PantallaAdmins({
             </ul>
           )}
         </section>
-      </ContenidoMock>
-      <PieMock />
+      </div>
 
       <Dialog
         open={aQuitar !== null}
@@ -210,7 +222,10 @@ export function PantallaAdmins({
           if (!abierto) cancelarQuitar();
         }}
       >
-        <DialogContent showCloseButton={false} className="max-w-[calc(100%-2.5rem)]">
+        <DialogContent
+          showCloseButton={false}
+          className="max-w-[calc(100%-2.5rem)] sm:max-w-md"
+        >
           <DialogHeader>
             <DialogTitle>¿Quitamos a {aQuitar?.nombre}?</DialogTitle>
             <DialogDescription>
@@ -238,6 +253,6 @@ export function PantallaAdmins({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </MarcoMock>
+    </ShellAdmin>
   );
 }

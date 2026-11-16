@@ -10,13 +10,8 @@ import {
   RUTAS_MOCK,
 } from "@/ui/features/mocks-roles/datos-ejemplo";
 import { EscudoClub } from "@/ui/features/mocks-roles/escudo-club";
-import {
-  CabeceraMock,
-  ContenidoMock,
-  EtiquetaEjemplo,
-  MarcoMock,
-  PieMock,
-} from "@/ui/features/mocks-roles/marco-mock";
+import { EtiquetaEjemplo } from "@/ui/features/mocks-roles/marco-mock";
+import { ShellAdmin } from "@/ui/features/mocks-roles/shell-admin";
 import { Button } from "@/ui/nativos/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui/nativos/card";
 
@@ -52,18 +47,17 @@ export default async function PaginaInicioClub({
       : undefined;
 
   return (
-    <MarcoMock>
-      <CabeceraMock
-        atras={atras}
-        titulo={club.nombre}
-        subtitulo={esSuperAdmin ? "Super Admin" : "Admin"}
-        accion={
-          <Button asChild variant="ghost" className="h-11 px-3 text-sm">
-            <Link href={RUTAS_MOCK.ingreso}>Salir</Link>
-          </Button>
-        }
-      />
-      <ContenidoMock className="gap-6">
+    <ShellAdmin
+      titulo={club.nombre}
+      subtitulo={esSuperAdmin ? "Super Admin" : "Admin"}
+      atras={atras}
+      club={club}
+      rol={esSuperAdmin ? "super-admin" : "admin"}
+      activo="inicio"
+      como={como}
+      esMultiClub={esMultiClub}
+    >
+      <div className="flex max-w-3xl flex-col gap-6">
         <div className="flex items-center gap-4">
           <EscudoClub club={club} tamano="lg" />
           <div className="min-w-0">
@@ -99,21 +93,24 @@ export default async function PaginaInicioClub({
         </Card>
 
         {esSuperAdmin ? (
-          <Button asChild variant="outline" className="h-12 w-full rounded-xl text-base">
+          <Button
+            asChild
+            variant="outline"
+            className="h-12 w-full rounded-xl text-base md:hidden"
+          >
             <Link href={RUTAS_MOCK.admins(club.slug)}>Ver Admins</Link>
           </Button>
         ) : null}
 
         {club.slug === CLUB_CARDOS.slug && esMultiClub ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground md:hidden">
             También sos Admin de {CLUB_EJEMPLO.nombre}.{" "}
             <Link href={RUTAS_MOCK.elegirClub} className="underline-offset-2 hover:underline">
               Cambiar de club
             </Link>
           </p>
         ) : null}
-      </ContenidoMock>
-      <PieMock />
-    </MarcoMock>
+      </div>
+    </ShellAdmin>
   );
 }

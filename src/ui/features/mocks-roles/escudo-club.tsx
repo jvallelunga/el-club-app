@@ -6,12 +6,24 @@ export function EscudoClub({
   tamano = "md",
 }: {
   club: ClubEjemplo;
-  tamano?: "sm" | "md" | "lg";
+  tamano?: "sm" | "md" | "lg" | "xl";
 }) {
   const medida =
-    tamano === "lg" ? "size-16" : tamano === "sm" ? "size-10" : "size-12";
+    tamano === "xl"
+      ? "size-28"
+      : tamano === "lg"
+        ? "size-16"
+        : tamano === "sm"
+          ? "size-10"
+          : "size-12";
   const texto =
-    tamano === "lg" ? "text-lg" : tamano === "sm" ? "text-xs" : "text-sm";
+    tamano === "xl"
+      ? "text-2xl"
+      : tamano === "lg"
+        ? "text-lg"
+        : tamano === "sm"
+          ? "text-xs"
+          : "text-sm";
 
   return (
     <div

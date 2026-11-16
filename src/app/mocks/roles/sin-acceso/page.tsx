@@ -5,14 +5,13 @@ import {
   BotonPrincipal,
   ContenidoMock,
   EtiquetaEjemplo,
-  MarcoMock,
-  PieMock,
+  MarcoAcceso,
 } from "@/ui/features/mocks-roles/marco-mock";
 
 export default function PaginaSinAcceso() {
   return (
-    <MarcoMock>
-      <ContenidoMock className="justify-center gap-6 py-10">
+    <MarcoAcceso>
+      <ContenidoMock className="justify-center gap-6 py-10 md:px-0 md:py-0">
         <div className="flex size-14 items-center justify-center rounded-full bg-muted">
           <ShieldOff className="size-6 text-muted-foreground" />
         </div>
@@ -41,7 +40,6 @@ export default function PaginaSinAcceso() {
           <Link href={RUTAS_MOCK.ingreso}>Cerrar sesión</Link>
         </BotonPrincipal>
       </ContenidoMock>
-      <PieMock />
-    </MarcoMock>
+    </MarcoAcceso>
   );
 }
