@@ -74,6 +74,7 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 - Es **multi-club** a futuro: cada club personaliza nombre, escudo o logo, paleta de colores, dominio y PWA. Las funcionalidades son las mismas para todos. Los Cardos Rugby Club (Tandil) es el primer caso.
 - [copa-raices](https://github.com/jvallelunga/copa-raices) queda como base y ejemplo. El código se copia de ahí cuando haga falta.
 - Se trabaja **de a una cosa**.
+- El **admin es responsive y se diseña mobile first**: se piensa primero para el celular y después se adapta a pantallas grandes (decisión de Jerónimo, 15/11/2026 22:23).
 
 ### Base del proyecto
 
