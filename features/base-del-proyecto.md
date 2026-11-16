@@ -1,26 +1,43 @@
 # Base del proyecto
 
-Primer ítem del paso 1. Todavía no implementado.
+Primer ítem del paso 1. [#1](https://github.com/jvallelunga/el-club-app/issues/1).
 
 ## Objetivo
 
 Dejar en este repo el stack que ya funcionó en [copa-raices](https://github.com/jvallelunga/copa-raices): Next.js y Supabase, para arrancar la app del club desde una base conocida.
 
-## Alcance
+## Qué se copió
 
-- Copiar de copa-raices lo necesario para levantar la app: Next.js (App Router), Supabase, la organización del código (`src/dominio`, `src/datos`, features) y las convenciones de trabajo (decisiones en `features/`, DER en el mismo commit que el modelo).
-- No se reescribe el stack. Se trae lo que sirva y se adapta el nombre y las rutas a El Club.
-- Los ambientes separados de desarrollo y producción **quedan para después**. En este ítem basta con un entorno de trabajo (local y, si hace falta, un solo proyecto de Supabase y un deploy de desarrollo). La separación dev/prod se anota como pendiente, no se implementa acá.
+- Next.js 16.4.3 (App Router), React 19.3.1, TypeScript, Node 22.
+- Tailwind 4, PostCSS, `components.json` de shadcn (estilo radix-nova, baseColor neutral), `next-themes`.
+- ESLint (`eslint-config-next` 16.4.3) con las reglas de capas de copa-raices (`dominio`, `ui`, `nativos`, `compartidos`, `app`).
+- Vitest (incluido el alias de `server-only`).
+- Carpetas vacías `src/dominio`, `src/datos` (con `consultas` y `comandos`), `src/ui` (`fundamentos`, `nativos`, `compartidos`, `features`).
+- Helpers de Supabase en `src/datos/supabase.ts` (`supabaseAnon`, `supabaseService`), leyendo `.env.example` / `.env.local`. Tipos mínimos en `src/datos/tipos.ts`.
+- Proveedor de TanStack Query y proveedor de tema, como en la arquitectura de copa-raices.
+- `supabase/config.toml` para un entorno local, y la convención de migraciones idempotentes.
+- `vercel.json` con región `gru1` (São Paulo), el mismo criterio de copa-raices. El proyecto de Vercel no se crea acá.
+
+## Qué se dejó afuera
+
+- Todas las features del torneo: admin, mesa, tablero, acceso por equipos, fixture, plantillas, push, analítica (PostHog y Vercel Analytics).
+- Clerk y cualquier implementación de roles o permisos (van en el [#15](https://github.com/jvallelunga/el-club-app/issues/15)).
+- Storybook, mocks, lector de DNI (`zxing`, script de `postinstall`), Excel, drag-and-drop, QR, íconos y marca de Copa Raíces.
+- Proyectos de Supabase y de Vercel (desarrollo y producción). Se crean después, con el OK de Jerónimo.
 
 ## Criterios de aceptación
 
 - El repo tiene una app Next.js que buildéa, con el mismo estilo de carpetas que copa-raices.
-- Hay un proyecto de Supabase (o la CLI local) con una migración inicial alineada al [DER](../docs/der-el-club.mmd), idempotente.
+- Hay una migración inicial idempotente, alineada al [DER](../docs/der-el-club.mmd), que solo crea la tabla `club` (`id`, `slug`, `nombre`, `creado_en`), vacía, con RLS activado y sin políticas todavía.
+- La home muestra «El Club App».
+- Los tokens de tema son una paleta neutra provisional, lista para el ítem 2.
 - El README explica cómo levantarla en local.
-- Queda escrito, sin implementar, que más adelante hay un ambiente de desarrollo y uno de producción, como en copa-raices.
-- No se implementan todavía la marca del club, el tablero, los torneos ni el dominio.
+- Queda escrito, sin implementar, que más adelante hay un ambiente de desarrollo y uno de producción.
 
 ## Decisiones
 
 - copa-raices queda congelado como base y ejemplo; el código se copia cuando haga falta (15/11/2026).
-- Se trabaja de a una cosa: este ítem es solo la base.
+- Se trabaja de a una cosa: este ítem es solo la base (15/11/2026).
+- La columna de alta se llama `creado_en`, como en copa-raices, no `created_at` (15/11/2026).
+- No se siembra Los Cardos todavía: eso entra con la personalización del ítem 2.
+- Tipografía de arranque: solo Inter. Bodoni y Montserrat eran de la identidad de Copa Raíces.
