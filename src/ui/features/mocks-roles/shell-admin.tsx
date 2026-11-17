@@ -35,6 +35,7 @@ export const RUTAS_SHELL_APP: RutasShell = {
   superAdmin: "/super-admin",
   elegirClub: "/elegir-club",
   club: (slug) => `/c/${slug}/admin/club`,
+  sedes: (slug) => `/c/${slug}/admin/sedes`,
   admins: (slug) => `/c/${slug}/admin/admins`,
 };
 

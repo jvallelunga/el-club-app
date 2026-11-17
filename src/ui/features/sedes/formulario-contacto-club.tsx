@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -13,15 +13,17 @@ import { Button } from "@/ui/nativos/button";
 import { BotonPrincipal } from "@/ui/features/mocks-roles/marco-mock";
 import { cn } from "@/lib/utils";
 import {
-  CONTACTO_VACIO,
   REDES_SOCIALES,
-  type ContactoClubEjemplo,
   type IdRedSocial,
-  type RedSocialEjemplo,
-} from "./datos-ejemplo";
+} from "@/dominio/contacto";
+import { CONTACTO_VACIO, type ContactoClubEjemplo, type RedSocialEjemplo } from "./datos-ejemplo";
 
 const CAMPO = "h-12 rounded-xl px-3 text-base";
 const SELECT = cn(CAMPO, "w-full border border-input bg-background");
+
+export type ResultadoGuardarContacto =
+  | { ok: true }
+  | { ok: false; error: string };
 
 function nuevaRed(): RedSocialEjemplo {
   return {
@@ -33,8 +35,10 @@ function nuevaRed(): RedSocialEjemplo {
 
 export function FormularioContactoClub({
   inicial,
+  guardar,
 }: {
   inicial: ContactoClubEjemplo;
+  guardar?: (formData: FormData) => Promise<ResultadoGuardarContacto>;
 }) {
   const [telefono, setTelefono] = useState(inicial.telefono);
   const [email, setEmail] = useState(inicial.email);
@@ -42,16 +46,23 @@ export function FormularioContactoClub({
   const [web, setWeb] = useState(inicial.web);
   const [redes, setRedes] = useState<RedSocialEjemplo[]>(inicial.redes);
   const [guardado, setGuardado] = useState(false);
+  const [errorServidor, setErrorServidor] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function marcarCambio() {
+    setGuardado(false);
+    setErrorServidor(null);
+  }
 
   function actualizarRed(id: string, cambio: Partial<RedSocialEjemplo>) {
-    setGuardado(false);
+    marcarCambio();
     setRedes((actual) =>
       actual.map((red) => (red.id === id ? { ...red, ...cambio } : red)),
     );
   }
 
   function mover(id: string, direccion: -1 | 1) {
-    setGuardado(false);
+    marcarCambio();
     setRedes((actual) => {
       const i = actual.findIndex((red) => red.id === id);
       const j = i + direccion;
@@ -68,7 +79,35 @@ export function FormularioContactoClub({
       className="flex flex-col gap-6"
       onSubmit={(evento) => {
         evento.preventDefault();
-        setGuardado(true);
+        if (!guardar) {
+          setGuardado(true);
+          return;
+        }
+        const formData = new FormData();
+        formData.set("telefono", telefono);
+        formData.set("email", email);
+        formData.set("direccion", direccion);
+        formData.set("web", web);
+        formData.set(
+          "redes",
+          JSON.stringify(
+            redes.map((red) => ({
+              red: red.red,
+              valor: red.valor,
+              etiqueta: red.etiqueta ?? "",
+            })),
+          ),
+        );
+        startTransition(async () => {
+          const resultado = await guardar(formData);
+          if (!resultado.ok) {
+            setErrorServidor(resultado.error);
+            setGuardado(false);
+            return;
+          }
+          setErrorServidor(null);
+          setGuardado(true);
+        });
       }}
     >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -82,7 +121,7 @@ export function FormularioContactoClub({
             type="tel"
             value={telefono}
             onChange={(e) => {
-              setGuardado(false);
+              marcarCambio();
               setTelefono(e.target.value);
             }}
             placeholder="+54 11 0000-0000"
@@ -100,7 +139,7 @@ export function FormularioContactoClub({
             type="email"
             value={email}
             onChange={(e) => {
-              setGuardado(false);
+              marcarCambio();
               setEmail(e.target.value);
             }}
             placeholder="contacto@club.com"
@@ -117,7 +156,7 @@ export function FormularioContactoClub({
             id="contacto-direccion"
             value={direccion}
             onChange={(e) => {
-              setGuardado(false);
+              marcarCambio();
               setDireccion(e.target.value);
             }}
             placeholder="Calle y número, ciudad"
@@ -135,7 +174,7 @@ export function FormularioContactoClub({
             type="url"
             value={web}
             onChange={(e) => {
-              setGuardado(false);
+              marcarCambio();
               setWeb(e.target.value);
             }}
             placeholder="https://"
@@ -258,8 +297,10 @@ export function FormularioContactoClub({
                     className="size-11 text-destructive"
                     aria-label="Quitar red"
                     onClick={() => {
-                      setGuardado(false);
-                      setRedes((actual) => actual.filter((item) => item.id !== red.id));
+                      marcarCambio();
+                      setRedes((actual) =>
+                        actual.filter((item) => item.id !== red.id),
+                      );
                     }}
                   >
                     <Trash2 className="size-4" />
@@ -275,7 +316,7 @@ export function FormularioContactoClub({
           variant="outline"
           className="h-11 w-full rounded-xl sm:w-auto"
           onClick={() => {
-            setGuardado(false);
+            marcarCambio();
             setRedes((actual) => [...actual, nuevaRed()]);
           }}
         >
@@ -284,13 +325,21 @@ export function FormularioContactoClub({
         </Button>
       </div>
 
-      {guardado ? (
+      {errorServidor ? (
+        <p className="text-sm text-destructive" role="alert">
+          {errorServidor}
+        </p>
+      ) : guardado ? (
         <p className="text-sm text-muted-foreground" role="status">
-          En el mock no se guarda de verdad. Así se vería el aviso al guardar.
+          {guardar
+            ? "Contacto guardado."
+            : "En el mock no se guarda de verdad. Así se vería el aviso al guardar."}
         </p>
       ) : null}
 
-      <BotonPrincipal type="submit">Guardar contacto</BotonPrincipal>
+      <BotonPrincipal type="submit" disabled={pending}>
+        {pending ? "Guardando…" : "Guardar contacto"}
+      </BotonPrincipal>
     </form>
   );
 }

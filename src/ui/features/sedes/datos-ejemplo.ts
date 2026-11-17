@@ -4,18 +4,10 @@
  * Ningún club real —tampoco Los Cardos— aparece acá.
  */
 
-export const REDES_SOCIALES = [
-  { id: "instagram", etiqueta: "Instagram" },
-  { id: "facebook", etiqueta: "Facebook" },
-  { id: "x", etiqueta: "X" },
-  { id: "youtube", etiqueta: "YouTube" },
-  { id: "tiktok", etiqueta: "TikTok" },
-  { id: "whatsapp", etiqueta: "WhatsApp" },
-  { id: "linkedin", etiqueta: "LinkedIn" },
-  { id: "otra", etiqueta: "Otra" },
-] as const;
+import { REDES_SOCIALES, type IdRedSocial } from "@/dominio/contacto";
 
-export type IdRedSocial = (typeof REDES_SOCIALES)[number]["id"];
+export { REDES_SOCIALES, type IdRedSocial };
+
 
 export type RedSocialEjemplo = {
   id: string;

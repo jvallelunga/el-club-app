@@ -14,6 +14,9 @@ import { urlYClaveAnon } from "@/datos/env-supabase";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
 import { puedeEditarRutasDelClub } from "@/dominio/permisos";
 import { inicialesDesdeNombre } from "@/dominio/slug";
+import { FormularioContactoClub } from "@/ui/features/sedes/formulario-contacto-club";
+import { actualizarContactoClub } from "@/datos/comandos/sedes";
+import { contactoDelClub } from "@/datos/consultas/sedes";
 
 export const dynamic = "force-dynamic";
 
@@ -29,12 +32,18 @@ export default async function PaginaDatosDelClub({
   await adminDelClubRequerido(club.id, `/c/${slug}/admin/club`);
 
   const clubId = club.id;
+  const contacto = await contactoDelClub(clubId);
   const editaRutas = puedeEditarRutasDelClub(sesion);
   const destino = `/c/${club.slug}/admin/club`;
 
   async function guardar(formData: FormData) {
     "use server";
     return actualizarClub(clubId, formData);
+  }
+
+  async function guardarContacto(formData: FormData) {
+    "use server";
+    return actualizarContactoClub(clubId, formData);
   }
 
   const clubShell = {
@@ -92,6 +101,37 @@ export default async function PaginaDatosDelClub({
             dominioBase: club.dominio_base,
           }}
         />
+
+        <section
+          id="contacto"
+          className="flex flex-col gap-4 border-t border-border pt-8 scroll-mt-28"
+        >
+          <div className="max-w-2xl">
+            <h2 className="text-lg font-medium tracking-tight">
+              Contacto y redes
+            </h2>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              Todos los campos son opcionales. Los puede editar un Admin del
+              club o un Super Admin. Las redes se eligen de una lista (y se
+              puede agregar otra) y se reordenan.
+            </p>
+          </div>
+          <FormularioContactoClub
+            inicial={{
+              telefono: contacto.telefono,
+              email: contacto.email,
+              direccion: contacto.direccion,
+              web: contacto.web,
+              redes: contacto.redes.map((red) => ({
+                id: red.id,
+                red: red.red,
+                etiqueta: red.etiqueta ?? undefined,
+                valor: red.valor,
+              })),
+            }}
+            guardar={guardarContacto}
+          />
+        </section>
       </div>
     </ShellAdmin>
   );

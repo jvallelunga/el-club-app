@@ -111,3 +111,15 @@ export function errorAlQuitarAdmin(params: {
   }
   return "No se puede quitar al último Admin del club.";
 }
+
+/** Mensaje si no puede administrar sedes o instalaciones de ese club. */
+export function errorSiNoPuedeAdministrarSedes(
+  sesion: SesionApp | null,
+  clubId: string,
+): string | null {
+  if (!sesion) return "Tenés que ingresar de nuevo.";
+  if (!puedeAdministrarClub(sesion, clubId)) {
+    return "No tenés permiso para administrar las sedes de este club.";
+  }
+  return null;
+}

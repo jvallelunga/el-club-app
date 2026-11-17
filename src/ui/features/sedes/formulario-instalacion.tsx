@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/ui/nativos/input";
 import { Label } from "@/ui/nativos/label";
@@ -14,21 +14,44 @@ import {
 const CAMPO = "h-12 rounded-xl px-3 text-base";
 const SELECT = cn(CAMPO, "w-full border border-input bg-background");
 
+export type ResultadoGuardarInstalacion =
+  | { ok: true; id?: string }
+  | { ok: false; error: string };
+
+export type InicialInstalacion = {
+  tipoId: string;
+  nombre: string;
+  notas: string;
+};
+
 export function FormularioInstalacion({
   tipos = TIPOS_DEL_CLUB_EJEMPLO,
   destino,
+  guardar,
+  inicial,
+  etiquetaBoton,
 }: {
   tipos?: TipoInstalacionEjemplo[];
   destino: string;
+  guardar?: (formData: FormData) => Promise<ResultadoGuardarInstalacion>;
+  inicial?: InicialInstalacion;
+  etiquetaBoton?: string;
 }) {
   const router = useRouter();
-  const [tipoId, setTipoId] = useState(tipos[0]?.id ?? "cancha-rugby");
+  const [tipoId, setTipoId] = useState(
+    inicial?.tipoId ?? tipos[0]?.id ?? "cancha-rugby",
+  );
   const [tipoPropio, setTipoPropio] = useState("");
-  const [nombre, setNombre] = useState("");
-  const [notas, setNotas] = useState("");
+  const [nombre, setNombre] = useState(inicial?.nombre ?? "");
+  const [notas, setNotas] = useState(inicial?.notas ?? "");
   const [intento, setIntento] = useState(false);
+  const [errorServidor, setErrorServidor] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
-  const eligeOtra = tipoId === "otra";
+  const tipoOtra = tipos.find(
+    (tipo) => tipo.base && tipo.nombre.toLowerCase() === "otra",
+  );
+  const eligeOtra = tipoId === "otra" || tipoId === tipoOtra?.id;
   const errorTipo =
     eligeOtra && !tipoPropio.trim()
       ? "Poné el nombre del tipo de instalación."
@@ -37,14 +60,35 @@ export function FormularioInstalacion({
     ? null
     : "Poné un nombre, por ejemplo «Cancha 1».";
 
+  const textoBoton =
+    etiquetaBoton ?? (inicial ? "Guardar instalación" : "Agregar instalación");
+
   return (
     <form
       className="mx-auto flex w-full max-w-xl flex-col gap-5"
       onSubmit={(evento) => {
         evento.preventDefault();
         setIntento(true);
+        setErrorServidor(null);
         if (errorTipo || errorNombre) return;
-        router.push(destino);
+        if (!guardar) {
+          router.push(destino);
+          return;
+        }
+        const formData = new FormData();
+        formData.set("tipo_instalacion_id", tipoId);
+        formData.set("tipo_propio", tipoPropio);
+        formData.set("nombre", nombre);
+        formData.set("notas", notas);
+        startTransition(async () => {
+          const resultado = await guardar(formData);
+          if (!resultado.ok) {
+            setErrorServidor(resultado.error);
+            return;
+          }
+          router.push(destino);
+          router.refresh();
+        });
       }}
     >
       <div className="flex flex-col gap-2">
@@ -144,7 +188,15 @@ export function FormularioInstalacion({
         />
       </div>
 
-      <BotonPrincipal type="submit">Agregar instalación</BotonPrincipal>
+      {errorServidor ? (
+        <p className="text-sm text-destructive" role="alert">
+          {errorServidor}
+        </p>
+      ) : null}
+
+      <BotonPrincipal type="submit" disabled={pending}>
+        {pending ? "Guardando…" : textoBoton}
+      </BotonPrincipal>
     </form>
   );
 }

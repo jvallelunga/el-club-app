@@ -25,6 +25,10 @@ export type Database = {
           color_claro: string;
           color_2: string | null;
           color_3: string | null;
+          telefono: string | null;
+          email: string | null;
+          direccion: string | null;
+          web: string | null;
           creado_en: string;
         };
         Insert: {
@@ -37,6 +41,10 @@ export type Database = {
           color_claro?: string;
           color_2?: string | null;
           color_3?: string | null;
+          telefono?: string | null;
+          email?: string | null;
+          direccion?: string | null;
+          web?: string | null;
           creado_en?: string;
         };
         Update: {
@@ -49,6 +57,10 @@ export type Database = {
           color_claro?: string;
           color_2?: string | null;
           color_3?: string | null;
+          telefono?: string | null;
+          email?: string | null;
+          direccion?: string | null;
+          web?: string | null;
           creado_en?: string;
         };
         Relationships: [];
@@ -189,6 +201,150 @@ export type Database = {
           },
         ];
       };
+      club_red_social: {
+        Row: {
+          id: string;
+          club_id: string;
+          red: string;
+          etiqueta: string | null;
+          valor: string;
+          orden: number;
+          creado_en: string;
+        };
+        Insert: {
+          id?: string;
+          club_id: string;
+          red: string;
+          etiqueta?: string | null;
+          valor: string;
+          orden?: number;
+          creado_en?: string;
+        };
+        Update: {
+          id?: string;
+          club_id?: string;
+          red?: string;
+          etiqueta?: string | null;
+          valor?: string;
+          orden?: number;
+          creado_en?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "club_red_social_club_id_fkey";
+            columns: ["club_id"];
+            isOneToOne: false;
+            referencedRelation: "club";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      sede: {
+        Row: {
+          id: string;
+          club_id: string;
+          nombre: string;
+          direccion: string | null;
+          maps_url: string | null;
+          creado_en: string;
+        };
+        Insert: {
+          id?: string;
+          club_id: string;
+          nombre: string;
+          direccion?: string | null;
+          maps_url?: string | null;
+          creado_en?: string;
+        };
+        Update: {
+          id?: string;
+          club_id?: string;
+          nombre?: string;
+          direccion?: string | null;
+          maps_url?: string | null;
+          creado_en?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sede_club_id_fkey";
+            columns: ["club_id"];
+            isOneToOne: false;
+            referencedRelation: "club";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tipo_instalacion: {
+        Row: {
+          id: string;
+          club_id: string | null;
+          nombre: string;
+          creado_en: string;
+        };
+        Insert: {
+          id?: string;
+          club_id?: string | null;
+          nombre: string;
+          creado_en?: string;
+        };
+        Update: {
+          id?: string;
+          club_id?: string | null;
+          nombre?: string;
+          creado_en?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tipo_instalacion_club_id_fkey";
+            columns: ["club_id"];
+            isOneToOne: false;
+            referencedRelation: "club";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      instalacion: {
+        Row: {
+          id: string;
+          sede_id: string;
+          tipo_instalacion_id: string;
+          nombre: string;
+          notas: string | null;
+          creado_en: string;
+        };
+        Insert: {
+          id?: string;
+          sede_id: string;
+          tipo_instalacion_id: string;
+          nombre: string;
+          notas?: string | null;
+          creado_en?: string;
+        };
+        Update: {
+          id?: string;
+          sede_id?: string;
+          tipo_instalacion_id?: string;
+          nombre?: string;
+          notas?: string | null;
+          creado_en?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "instalacion_sede_id_fkey";
+            columns: ["sede_id"];
+            isOneToOne: false;
+            referencedRelation: "sede";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "instalacion_tipo_instalacion_id_fkey";
+            columns: ["tipo_instalacion_id"];
+            isOneToOne: false;
+            referencedRelation: "tipo_instalacion";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -225,3 +381,8 @@ export type Usuario = Database["public"]["Tables"]["usuario"]["Row"];
 export type ClubMiembro = Database["public"]["Tables"]["club_miembro"]["Row"];
 export type ClubInvitacion =
   Database["public"]["Tables"]["club_invitacion"]["Row"];
+
+export type ClubRedSocial = Database["public"]["Tables"]["club_red_social"]["Row"];
+export type Sede = Database["public"]["Tables"]["sede"]["Row"];
+export type TipoInstalacion = Database["public"]["Tables"]["tipo_instalacion"]["Row"];
+export type Instalacion = Database["public"]["Tables"]["instalacion"]["Row"];

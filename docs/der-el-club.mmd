@@ -19,8 +19,12 @@
 %% Un Admin puede invitar y quitar Admins solo de su club
 %% (interno.es_admin_club). No se puede quitar al último Admin.
 %% Un Admin también puede actualizar los datos estéticos de su club
-%% (nombre, escudo_ruta, paleta). slug y dominio_base solo los cambia
-%% el Super Admin (trigger impedir_cambio_de_rutas_del_club).
+%% (nombre, escudo_ruta, paleta) y el contacto (telefono, email,
+%% direccion, web y club_red_social). slug y dominio_base solo los
+%% cambia el Super Admin (trigger impedir_cambio_de_rutas_del_club).
+%% Un club tiene sedes; cada sede tiene instalaciones. tipo_instalacion
+%% con club_id null son los tipos de base (solo el Super Admin los
+%% edita); un club_id es un tipo propio de ese club.
 %% El email del Super Admin no se guarda en el repo: el alta se hace
 %% directo en la base (ver scripts/sembrar-super-admin.sql).
 %% copa-raices queda como base y ejemplo: https://github.com/jvallelunga/copa-raices
@@ -35,6 +39,41 @@ erDiagram
         string color_claro
         string color_2
         string color_3
+        string telefono
+        string email
+        string direccion
+        string web
+        timestamptz creado_en
+    }
+    CLUB_RED_SOCIAL {
+        uuid id PK
+        uuid club_id FK
+        string red
+        string etiqueta
+        string valor
+        int orden
+        timestamptz creado_en
+    }
+    SEDE {
+        uuid id PK
+        uuid club_id FK
+        string nombre
+        string direccion
+        string maps_url
+        timestamptz creado_en
+    }
+    TIPO_INSTALACION {
+        uuid id PK
+        uuid club_id FK
+        string nombre
+        timestamptz creado_en
+    }
+    INSTALACION {
+        uuid id PK
+        uuid sede_id FK
+        uuid tipo_instalacion_id FK
+        string nombre
+        string notas
         timestamptz creado_en
     }
     USUARIO {
@@ -71,3 +110,8 @@ erDiagram
     USUARIO ||--o{ CLUB_MIEMBRO : integra
     USUARIO ||--o| SUPER_ADMIN : es
     CLUB ||--o{ CLUB_INVITACION : invita
+    CLUB ||--o{ CLUB_RED_SOCIAL : tiene
+    CLUB ||--o{ SEDE : tiene
+    CLUB ||--o{ TIPO_INSTALACION : puede_definir
+    SEDE ||--o{ INSTALACION : tiene
+    TIPO_INSTALACION ||--o{ INSTALACION : clasifica

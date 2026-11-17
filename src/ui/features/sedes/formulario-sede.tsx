@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/ui/nativos/input";
 import { Label } from "@/ui/nativos/label";
@@ -10,18 +10,28 @@ import type { SedeEjemplo } from "./datos-ejemplo";
 
 const CAMPO = "h-12 rounded-xl px-3 text-base";
 
+export type ResultadoGuardarSede =
+  | { ok: true; id?: string }
+  | { ok: false; error: string };
+
 export function FormularioSede({
   inicial,
   destino,
+  destinoCreada,
+  guardar,
 }: {
   inicial?: Pick<SedeEjemplo, "nombre" | "direccion" | "mapsUrl">;
   destino: string;
+  destinoCreada?: (id: string) => string;
+  guardar?: (formData: FormData) => Promise<ResultadoGuardarSede>;
 }) {
   const router = useRouter();
   const [nombre, setNombre] = useState(inicial?.nombre ?? "");
   const [direccion, setDireccion] = useState(inicial?.direccion ?? "");
   const [mapsUrl, setMapsUrl] = useState(inicial?.mapsUrl ?? "");
   const [intento, setIntento] = useState(false);
+  const [errorServidor, setErrorServidor] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
   const errorNombre = nombre.trim() ? null : "Poné un nombre para la sede.";
   const preview = useMemo(
@@ -35,8 +45,29 @@ export function FormularioSede({
       onSubmit={(evento) => {
         evento.preventDefault();
         setIntento(true);
+        setErrorServidor(null);
         if (errorNombre) return;
-        router.push(destino);
+        if (!guardar) {
+          router.push(destino);
+          return;
+        }
+        const formData = new FormData();
+        formData.set("nombre", nombre);
+        formData.set("direccion", direccion);
+        formData.set("maps_url", mapsUrl);
+        startTransition(async () => {
+          const resultado = await guardar(formData);
+          if (!resultado.ok) {
+            setErrorServidor(resultado.error);
+            return;
+          }
+          const url =
+            resultado.id && destinoCreada
+              ? destinoCreada(resultado.id)
+              : destino;
+          router.push(url);
+          router.refresh();
+        });
       }}
     >
       <div className="flex flex-col gap-5">
@@ -94,11 +125,20 @@ export function FormularioSede({
             vista previa con un pin (sin usar la API de Google).
           </p>
         </div>
+        {errorServidor ? (
+          <p className="text-sm text-destructive" role="alert">
+            {errorServidor}
+          </p>
+        ) : null}
         <div className="lg:hidden">
           <MapaEstatico link={preview.link} direccion={preview.direccion} />
         </div>
-        <BotonPrincipal type="submit">
-          {inicial ? "Guardar sede" : "Crear sede"}
+        <BotonPrincipal type="submit" disabled={pending}>
+          {pending
+            ? "Guardando…"
+            : inicial
+              ? "Guardar sede"
+              : "Crear sede"}
         </BotonPrincipal>
       </div>
       <div className="hidden lg:sticky lg:top-6 lg:block">
