@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 import { ProveedorConsulta } from "@/datos/proveedor-consulta";
 import { ProveedorTema } from "@/ui/fundamentos/proveedor-tema";
 import "./globals.css";
