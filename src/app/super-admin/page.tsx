@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
-import { EscudoClub } from "@/ui/features/mocks-roles/escudo-club";
-import { BotonPrincipal } from "@/ui/features/mocks-roles/marco-mock";
+import { EscudoClub } from "@/ui/compartidos/escudo-club";
+import { BotonPrincipal } from "@/ui/compartidos/marco";
 import {
-  RUTAS_SHELL_APP,
   ShellAdmin,
-} from "@/ui/features/mocks-roles/shell-admin";
+} from "@/ui/compartidos/shell-admin";
 import { Button } from "@/ui/nativos/button";
 import { inicialesDesdeNombre } from "@/dominio/slug";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
@@ -48,9 +47,6 @@ export default async function PaginaSuperAdmin() {
       rol="super-admin"
       activo="clubes"
       accion={botonCrear}
-      salirHref="/auth/salir"
-      rutas={RUTAS_SHELL_APP}
-      pie={null}
     >
       <div className="flex flex-col gap-6">
         <div className="flex items-end justify-between gap-3">

@@ -17,7 +17,7 @@ function validar(lat: number, lng: number): Coordenadas | null {
 /**
  * Lee latitud y longitud de un link de Google Maps (o un par suelto
  * "lat,lng"). No resuelve links cortos (maps.app.goo.gl) porque eso
- * pediría una red y, en los mocks, no se usa ninguna API.
+ * pediría una red y no se usa ninguna API.
  */
 export function coordenadasDesdeLinkMaps(valor: string): Coordenadas | null {
   const texto = valor.trim();

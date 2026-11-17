@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import {
-  ContenidoMock,
+  Contenido,
   MarcoPagina,
-  CabeceraMock,
-} from "@/ui/features/mocks-roles/marco-mock";
+  Cabecera,
+} from "@/ui/compartidos/marco";
 import { adminDelClubRequerido, sesionRequerida } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
 
@@ -24,9 +24,9 @@ export default async function PaginaVivoClub({
 
   return (
     <MarcoPagina
-      cabecera={<CabeceraMock titulo={club.nombre} subtitulo="En vivo" />}
+      cabecera={<Cabecera titulo={club.nombre} subtitulo="En vivo" />}
     >
-      <ContenidoMock className="mx-auto w-full max-w-xl justify-center gap-4 py-16">
+      <Contenido className="mx-auto w-full max-w-xl justify-center gap-4 py-16">
         <h1 className="text-2xl font-medium tracking-tight">En vivo</h1>
         <p className="text-sm leading-relaxed text-muted-foreground">
           Acá va a estar el tablero de partidos en vivo de {club.nombre}.
@@ -47,7 +47,7 @@ export default async function PaginaVivoClub({
             .
           </p>
         )}
-      </ContenidoMock>
+      </Contenido>
     </MarcoPagina>
   );
 }

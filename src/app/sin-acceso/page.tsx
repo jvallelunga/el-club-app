@@ -1,9 +1,9 @@
-import { BotonSalir } from "@/ui/features/mocks-roles/boton-salir";
+import { BotonSalir } from "@/ui/compartidos/boton-salir";
 import { ShieldOff } from "lucide-react";
 import {
-  ContenidoMock,
+  Contenido,
   MarcoAcceso,
-} from "@/ui/features/mocks-roles/marco-mock";
+} from "@/ui/compartidos/marco";
 import { sesionRequerida } from "@/datos/consultas/acceso";
 
 export const dynamic = "force-dynamic";
@@ -12,8 +12,8 @@ export default async function PaginaSinAcceso() {
   const sesion = await sesionRequerida("/sin-acceso");
 
   return (
-    <MarcoAcceso pie={null}>
-      <ContenidoMock className="justify-center gap-6 py-10 md:px-0 md:py-0">
+    <MarcoAcceso>
+      <Contenido className="justify-center gap-6 py-10 md:px-0 md:py-0">
         <div className="flex size-14 items-center justify-center rounded-full bg-muted">
           <ShieldOff className="size-6 text-muted-foreground" />
         </div>
@@ -34,13 +34,12 @@ export default async function PaginaSinAcceso() {
           </p>
         </div>
         <BotonSalir
-          href="/auth/salir"
           variant="outline"
           className="h-12 w-full rounded-xl text-base"
         >
           Cerrar sesión
         </BotonSalir>
-      </ContenidoMock>
+      </Contenido>
     </MarcoAcceso>
   );
 }

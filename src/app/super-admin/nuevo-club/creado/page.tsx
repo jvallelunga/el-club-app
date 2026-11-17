@@ -2,11 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CircleCheck } from "lucide-react";
 import { Button } from "@/ui/nativos/button";
-import { BotonPrincipal } from "@/ui/features/mocks-roles/marco-mock";
+import { BotonPrincipal } from "@/ui/compartidos/marco";
 import {
-  RUTAS_SHELL_APP,
   ShellAdmin,
-} from "@/ui/features/mocks-roles/shell-admin";
+} from "@/ui/compartidos/shell-admin";
 import { VistaPreviaClub } from "@/ui/features/club/vista-previa-club";
 import { superAdminRequerido } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
@@ -43,9 +42,6 @@ export default async function PaginaClubCreado({
       atras={{ href: "/super-admin", etiqueta: "Volver a clubes" }}
       rol="super-admin"
       activo="clubes"
-      salirHref="/auth/salir"
-      rutas={RUTAS_SHELL_APP}
-      pie={null}
       salirEnMobile={false}
     >
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 md:flex-row md:items-start">

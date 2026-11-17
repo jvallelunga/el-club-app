@@ -4,15 +4,15 @@ import { Button } from "@/ui/nativos/button";
 import { Input } from "@/ui/nativos/input";
 import { Label } from "@/ui/nativos/label";
 import { Separator } from "@/ui/nativos/separator";
-import { IconoGoogle } from "@/ui/features/mocks-roles/icono-google";
+import { IconoGoogle } from "@/ui/compartidos/icono-google";
 import {
   BotonPrincipal,
-  ContenidoMock,
+  Contenido,
   MarcoAcceso,
-} from "@/ui/features/mocks-roles/marco-mock";
+} from "@/ui/compartidos/marco";
 import { emailValido, normalizarEmail } from "@/dominio/email";
 import { MarcaElClub } from "@/ui/marca/logo-el-club";
-import { EscudoClub } from "@/ui/features/mocks-roles/escudo-club";
+import { EscudoClub } from "@/ui/compartidos/escudo-club";
 import { destinoTrasIngreso } from "@/dominio/permisos";
 import { derivarPaleta } from "@/dominio/paleta";
 import { inicialesDesdeNombre } from "@/dominio/slug";
@@ -99,7 +99,6 @@ export default async function PaginaIngreso({
 
   const pagina = (
     <MarcoAcceso
-      pie={null}
       panel={
         <div className="flex max-w-sm flex-col gap-8">
           <div className="flex flex-col gap-3">
@@ -114,7 +113,7 @@ export default async function PaginaIngreso({
         </div>
       }
     >
-      <ContenidoMock className="justify-center gap-8 py-10 md:px-0 md:py-0">
+      <Contenido className="justify-center gap-8 py-10 md:px-0 md:py-0">
         <div className="flex flex-col gap-3">
           <div className="lg:hidden">{cabeceraMarca}</div>
           <h1 className="text-3xl font-medium tracking-tight">Ingresá</h1>
@@ -195,7 +194,7 @@ export default async function PaginaIngreso({
             Continuar con Google
           </Button>
         </form>
-      </ContenidoMock>
+      </Contenido>
     </MarcoAcceso>
   );
 

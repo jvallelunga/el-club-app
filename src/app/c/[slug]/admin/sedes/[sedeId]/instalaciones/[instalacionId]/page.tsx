@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
 import {
-  RUTAS_SHELL_APP,
   ShellAdmin,
-} from "@/ui/features/mocks-roles/shell-admin";
+} from "@/ui/compartidos/shell-admin";
 import { FormularioInstalacion } from "@/ui/features/sedes/formulario-instalacion";
 import { actualizarInstalacion } from "@/datos/comandos/sedes";
 import {
@@ -67,9 +66,6 @@ export default async function PaginaEditarInstalacion({
       rol={sesion.esSuperAdmin ? "super-admin" : "admin"}
       activo="sedes"
       esMultiClub={!sesion.esSuperAdmin && sesion.membresias.length > 1}
-      salirHref="/auth/salir"
-      rutas={RUTAS_SHELL_APP}
-      pie={null}
       salirEnMobile={false}
     >
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">

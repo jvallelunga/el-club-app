@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { Badge } from "@/ui/nativos/badge";
 import { Button } from "@/ui/nativos/button";
 import { cn } from "@/lib/utils";
-import { RUTAS_MOCK } from "./datos-ejemplo";
 import { LogoElClub } from "@/ui/marca/logo-el-club";
 
 export function MarcoPagina({
@@ -36,7 +34,7 @@ export function MarcoPagina({
 export function MarcoAcceso({
   children,
   panel,
-  pie = <PieMock />,
+  pie,
 }: {
   children: React.ReactNode;
   panel?: React.ReactNode;
@@ -94,7 +92,7 @@ export function TarjetaFormulario({
   );
 }
 
-export function CabeceraMock({
+export function Cabecera({
   atras,
   titulo,
   subtitulo,
@@ -137,7 +135,7 @@ export function CabeceraMock({
   );
 }
 
-export function ContenidoMock({
+export function Contenido({
   children,
   className,
 }: {
@@ -148,34 +146,6 @@ export function ContenidoMock({
     <main className={cn("flex flex-1 flex-col px-5 py-6 md:px-8 md:py-8", className)}>
       {children}
     </main>
-  );
-}
-
-export function PieMock({ extra }: { extra?: React.ReactNode }) {
-  return (
-    <footer className="mt-auto px-5 pb-6 pt-4 text-center">
-      {extra}
-      <p className="text-[11px] leading-relaxed text-muted-foreground">
-        Mock de aprobación · datos de ejemplo ·{" "}
-        <Link href={RUTAS_MOCK.indice} className="underline-offset-2 hover:underline">
-          ver pantallas
-        </Link>
-      </p>
-    </footer>
-  );
-}
-
-export function EtiquetaEjemplo({ className }: { className?: string }) {
-  return (
-    <Badge
-      variant="secondary"
-      className={cn(
-        "h-5 px-1.5 text-[10px] font-medium tracking-wide text-muted-foreground uppercase",
-        className,
-      )}
-    >
-      ejemplo
-    </Badge>
   );
 }
 

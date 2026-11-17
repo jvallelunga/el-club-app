@@ -4,12 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/ui/nativos/input";
 import { Label } from "@/ui/nativos/label";
-import { BotonPrincipal } from "@/ui/features/mocks-roles/marco-mock";
+import { BotonPrincipal } from "@/ui/compartidos/marco";
 import { cn } from "@/lib/utils";
-import {
-  TIPOS_DEL_CLUB_EJEMPLO,
-  type TipoInstalacionEjemplo,
-} from "./datos-ejemplo";
 
 const CAMPO = "h-12 rounded-xl px-3 text-base";
 const SELECT = cn(CAMPO, "w-full border border-input bg-background");
@@ -18,6 +14,12 @@ export type ResultadoGuardarInstalacion =
   | { ok: true; id?: string }
   | { ok: false; error: string };
 
+export type OpcionTipoInstalacion = {
+  id: string;
+  nombre: string;
+  base: boolean;
+};
+
 export type InicialInstalacion = {
   tipoId: string;
   nombre: string;
@@ -25,15 +27,15 @@ export type InicialInstalacion = {
 };
 
 export function FormularioInstalacion({
-  tipos = TIPOS_DEL_CLUB_EJEMPLO,
+  tipos,
   destino,
   guardar,
   inicial,
   etiquetaBoton,
 }: {
-  tipos?: TipoInstalacionEjemplo[];
+  tipos: OpcionTipoInstalacion[];
   destino: string;
-  guardar?: (formData: FormData) => Promise<ResultadoGuardarInstalacion>;
+  guardar: (formData: FormData) => Promise<ResultadoGuardarInstalacion>;
   inicial?: InicialInstalacion;
   etiquetaBoton?: string;
 }) {
@@ -71,10 +73,6 @@ export function FormularioInstalacion({
         setIntento(true);
         setErrorServidor(null);
         if (errorTipo || errorNombre) return;
-        if (!guardar) {
-          router.push(destino);
-          return;
-        }
         const formData = new FormData();
         formData.set("tipo_instalacion_id", tipoId);
         formData.set("tipo_propio", tipoPropio);

@@ -3,9 +3,8 @@ import { notFound } from "next/navigation";
 import { MapPin, Plus } from "lucide-react";
 import { Button } from "@/ui/nativos/button";
 import {
-  RUTAS_SHELL_APP,
   ShellAdmin,
-} from "@/ui/features/mocks-roles/shell-admin";
+} from "@/ui/compartidos/shell-admin";
 import {
   adminDelClubRequerido,
   sesionRequerida,
@@ -46,9 +45,6 @@ export default async function PaginaSedes({
       rol={sesion.esSuperAdmin ? "super-admin" : "admin"}
       activo="sedes"
       esMultiClub={!sesion.esSuperAdmin && sesion.membresias.length > 1}
-      salirHref="/auth/salir"
-      rutas={RUTAS_SHELL_APP}
-      pie={null}
       salirEnMobile={false}
       accion={
         <Button asChild className="h-11 rounded-xl px-4">

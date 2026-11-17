@@ -3,9 +3,8 @@ import { notFound } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/ui/nativos/button";
 import {
-  RUTAS_SHELL_APP,
   ShellAdmin,
-} from "@/ui/features/mocks-roles/shell-admin";
+} from "@/ui/compartidos/shell-admin";
 import { FormularioSede } from "@/ui/features/sedes/formulario-sede";
 import { BotonEliminarInstalacion } from "@/ui/features/sedes/boton-eliminar-instalacion";
 import { actualizarSede, eliminarInstalacion } from "@/datos/comandos/sedes";
@@ -66,9 +65,6 @@ export default async function PaginaSede({
       rol={sesion.esSuperAdmin ? "super-admin" : "admin"}
       activo="sedes"
       esMultiClub={!sesion.esSuperAdmin && sesion.membresias.length > 1}
-      salirHref="/auth/salir"
-      rutas={RUTAS_SHELL_APP}
-      pie={null}
       salirEnMobile={false}
     >
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-10">
