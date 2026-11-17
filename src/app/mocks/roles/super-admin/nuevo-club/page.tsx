@@ -16,9 +16,9 @@ export default function PaginaNuevoClub() {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <div className="flex flex-col gap-2">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Nombre, identificador, escudo, hasta 4 colores (el principal es
-            obligatorio; 2, 3 y 4 son opcionales), el color claro de fondo y,
-            si ya lo tiene, el dominio del sitio web. Si no cargás los
+            Nombre, identificador, escudo, hasta 3 colores (el principal es
+            obligatorio; 2 y 3 son opcionales), el color claro de fondo y, si
+            ya lo tiene, el dominio del sitio web. Si no cargás los
             opcionales, se derivan del principal. Nada de un club real viene
             precargado.
           </p>

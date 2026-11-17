@@ -42,12 +42,11 @@ function PaginaClubCreadoContenido() {
   const marca = params.get("marca")?.trim() || ejemplo?.marca || "";
   const color2 = params.get("color2")?.trim() || ejemplo?.color2 || "";
   const color3 = params.get("color3")?.trim() || ejemplo?.color3 || "";
-  const color4 = params.get("color4")?.trim() || ejemplo?.color4 || "";
   const claro = params.get("claro")?.trim() || ejemplo?.claro || "";
   const dominioBase = params.get("dominio")?.trim() ?? ejemplo?.dominioBase ?? "";
   const paleta = useMemo(
-    () => derivarPaleta(marca, claro, [color2, color3, color4]),
-    [marca, claro, color2, color3, color4],
+    () => derivarPaleta(marca, claro, [color2, color3]),
+    [marca, claro, color2, color3],
   );
   const escudo = useSyncExternalStore(
     suscribirEscudoMock,

@@ -51,20 +51,20 @@ describe("derivados", () => {
   });
 });
 
-describe("paleta de hasta 4 colores", () => {
-  it("deriva 2, 3 y 4 desde el principal si no se cargan", () => {
+describe("paleta de hasta 3 colores", () => {
+  it("deriva 2 y 3 desde el principal si no se cargan", () => {
     const paleta = derivarPaleta("#1f4b3a", "#ffffff");
     expect(paleta.colores[0]).toBe("#1f4b3a");
-    expect(paleta.explicitos).toEqual([true, false, false, false]);
-    expect(new Set(paleta.colores).size).toBe(4);
+    expect(paleta.explicitos).toEqual([true, false, false]);
+    expect(new Set(paleta.colores).size).toBe(3);
     expect(paleta.colores[1]).toBe(colorAlternativoDesdeMarca("#1f4b3a", 2));
+    expect(paleta.colores[2]).toBe(colorAlternativoDesdeMarca("#1f4b3a", 3));
   });
 
   it("respeta los colores opcionales que sí se cargaron", () => {
-    const paleta = derivarPaleta("#1f4b3a", "#ffffff", ["#c47a2c", "", "#6a4a78"]);
+    const paleta = derivarPaleta("#1f4b3a", "#ffffff", ["#c47a2c", ""]);
     expect(paleta.colores[1]).toBe("#c47a2c");
-    expect(paleta.colores[3]).toBe("#6a4a78");
-    expect(paleta.explicitos).toEqual([true, true, false, true]);
+    expect(paleta.explicitos).toEqual([true, true, false]);
     expect(paleta.colores[2]).toBe(colorAlternativoDesdeMarca("#1f4b3a", 3));
   });
 

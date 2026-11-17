@@ -65,7 +65,7 @@ function validar(valores: {
     (extra) => extra.trim() !== "" && !esHexValido(extra),
   );
   if (extraInvalido) {
-    errores.extras = "Los colores opcionales van en hexadecimal, por ejemplo #c47a2c. Si no los cargás, se derivan del principal.";
+    errores.extras = "Los colores opcionales van en hexadecimal, por ejemplo #c47a2c. Si los dejás vacíos, se derivan del principal.";
   }
   const errorDominio = validarDominioBase(valores.dominioBase);
   if (errorDominio) errores.dominioBase = errorDominio;
@@ -91,14 +91,11 @@ export function FormularioNuevoClub() {
   const [claro, setClaro] = useState<string>(
     conDatos ? CLUB_CREADO_EJEMPLO.claro : COLOR_CLARO_DEFAULT,
   );
-  const [extras, setExtras] = useState<string[]>(
-    conDatos
-      ? [
-          CLUB_CREADO_EJEMPLO.color2,
-          CLUB_CREADO_EJEMPLO.color3,
-          CLUB_CREADO_EJEMPLO.color4,
-        ]
-      : [],
+  const [color2, setColor2] = useState(
+    conDatos ? CLUB_CREADO_EJEMPLO.color2 : "",
+  );
+  const [color3, setColor3] = useState(
+    conDatos ? CLUB_CREADO_EJEMPLO.color3 : "",
   );
   const [dominioBase, setDominioBase] = useState(
     conDatos
@@ -112,7 +109,10 @@ export function FormularioNuevoClub() {
 
   const slugSugerido = useMemo(() => slugDesdeNombre(nombre), [nombre]);
   const slug = editaSlug ? slugManual : slugSugerido;
-  const paleta = useMemo(() => derivarPaleta(marca, claro, extras), [marca, claro, extras]);
+  const paleta = useMemo(
+    () => derivarPaleta(marca, claro, [color2, color3]),
+    [marca, claro, color2, color3],
+  );
 
   const errores = validar({
     nombre,
@@ -120,7 +120,7 @@ export function FormularioNuevoClub() {
     slugManual: editaSlug,
     marca,
     claro,
-    extras,
+    extras: [color2, color3],
     dominioBase,
   });
   const hayErrores = Object.keys(errores).length > 0;
@@ -155,11 +155,10 @@ export function FormularioNuevoClub() {
       marca: paleta.marca,
       claro: paleta.claro,
     });
-    const nombresExtra = ["color2", "color3", "color4"] as const;
-    extras.forEach((extra, indice) => {
-      const normalizado = normalizarHex(extra);
-      if (normalizado) params.set(nombresExtra[indice], normalizado);
-    });
+    const extra2 = normalizarHex(color2);
+    const extra3 = normalizarHex(color3);
+    if (extra2) params.set("color2", extra2);
+    if (extra3) params.set("color3", extra3);
     if (dominioBase.trim()) params.set("dominio", dominioBase.trim().toLowerCase());
     router.push(`${RUTAS_MOCK.nuevoClubCreado}?${params.toString()}`);
   }
@@ -256,71 +255,65 @@ export function FormularioNuevoClub() {
 
         <div className="flex flex-col gap-4">
           <p className="text-sm font-medium">Paleta</p>
-          <CampoColor
-            id="color-1"
-            etiqueta="Color 1 · principal"
-            valor={marca}
-            invalido={mostrarErrores && Boolean(errores.marca)}
-            onChange={setMarca}
-            ayuda="Obligatorio. Botones, header y acentos principales."
-          />
-          {extras.map((extra, indice) => {
-            const numero = indice + 2;
-            const usos =
-              numero === 2
-                ? "Insignias y líneas."
-                : numero === 3
-                  ? "Indicador en vivo."
-                  : "Destacados.";
-            return (
-              <CampoColor
-                key={`color-${numero}`}
-                id={`color-${numero}`}
-                etiqueta={`Color ${numero}`}
-                opcional
-                valor={extra}
-                sugerido={paleta.colores[indice + 1]}
-                invalido={mostrarErrores && Boolean(errores.extras) && extra.trim() !== "" && !esHexValido(extra)}
-                onChange={(valor) =>
-                  setExtras((actuales) =>
-                    actuales.map((item, i) => (i === indice ? valor : item)),
-                  )
-                }
-                onQuitar={() =>
-                  setExtras((actuales) => actuales.filter((_, i) => i !== indice))
-                }
-                ayuda={`${usos} Si lo dejás vacío, se deriva del color principal.`}
-              />
-            );
-          })}
-          {extras.length < 3 ? (
-            <button
-              type="button"
-              onClick={() => setExtras((actuales) => [...actuales, ""])}
-              className="h-11 rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground hover:bg-muted/60"
-            >
-              Agregar color
-            </button>
-          ) : null}
-          <CampoColor
-            id="color-claro"
-            etiqueta="Color claro"
-            valor={claro}
-            invalido={mostrarErrores && Boolean(errores.claro)}
-            onChange={setClaro}
-            ayuda="Fondo claro, aparte de la paleta. Si no lo cambiás, queda #ffffff."
-          />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <CampoColor
+              id="color-1"
+              etiqueta="Color 1 · principal"
+              valor={marca}
+              invalido={mostrarErrores && Boolean(errores.marca)}
+              onChange={setMarca}
+              ayuda="Obligatorio. Botones, header y acentos principales."
+            />
+            <CampoColor
+              id="color-claro"
+              etiqueta="Color claro"
+              valor={claro}
+              invalido={mostrarErrores && Boolean(errores.claro)}
+              onChange={setClaro}
+              ayuda="Fondo claro, aparte de la paleta. Si no lo cambiás, queda #ffffff."
+            />
+            <CampoColor
+              id="color-2"
+              etiqueta="Color 2"
+              opcional
+              valor={color2}
+              sugerido={paleta.colores[1]}
+              invalido={
+                mostrarErrores &&
+                Boolean(errores.extras) &&
+                color2.trim() !== "" &&
+                !esHexValido(color2)
+              }
+              onChange={setColor2}
+              ayuda="Opcional. Insignias, líneas y destacados. Si lo dejás vacío, se deriva del principal."
+            />
+            <CampoColor
+              id="color-3"
+              etiqueta="Color 3"
+              opcional
+              valor={color3}
+              sugerido={paleta.colores[2]}
+              invalido={
+                mostrarErrores &&
+                Boolean(errores.extras) &&
+                color3.trim() !== "" &&
+                !esHexValido(color3)
+              }
+              onChange={setColor3}
+              ayuda="Opcional. Indicador en vivo. Si lo dejás vacío, se deriva del principal."
+            />
+          </div>
           {mostrarErrores && (errores.marca || errores.claro || errores.extras) ? (
             <p className="text-sm text-destructive" role="alert">
               {errores.marca ?? errores.claro ?? errores.extras}
             </p>
           ) : (
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Hasta 4 colores: el 1 es obligatorio; 2, 3 y 4 son opcionales
-              para detalles. El hover, el pressed, el fondo oscuro y, si
-              faltan, los colores 2 a 4 se derivan del principal. El texto se
-              elige para cumplir contraste AA. Los estados (ok, alerta, error)
-              son del sistema y no cambian.
+              Hasta 3 colores: el 1 es obligatorio; 2 y 3 son opcionales
+              para detalles. Si los dejás vacíos, se derivan del principal.
+              El hover, el pressed y el fondo oscuro también se calculan
+              solos. El texto se elige para cumplir contraste AA. Los estados
+              (ok, alerta, error) son del sistema y no cambian.
             </p>
           )}
         </div>
@@ -547,7 +540,7 @@ export function VistaPreviaClub({
 
 function FilaColores({ paleta }: { paleta: PaletaDerivada }) {
   return (
-    <div className="flex gap-1.5" aria-label="Paleta de hasta 4 colores">
+    <div className="flex gap-1.5" aria-label="Paleta de hasta 3 colores">
       {paleta.colores.map((color, indice) => (
         <span
           key={`${color}-${indice}`}
@@ -656,7 +649,7 @@ function TarjetaEjemplo({
   const linea = acentoVisible(paleta.colores[1], fondo);
   const chipFondo = acentoVisible(paleta.colores[2], fondo);
   const chipTexto = textoConContrasteAA(chipFondo);
-  const destacado = acentoVisible(paleta.colores[3], fondo);
+  const destacado = linea;
 
   return (
     <div

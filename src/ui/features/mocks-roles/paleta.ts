@@ -150,27 +150,23 @@ export function hslAHex(h: number, s: number, l: number): string {
   return rgbAHex(r, g, b);
 }
 
-/** Alternativas 2, 3 y 4 cuando el usuario no las carga: se derivan del color principal. */
+/** Alternativas 2 y 3 cuando el usuario no las carga: se derivan del color principal. */
 export function colorAlternativoDesdeMarca(
   marca: string,
-  indice: 2 | 3 | 4,
+  indice: 2 | 3,
 ): string {
   const origen = normalizarHex(marca) ?? COLOR_MARCA_VACIO;
   const hsl = hexAHsl(origen) ?? { h: 150, s: 0.25, l: 0.18 };
-  const giro = indice === 2 ? 38 : indice === 3 ? 210 : 300;
+  const giro = indice === 2 ? 38 : 210;
   const s = Math.min(0.85, Math.max(0.35, hsl.s * 1.12 + 0.08));
   const l =
     indice === 2
       ? hsl.l < 0.4
         ? Math.min(0.55, hsl.l + 0.22)
         : Math.max(0.32, hsl.l - 0.08)
-      : indice === 3
-        ? hsl.l < 0.45
-          ? Math.min(0.5, hsl.l + 0.16)
-          : Math.max(0.3, hsl.l - 0.12)
-        : hsl.l < 0.4
-          ? Math.min(0.48, hsl.l + 0.2)
-          : Math.max(0.28, hsl.l - 0.1);
+      : hsl.l < 0.45
+        ? Math.min(0.5, hsl.l + 0.16)
+        : Math.max(0.3, hsl.l - 0.12);
   return hslAHex(hsl.h + giro, s, l);
 }
 
@@ -189,8 +185,8 @@ export function acentoVisible(color: string, fondo: string): string {
 export type PaletaDerivada = {
   marca: string;
   claro: string;
-  colores: [string, string, string, string];
-  explicitos: [boolean, boolean, boolean, boolean];
+  colores: [string, string, string];
+  explicitos: [boolean, boolean, boolean];
   hover: string;
   pressed: string;
   oscuro: string;
@@ -209,18 +205,16 @@ export function derivarPaleta(
   const oscuro = fondoOscuro(marcaOk);
   const extra2 = normalizarHex(extras[0] ?? "");
   const extra3 = normalizarHex(extras[1] ?? "");
-  const extra4 = normalizarHex(extras[2] ?? "");
-  const colores: [string, string, string, string] = [
+  const colores: [string, string, string] = [
     marcaOk,
     extra2 ?? colorAlternativoDesdeMarca(marcaOk, 2),
     extra3 ?? colorAlternativoDesdeMarca(marcaOk, 3),
-    extra4 ?? colorAlternativoDesdeMarca(marcaOk, 4),
   ];
   return {
     marca: marcaOk,
     claro: claroOk,
     colores,
-    explicitos: [true, Boolean(extra2), Boolean(extra3), Boolean(extra4)],
+    explicitos: [true, Boolean(extra2), Boolean(extra3)],
     hover: colorHover(marcaOk),
     pressed: colorPressed(marcaOk),
     oscuro,
