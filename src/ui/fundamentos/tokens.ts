@@ -1,8 +1,8 @@
 /**
  * Tokens de tema de El Club.
- * La paleta de cada club se carga en el ítem 2 (personalización).
- * Estos valores son un neutro provisional para que la app renderice,
- * no son la marca de ningún club.
+ * Las variables CSS vivas están en `globals.css` y en `tema.ts`.
+ * El default es el tema de producto (naranja del logo). Dentro de un
+ * club lo pisa la paleta de ese club.
  */
 
 export type PaletaClub = {
@@ -20,20 +20,20 @@ export type PaletaClub = {
   anillo: string;
 };
 
-/** Paleta vacía / provisional, lista para reemplazar en el ítem 2. */
+/** Paleta de producto (no es la de un club). */
 export const paletaProvisional: PaletaClub = {
-  fondo: "#fafafa",
-  fondoForeground: "#171717",
+  fondo: "#fffaf7",
+  fondoForeground: "#1c1917",
   card: "#ffffff",
-  cardForeground: "#171717",
-  primario: "#171717",
-  primarioForeground: "#fafafa",
-  secundario: "#f5f5f5",
-  secundarioForeground: "#171717",
-  muted: "#f5f5f5",
-  mutedForeground: "#737373",
-  borde: "#e5e5e5",
-  anillo: "#171717",
+  cardForeground: "#1c1917",
+  primario: "#FF8C42",
+  primarioForeground: "#1c1917",
+  secundario: "#fff1e8",
+  secundarioForeground: "#1c1917",
+  muted: "#fff1e8",
+  mutedForeground: "#6f675f",
+  borde: "#e8e0d8",
+  anillo: "#FF8C42",
 };
 
 export const tipografia = {

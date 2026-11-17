@@ -101,3 +101,14 @@ export function validarDominioBase(valor: string): string | null {
   }
   return null;
 }
+
+/**
+ * Extrae el slug de una ruta o destino `/c/<slug>/...`.
+ * Sirve para el ingreso con `?siguiente=` o para una URL del club.
+ */
+export function slugClubEnRuta(ruta: string | null | undefined): string | null {
+  if (!ruta) return null;
+  const path = ruta.trim().split("?")[0] ?? "";
+  const match = /^\/c\/([a-z0-9]+(?:-[a-z0-9]+)*)(?:\/|$)/.exec(path);
+  return match?.[1] ?? null;
+}

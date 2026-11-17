@@ -3,6 +3,7 @@ import {
   COLOR_CLARO_DEFAULT,
   acentoVisible,
   colorAlternativoDesdeMarca,
+  colorEnlace,
   colorHover,
   colorPressed,
   derivarPaleta,
@@ -73,5 +74,21 @@ describe("paleta de hasta 3 colores", () => {
     expect(ratioContraste(visible, "#0a0a0a")).toBeGreaterThanOrEqual(3);
     expect(hslAHex(0, 0, 1)).toBe("#ffffff");
     expect(hexAHsl("#ffffff")?.l).toBeCloseTo(1, 2);
+  });
+});
+
+describe("colorEnlace", () => {
+  it("deja la marca si ya cumple AA sobre el fondo", () => {
+    expect(colorEnlace("#1f4b3a", "#ffffff")).toBe("#1f4b3a");
+    expect(ratioContraste(colorEnlace("#1f4b3a", "#ffffff"), "#ffffff")).toBeGreaterThanOrEqual(
+      4.5,
+    );
+  });
+
+  it("oscurece #FF8C42 sobre un fondo claro hasta cumplir AA", () => {
+    const enlace = colorEnlace("#FF8C42", "#fffaf7");
+    expect(enlace).not.toBe("#ff8c42");
+    expect(ratioContraste(enlace, "#fffaf7")).toBeGreaterThanOrEqual(4.5);
+    expect(ratioContraste(enlace, "#ffffff")).toBeGreaterThanOrEqual(4.5);
   });
 });

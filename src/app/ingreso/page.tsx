@@ -12,9 +12,15 @@ import {
 } from "@/ui/features/mocks-roles/marco-mock";
 import { emailValido, normalizarEmail } from "@/dominio/email";
 import { MarcaElClub } from "@/ui/marca/logo-el-club";
+import { EscudoClub } from "@/ui/features/mocks-roles/escudo-club";
 import { destinoTrasIngreso } from "@/dominio/permisos";
-import { hayConfiguracionSupabase } from "@/datos/env-supabase";
+import { derivarPaleta } from "@/dominio/paleta";
+import { inicialesDesdeNombre } from "@/dominio/slug";
+import { urlEscudoPublico } from "@/dominio/nuevo-club";
+import { hayConfiguracionSupabase, urlYClaveAnon } from "@/datos/env-supabase";
 import { cargarSesion } from "@/datos/consultas/sesion";
+import { marcaClubDePeticion } from "@/datos/consultas/marca-club";
+import { ProveedorPaleta } from "@/ui/fundamentos/proveedor-paleta";
 
 export const dynamic = "force-dynamic";
 
@@ -65,13 +71,39 @@ export default async function PaginaIngreso({
     ? `/ingreso?siguiente=${encodeURIComponent(params.siguiente)}`
     : "/ingreso";
 
-  return (
+  const club = await marcaClubDePeticion({ siguiente: params.siguiente });
+  const paletaClub = club
+    ? derivarPaleta(club.color_principal, club.color_claro, [
+        club.color_2 ?? undefined,
+        club.color_3 ?? undefined,
+      ])
+    : null;
+  const escudoClub =
+    club && hayConfiguracionSupabase()
+      ? urlEscudoPublico(urlYClaveAnon().url, club.escudo_ruta)
+      : null;
+  const cabeceraMarca = club ? (
+    <div className="flex items-center gap-3">
+      <EscudoClub
+        club={{
+          nombre: club.nombre,
+          escudo: escudoClub,
+          iniciales: inicialesDesdeNombre(club.nombre),
+        }}
+      />
+      <p className="text-sm font-medium tracking-wide">{club.nombre}</p>
+    </div>
+  ) : (
+    <MarcaElClub nombreClassName="text-sm font-medium tracking-wide text-muted-foreground" />
+  );
+
+  const pagina = (
     <MarcoAcceso
       pie={null}
       panel={
         <div className="flex max-w-sm flex-col gap-8">
           <div className="flex flex-col gap-3">
-            <MarcaElClub nombreClassName="text-sm font-medium tracking-wide text-muted-foreground" />
+            {cabeceraMarca}
             <p className="text-4xl font-medium tracking-tight">
               La app del club.
             </p>
@@ -84,10 +116,7 @@ export default async function PaginaIngreso({
     >
       <ContenidoMock className="justify-center gap-8 py-10 md:px-0 md:py-0">
         <div className="flex flex-col gap-3">
-          <MarcaElClub
-            className="lg:hidden"
-            nombreClassName="text-sm font-medium tracking-wide text-muted-foreground"
-          />
+          <div className="lg:hidden">{cabeceraMarca}</div>
           <h1 className="text-3xl font-medium tracking-tight">Ingresá</h1>
           <p className="text-sm leading-relaxed text-muted-foreground">
             Entrá con tu email o con Google. El Super Admin te da de alta con
@@ -169,4 +198,7 @@ export default async function PaginaIngreso({
       </ContenidoMock>
     </MarcoAcceso>
   );
+
+  if (!paletaClub) return pagina;
+  return <ProveedorPaleta paleta={paletaClub}>{pagina}</ProveedorPaleta>;
 }

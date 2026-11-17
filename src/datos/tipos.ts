@@ -198,6 +198,18 @@ export type Database = {
         Args: { p_email: string };
         Returns: boolean;
       };
+      marca_publica_del_club: {
+        Args: { p_slug?: string | null; p_dominio_base?: string | null };
+        Returns: {
+          slug: string;
+          nombre: string;
+          escudo_ruta: string | null;
+          color_principal: string;
+          color_claro: string;
+          color_2: string | null;
+          color_3: string | null;
+        }[];
+      };
     };
     Enums: {
       rol_club: RolClub;

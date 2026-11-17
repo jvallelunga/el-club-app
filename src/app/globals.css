@@ -18,6 +18,15 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-enlace: var(--enlace);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -31,50 +40,77 @@
 }
 
 /*
-  Paleta provisional (neutra). En el ítem 2 estos valores salen del club.
-  No usar acá los verdes de Copa Raíces ni la paleta de un club concreto.
+  Tema de producto (El Club App): naranja #FF8C42 del logo, superficies
+  blancas y neutros cálidos. Vale para el ingreso genérico, el selector
+  de club y el Super Admin. Dentro de un club (ruta /c/<slug>, host del
+  club o ingreso con contexto de club) estas variables las pisa la
+  paleta del club (color_principal, color_claro, etc.).
+  El texto sobre el naranja va oscuro: el blanco no cumple contraste AA
+  (2,31:1). Los enlaces sobre fondo claro usan un naranja más oscuro.
 */
 :root {
   color-scheme: light;
-  --background: #fafafa;
-  --foreground: #171717;
+  --background: #fffaf7;
+  --foreground: #1c1917;
   --card: #ffffff;
-  --card-foreground: #171717;
+  --card-foreground: #1c1917;
   --popover: #ffffff;
-  --popover-foreground: #171717;
-  --primary: #171717;
-  --primary-foreground: #fafafa;
-  --secondary: #f5f5f5;
-  --secondary-foreground: #171717;
-  --muted: #f5f5f5;
-  --muted-foreground: #737373;
-  --accent: #f5f5f5;
-  --accent-foreground: #171717;
+  --popover-foreground: #1c1917;
+  --primary: #ff8c42;
+  --primary-foreground: #1c1917;
+  --primary-hover: #db7839;
+  --primary-active: #b86530;
+  --secondary: #fff1e8;
+  --secondary-foreground: #1c1917;
+  --muted: #fff1e8;
+  --muted-foreground: #6f675f;
+  --accent: #fff1e8;
+  --accent-foreground: #1c1917;
   --destructive: #7f1d1d;
-  --border: #e5e5e5;
-  --input: #e5e5e5;
-  --ring: #171717;
+  --border: #e8e0d8;
+  --input: #e8e0d8;
+  --ring: #ff8c42;
+  --enlace: #ad5f2d;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1c1917;
+  --sidebar-primary: #ff8c42;
+  --sidebar-primary-foreground: #1c1917;
+  --sidebar-accent: #fff1e8;
+  --sidebar-accent-foreground: #1c1917;
+  --sidebar-border: #e8e0d8;
+  --sidebar-ring: #ff8c42;
   --radius: 0.5rem;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --card: #171717;
-  --card-foreground: #fafafa;
-  --popover: #171717;
-  --popover-foreground: #fafafa;
-  --primary: #fafafa;
-  --primary-foreground: #171717;
-  --secondary: #262626;
-  --secondary-foreground: #fafafa;
-  --muted: #262626;
-  --muted-foreground: #a3a3a3;
-  --accent: #262626;
-  --accent-foreground: #fafafa;
+  --background: #1c1917;
+  --foreground: #fffaf7;
+  --card: #292524;
+  --card-foreground: #fffaf7;
+  --popover: #292524;
+  --popover-foreground: #fffaf7;
+  --primary: #ff8c42;
+  --primary-foreground: #1c1917;
+  --primary-hover: #db7839;
+  --primary-active: #b86530;
+  --secondary: #292524;
+  --secondary-foreground: #fffaf7;
+  --muted: #292524;
+  --muted-foreground: #a8a29e;
+  --accent: #292524;
+  --accent-foreground: #fffaf7;
   --destructive: #fca5a5;
-  --border: #262626;
-  --input: #262626;
-  --ring: #fafafa;
+  --border: #44403c;
+  --input: #44403c;
+  --ring: #ff8c42;
+  --enlace: #ff8c42;
+  --sidebar: #1c1917;
+  --sidebar-foreground: #fffaf7;
+  --sidebar-primary: #ff8c42;
+  --sidebar-primary-foreground: #1c1917;
+  --sidebar-accent: #292524;
+  --sidebar-accent-foreground: #fffaf7;
+  --sidebar-border: #44403c;
+  --sidebar-ring: #ff8c42;
 }

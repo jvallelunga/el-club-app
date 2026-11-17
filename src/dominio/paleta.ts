@@ -223,3 +223,20 @@ export function derivarPaleta(
     textoSobreOscuro: textoConContrasteAA(oscuro),
   };
 }
+
+/**
+ * Color de enlace o texto-sobre-claro a partir de la marca.
+ * Si la marca no llega a AA (4,5:1) sobre el fondo, se oscurece o aclara
+ * hasta cumplirlo. `#FF8C42` sobre blanco no alcanza: el enlace queda más oscuro.
+ */
+export function colorEnlace(marca: string, fondo: string): string {
+  const origen = normalizarHex(marca) ?? COLOR_MARCA_VACIO;
+  const fondoOk = normalizarHex(fondo) ?? COLOR_CLARO_DEFAULT;
+  if (ratioContraste(origen, fondoOk) >= 4.5) return origen;
+  const hacia = luminanciaRelativa(fondoOk) < 0.25 ? "#ffffff" : "#000000";
+  let actual = origen;
+  for (let i = 0; i < 12 && ratioContraste(actual, fondoOk) < 4.5; i += 1) {
+    actual = mezclarHex(actual, hacia, 0.12);
+  }
+  return actual;
+}

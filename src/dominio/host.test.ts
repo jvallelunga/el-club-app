@@ -3,6 +3,7 @@ import {
   hostSuperficie,
   resolverHost,
   rutaFallbackClub,
+  slugClubEnRuta,
   validarDominioBase,
 } from "./host";
 
@@ -79,5 +80,20 @@ describe("validarDominioBase", () => {
     expect(validarDominioBase("www.clubejemplo.com.ar")).toMatch(/www/);
     expect(validarDominioBase("ClubEjemplo.com.ar")).toMatch(/minúsculas/);
     expect(validarDominioBase("no es un dominio")).not.toBe(null);
+  });
+});
+
+describe("slugClubEnRuta", () => {
+  it("lee el slug de /c/<slug> y de un destino con query", () => {
+    expect(slugClubEnRuta("/c/club-de-ejemplo/admin")).toBe("club-de-ejemplo");
+    expect(slugClubEnRuta("/c/club-norte/admin?x=1")).toBe("club-norte");
+    expect(slugClubEnRuta("/c/club-norte")).toBe("club-norte");
+  });
+
+  it("no toma rutas que no son de un club", () => {
+    expect(slugClubEnRuta("/ingreso")).toBeNull();
+    expect(slugClubEnRuta("/super-admin/clubes/algo")).toBeNull();
+    expect(slugClubEnRuta("/c/")).toBeNull();
+    expect(slugClubEnRuta(null)).toBeNull();
   });
 });
