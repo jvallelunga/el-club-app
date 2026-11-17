@@ -21,6 +21,6 @@ comment on column public.club.nombre is
   'Nombre visible del club.';
 
 comment on column public.club.creado_en is
-  'Momento de alta. Mismo criterio de nombres que copa-raices (español).';
+  'Momento de alta.';
 
 alter table public.club enable row level security;
