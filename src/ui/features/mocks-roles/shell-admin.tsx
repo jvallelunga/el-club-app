@@ -6,6 +6,7 @@ import { RUTAS_MOCK } from "./datos-ejemplo";
 import { EscudoClub, type ClubConEscudo } from "./escudo-club";
 import { BotonSalir, EnlaceSalir } from "./boton-salir";
 import { PieMock } from "./marco-mock";
+import { LogoElClub } from "@/ui/marca/logo-el-club";
 
 export type RolShell = "super-admin" | "admin";
 export type ActivoShell = "clubes" | "inicio" | "admins";
@@ -204,11 +205,14 @@ export function ShellAdmin({
                 </div>
               </>
             ) : (
-              <div className="min-w-0">
-                <p className="text-sm font-medium">El Club App</p>
-                <p className="text-xs text-muted-foreground">
-                  {rol === "super-admin" ? "Super Admin" : "Admin"}
-                </p>
+              <div className="flex min-w-0 items-center gap-3">
+                <LogoElClub />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">El Club App</p>
+                  <p className="text-xs text-muted-foreground">
+                    {rol === "super-admin" ? "Super Admin" : "Admin"}
+                  </p>
+                </div>
               </div>
             )}
           </div>

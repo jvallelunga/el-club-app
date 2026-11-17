@@ -42,6 +42,8 @@ Dejar en este repo el stack que ya funcionó en [copa-raices](https://github.com
 - No se siembra ningún club fijo (tampoco Los Cardos): el primer club real se crea con el formulario cuando toque (17/11/2026 08:26).
 - Tipografía de arranque: solo Inter. Bodoni y Montserrat eran de la identidad de Copa Raíces.
 
+- El 17/11/2026 12:42 Jerónimo aprobó el logo de El Club App: ícono cuadrado redondeado, fondo sólido `#FF8C42`, escudo blanco cuyo contorno forma una C abierta a la derecha (cortes en ángulo arriba y abajo a la derecha), sin estrella, plano y sin degradés. Vive en `public/marca/` (`logo-icon.svg` con fondo, `logo-mark.svg` solo la C blanca, `logo-mark-naranja.svg` la C en `#FF8C42` para fondos claros). Se usa como favicon e ícono de la app, y junto al nombre «El Club App» en el ingreso genérico, el selector de club y la cabecera del Super Admin. No reemplaza el escudo de un club (17/11/2026 12:42).
+
 ## Decisión: mobile first, y optimizado para tablet y desktop
 
 Criterio de desarrollo de toda la app, no solo del admin:

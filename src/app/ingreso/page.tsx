@@ -11,6 +11,7 @@ import {
   MarcoAcceso,
 } from "@/ui/features/mocks-roles/marco-mock";
 import { emailValido, normalizarEmail } from "@/dominio/email";
+import { MarcaElClub } from "@/ui/marca/logo-el-club";
 import { destinoTrasIngreso } from "@/dominio/permisos";
 import { hayConfiguracionSupabase } from "@/datos/env-supabase";
 import { cargarSesion } from "@/datos/consultas/sesion";
@@ -70,9 +71,7 @@ export default async function PaginaIngreso({
       panel={
         <div className="flex max-w-sm flex-col gap-8">
           <div className="flex flex-col gap-3">
-            <p className="text-sm font-medium tracking-wide text-muted-foreground">
-              El Club App
-            </p>
+            <MarcaElClub nombreClassName="text-sm font-medium tracking-wide text-muted-foreground" />
             <p className="text-4xl font-medium tracking-tight">
               La app del club.
             </p>
@@ -85,9 +84,10 @@ export default async function PaginaIngreso({
     >
       <ContenidoMock className="justify-center gap-8 py-10 md:px-0 md:py-0">
         <div className="flex flex-col gap-3">
-          <p className="text-sm font-medium tracking-wide text-muted-foreground lg:hidden">
-            El Club App
-          </p>
+          <MarcaElClub
+            className="lg:hidden"
+            nombreClassName="text-sm font-medium tracking-wide text-muted-foreground"
+          />
           <h1 className="text-3xl font-medium tracking-tight">Ingresá</h1>
           <p className="text-sm leading-relaxed text-muted-foreground">
             Entrá con tu email o con Google. El Super Admin te da de alta con

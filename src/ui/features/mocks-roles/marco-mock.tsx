@@ -4,6 +4,7 @@ import { Badge } from "@/ui/nativos/badge";
 import { Button } from "@/ui/nativos/button";
 import { cn } from "@/lib/utils";
 import { RUTAS_MOCK } from "./datos-ejemplo";
+import { LogoElClub } from "@/ui/marca/logo-el-club";
 
 export function MarcoPagina({
   children,
@@ -98,11 +99,13 @@ export function CabeceraMock({
   titulo,
   subtitulo,
   accion,
+  logo = false,
 }: {
   atras?: { href: string; etiqueta?: string };
   titulo: string;
   subtitulo?: string;
   accion?: React.ReactNode;
+  logo?: boolean;
 }) {
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-background/90 px-3 py-2 backdrop-blur md:px-8">
@@ -119,6 +122,7 @@ export function CabeceraMock({
             </Link>
           </Button>
         ) : null}
+        {logo ? <LogoElClub /> : null}
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-base font-medium tracking-tight">
             {titulo}

@@ -7,6 +7,7 @@ import {
   RUTAS_MOCK,
 } from "@/ui/features/mocks-roles/datos-ejemplo";
 import { IconoGoogle } from "@/ui/features/mocks-roles/icono-google";
+import { MarcaElClub } from "@/ui/marca/logo-el-club";
 import { EscudoClub } from "@/ui/features/mocks-roles/escudo-club";
 import {
   ContenidoMock,
@@ -39,9 +40,7 @@ export default function PaginaIngreso() {
         <div className="flex max-w-sm flex-col gap-8">
           <EscudoClub club={CLUB_NORTE} tamano="xl" />
           <div className="flex flex-col gap-3">
-            <p className="text-sm font-medium tracking-wide text-muted-foreground">
-              El Club App
-            </p>
+            <MarcaElClub nombreClassName="text-sm font-medium tracking-wide text-muted-foreground" />
             <p className="text-4xl font-medium tracking-tight">
               La app del club.
             </p>
@@ -54,9 +53,10 @@ export default function PaginaIngreso() {
     >
       <ContenidoMock className="justify-center gap-8 py-10 md:px-0 md:py-0">
         <div className="flex flex-col gap-3">
-          <p className="text-sm font-medium tracking-wide text-muted-foreground lg:hidden">
-            El Club App
-          </p>
+          <MarcaElClub
+            className="lg:hidden"
+            nombreClassName="text-sm font-medium tracking-wide text-muted-foreground"
+          />
           <h1 className="text-3xl font-medium tracking-tight">Ingresá</h1>
           <p className="text-sm leading-relaxed text-muted-foreground">
             Entrá con tu cuenta de Google. El Super Admin te da de alta con tu

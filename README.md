@@ -75,6 +75,8 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 - [copa-raices](https://github.com/jvallelunga/copa-raices) queda como base y ejemplo. El código se copia de ahí cuando haga falta.
 - Se trabaja **de a una cosa**.
 
+- El 17/11/2026 12:42 Jerónimo aprobó el logo de El Club App: ícono cuadrado redondeado, fondo sólido `#FF8C42`, escudo blanco cuyo contorno forma una C abierta a la derecha (cortes en ángulo arriba y abajo a la derecha), sin estrella, plano y sin degradés. Vive en `public/marca/` (`logo-icon.svg` con fondo, `logo-mark.svg` solo la C blanca, `logo-mark-naranja.svg` la C en `#FF8C42` para fondos claros). Se usa como favicon e ícono de la app, y junto al nombre «El Club App» en el ingreso genérico, el selector de club y la cabecera del Super Admin. No reemplaza el escudo de un club (17/11/2026 12:42).
+
 ### Desarrollo
 
 - Toda la app se diseña **mobile first** y se **optimiza para tablet y desktop**: no se deja una columna de celular en el medio de una pantalla grande. Se piensa primero para el celular y, en cada breakpoint, se aprovecha el ancho (grilla, cáscara de admin, formularios con un máximo). El 15/11/2026 22:23 esta regla se acordó para el admin; el 16/11/2026 17:31 Jerónimo pidió que en desktop se viera optimizado para desktop; el 16/11/2026 17:32 lo confirmó como criterio de desarrollo de todo el sistema, también para tablet.

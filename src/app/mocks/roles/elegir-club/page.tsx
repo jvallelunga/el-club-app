@@ -24,6 +24,7 @@ export default function PaginaElegirClub() {
       ancho="completo"
       cabecera={
         <CabeceraMock
+          logo
           titulo="El Club App"
           accion={
             <Button asChild variant="ghost" className="h-11 px-3 text-sm">
