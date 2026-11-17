@@ -1,5 +1,5 @@
 // Tipos de la base. Cuando haya un Supabase local, se regeneran con `npm run tipos`.
-// Hasta entonces se mantienen a mano, alineados con la migración inicial de `club`.
+// Hasta entonces se mantienen a mano, alineados con las migraciones.
 
 export type Json =
   | string
@@ -9,6 +9,8 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+export type RolClub = "admin";
+
 export type Database = {
   public: {
     Tables: {
@@ -17,34 +19,370 @@ export type Database = {
           id: string;
           slug: string;
           nombre: string;
+          dominio_base: string | null;
+          escudo_ruta: string | null;
+          color_principal: string;
+          color_claro: string;
+          color_2: string | null;
+          color_3: string | null;
+          telefono: string | null;
+          email: string | null;
+          direccion: string | null;
+          web: string | null;
           creado_en: string;
         };
         Insert: {
           id?: string;
           slug: string;
           nombre: string;
+          dominio_base?: string | null;
+          escudo_ruta?: string | null;
+          color_principal: string;
+          color_claro?: string;
+          color_2?: string | null;
+          color_3?: string | null;
+          telefono?: string | null;
+          email?: string | null;
+          direccion?: string | null;
+          web?: string | null;
           creado_en?: string;
         };
         Update: {
           id?: string;
           slug?: string;
           nombre?: string;
+          dominio_base?: string | null;
+          escudo_ruta?: string | null;
+          color_principal?: string;
+          color_claro?: string;
+          color_2?: string | null;
+          color_3?: string | null;
+          telefono?: string | null;
+          email?: string | null;
+          direccion?: string | null;
+          web?: string | null;
           creado_en?: string;
         };
         Relationships: [];
+      };
+      usuario: {
+        Row: {
+          id: string;
+          nombre: string;
+          email: string;
+          creado_en: string;
+        };
+        Insert: {
+          id: string;
+          nombre: string;
+          email: string;
+          creado_en?: string;
+        };
+        Update: {
+          id?: string;
+          nombre?: string;
+          email?: string;
+          creado_en?: string;
+        };
+        Relationships: [];
+      };
+      super_admin: {
+        Row: {
+          usuario_id: string;
+          creado_en: string;
+        };
+        Insert: {
+          usuario_id: string;
+          creado_en?: string;
+        };
+        Update: {
+          usuario_id?: string;
+          creado_en?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "super_admin_usuario_id_fkey";
+            columns: ["usuario_id"];
+            isOneToOne: true;
+            referencedRelation: "usuario";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      super_admin_invitacion: {
+        Row: {
+          id: string;
+          email: string;
+          creado_en: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          creado_en?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          creado_en?: string;
+        };
+        Relationships: [];
+      };
+      club_miembro: {
+        Row: {
+          id: string;
+          club_id: string;
+          usuario_id: string;
+          rol: RolClub;
+          creado_en: string;
+        };
+        Insert: {
+          id?: string;
+          club_id: string;
+          usuario_id: string;
+          rol?: RolClub;
+          creado_en?: string;
+        };
+        Update: {
+          id?: string;
+          club_id?: string;
+          usuario_id?: string;
+          rol?: RolClub;
+          creado_en?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "club_miembro_club_id_fkey";
+            columns: ["club_id"];
+            isOneToOne: false;
+            referencedRelation: "club";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "club_miembro_usuario_id_fkey";
+            columns: ["usuario_id"];
+            isOneToOne: false;
+            referencedRelation: "usuario";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      club_invitacion: {
+        Row: {
+          id: string;
+          club_id: string;
+          email: string;
+          rol: RolClub;
+          creado_en: string;
+          aceptada_en: string | null;
+        };
+        Insert: {
+          id?: string;
+          club_id: string;
+          email: string;
+          rol?: RolClub;
+          creado_en?: string;
+          aceptada_en?: string | null;
+        };
+        Update: {
+          id?: string;
+          club_id?: string;
+          email?: string;
+          rol?: RolClub;
+          creado_en?: string;
+          aceptada_en?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "club_invitacion_club_id_fkey";
+            columns: ["club_id"];
+            isOneToOne: false;
+            referencedRelation: "club";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      club_red_social: {
+        Row: {
+          id: string;
+          club_id: string;
+          red: string;
+          etiqueta: string | null;
+          valor: string;
+          orden: number;
+          creado_en: string;
+        };
+        Insert: {
+          id?: string;
+          club_id: string;
+          red: string;
+          etiqueta?: string | null;
+          valor: string;
+          orden?: number;
+          creado_en?: string;
+        };
+        Update: {
+          id?: string;
+          club_id?: string;
+          red?: string;
+          etiqueta?: string | null;
+          valor?: string;
+          orden?: number;
+          creado_en?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "club_red_social_club_id_fkey";
+            columns: ["club_id"];
+            isOneToOne: false;
+            referencedRelation: "club";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      sede: {
+        Row: {
+          id: string;
+          club_id: string;
+          nombre: string;
+          direccion: string | null;
+          maps_url: string | null;
+          creado_en: string;
+        };
+        Insert: {
+          id?: string;
+          club_id: string;
+          nombre: string;
+          direccion?: string | null;
+          maps_url?: string | null;
+          creado_en?: string;
+        };
+        Update: {
+          id?: string;
+          club_id?: string;
+          nombre?: string;
+          direccion?: string | null;
+          maps_url?: string | null;
+          creado_en?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sede_club_id_fkey";
+            columns: ["club_id"];
+            isOneToOne: false;
+            referencedRelation: "club";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tipo_instalacion: {
+        Row: {
+          id: string;
+          club_id: string | null;
+          nombre: string;
+          creado_en: string;
+        };
+        Insert: {
+          id?: string;
+          club_id?: string | null;
+          nombre: string;
+          creado_en?: string;
+        };
+        Update: {
+          id?: string;
+          club_id?: string | null;
+          nombre?: string;
+          creado_en?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tipo_instalacion_club_id_fkey";
+            columns: ["club_id"];
+            isOneToOne: false;
+            referencedRelation: "club";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      instalacion: {
+        Row: {
+          id: string;
+          sede_id: string;
+          tipo_instalacion_id: string;
+          nombre: string;
+          notas: string | null;
+          creado_en: string;
+        };
+        Insert: {
+          id?: string;
+          sede_id: string;
+          tipo_instalacion_id: string;
+          nombre: string;
+          notas?: string | null;
+          creado_en?: string;
+        };
+        Update: {
+          id?: string;
+          sede_id?: string;
+          tipo_instalacion_id?: string;
+          nombre?: string;
+          notas?: string | null;
+          creado_en?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "instalacion_sede_id_fkey";
+            columns: ["sede_id"];
+            isOneToOne: false;
+            referencedRelation: "sede";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "instalacion_tipo_instalacion_id_fkey";
+            columns: ["tipo_instalacion_id"];
+            isOneToOne: false;
+            referencedRelation: "tipo_instalacion";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      puede_solicitar_ingreso_email: {
+        Args: { p_email: string };
+        Returns: boolean;
+      };
+      marca_publica_del_club: {
+        Args: { p_slug?: string | null; p_dominio_base?: string | null };
+        Returns: {
+          slug: string;
+          nombre: string;
+          escudo_ruta: string | null;
+          color_principal: string;
+          color_claro: string;
+          color_2: string | null;
+          color_3: string | null;
+        }[];
+      };
     };
     Enums: {
-      [_ in never]: never;
+      rol_club: RolClub;
     };
     CompositeTypes: {
       [_ in never]: never;
     };
   };
 };
+
+export type Club = Database["public"]["Tables"]["club"]["Row"];
+export type Usuario = Database["public"]["Tables"]["usuario"]["Row"];
+export type ClubMiembro = Database["public"]["Tables"]["club_miembro"]["Row"];
+export type ClubInvitacion =
+  Database["public"]["Tables"]["club_invitacion"]["Row"];
+
+export type ClubRedSocial = Database["public"]["Tables"]["club_red_social"]["Row"];
+export type Sede = Database["public"]["Tables"]["sede"]["Row"];
+export type TipoInstalacion = Database["public"]["Tables"]["tipo_instalacion"]["Row"];
+export type Instalacion = Database["public"]["Tables"]["instalacion"]["Row"];

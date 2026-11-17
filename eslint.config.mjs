@@ -130,7 +130,17 @@ const eslintConfig = defineConfig([
   },
   {
     files: ["src/app/**/*.{ts,tsx}"],
-    ignores: ["src/app/api/**"],
+    ignores: [
+      "src/app/api/**",
+      "src/app/**/page.tsx",
+      "src/app/**/layout.tsx",
+      "src/app/**/template.tsx",
+      "src/app/**/default.tsx",
+      "src/app/**/loading.tsx",
+      "src/app/**/error.tsx",
+      "src/app/**/not-found.tsx",
+      "src/app/**/route.ts",
+    ],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -145,7 +155,7 @@ const eslintConfig = defineConfig([
                 "@/datos/comandos/**",
               ],
               message:
-                "un componente cliente no importa datos de servidor; usá los hooks de datos/<recurso>.",
+                "un componente cliente no importa datos de servidor; las páginas y route handlers sí pueden.",
             },
           ],
         },
