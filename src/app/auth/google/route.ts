@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
   const ingreso = new URL("/ingreso", request.url);
   const siguiente = request.nextUrl.searchParams.get("siguiente");
   if (siguiente) ingreso.searchParams.set("siguiente", siguiente);
+  // 303: un GET no debería reenviar nada a /authorize.
   return NextResponse.redirect(ingreso, 303);
 }
 
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!hayConfiguracionSupabase()) {
-    return NextResponse.redirect(new URL("/ingreso?error=config", origen));
+    return NextResponse.redirect(new URL("/ingreso?error=config", origen), 303);
   }
 
   const { supabase, aplicarCookies } = clienteAuthConCookies(request);
@@ -46,12 +47,17 @@ export async function POST(request: NextRequest) {
   });
 
   if (error || !data.url) {
-    const fallo = NextResponse.redirect(new URL("/ingreso?error=google", origen));
+    const fallo = NextResponse.redirect(
+      new URL("/ingreso?error=google", origen),
+      303,
+    );
     aplicarCookies(fallo);
     return fallo;
   }
 
-  const respuesta = NextResponse.redirect(data.url);
+  // 303 See Other: el navegador hace GET a /authorize. Un 307/308
+  // reenviaría el POST y Supabase responde 405.
+  const respuesta = NextResponse.redirect(data.url, 303);
   aplicarCookies(respuesta);
   guardarSiguiente(respuesta, siguiente, seguro);
   return respuesta;

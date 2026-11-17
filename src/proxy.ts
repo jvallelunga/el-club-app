@@ -5,6 +5,14 @@ import {
   conCookies,
 } from "@/datos/supabase-proxy";
 
+function codigoRedireccion(request: NextRequest): 303 | 307 {
+  // Tras un POST/PUT/PATCH/DELETE, 303 fuerza un GET al destino.
+  // En GET/HEAD se mantiene 307.
+  const metodo = request.method.toUpperCase();
+  if (metodo === "GET" || metodo === "HEAD") return 307;
+  return 303;
+}
+
 function esRutaPublica(pathname: string): boolean {
   if (pathname === "/" || pathname === "/ingreso") return true;
   if (pathname.startsWith("/auth/")) return true;
@@ -21,7 +29,7 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/ingreso";
     url.search = "";
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(url, codigoRedireccion(request));
   }
 
   const { respuesta, usuarioId } = await actualizarSesionEnProxy(request);
@@ -34,7 +42,7 @@ export async function proxy(request: NextRequest) {
     if (siguiente && siguiente !== "/ingreso") {
       url.searchParams.set("siguiente", siguiente);
     }
-    return conCookies(NextResponse.redirect(url), respuesta);
+    return conCookies(NextResponse.redirect(url, codigoRedireccion(request)), respuesta);
   }
 
   return respuesta;
