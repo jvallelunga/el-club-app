@@ -90,7 +90,7 @@ export default async function PaginaClubCreado({
           </div>
           <div className="flex flex-col gap-3 sm:max-w-sm">
             <BotonPrincipal asChild>
-              <Link href={`/super-admin/clubes/${club.slug}/admins`}>
+              <Link href={`/c/${club.slug}/admin/admins`}>
                 Agregar Admins
               </Link>
             </BotonPrincipal>

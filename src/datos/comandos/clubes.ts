@@ -12,6 +12,10 @@ import {
   validarDatosNuevoClub,
 } from "@/dominio/nuevo-club";
 import { rutaFallbackClub } from "@/dominio/host";
+import {
+  errorAlQuitarAdmin,
+  errorSiNoPuedeAdministrarAdmins,
+} from "@/dominio/permisos";
 import { cargarSesion } from "../consultas/sesion";
 import { enviarMagicLinkIngreso } from "../enviar-link-ingreso";
 import { origenDePeticion } from "../origen-peticion";
@@ -271,6 +275,7 @@ export async function actualizarClub(
   revalidatePath(`/c/${club.slug}/admin`);
   revalidatePath(`/super-admin/clubes/${club.slug}/editar`);
   revalidatePath(`/super-admin/clubes/${club.slug}/admins`);
+  revalidatePath(`/c/${club.slug}/admin/admins`);
   return { ok: true, slug: club.slug };
 }
 
@@ -318,8 +323,9 @@ export async function invitarAdminClub(
   }
 
   const sesion = await cargarSesion();
-  if (!sesion) {
-    return { ok: false, error: "Tenés que ingresar de nuevo." };
+  const permiso = errorSiNoPuedeAdministrarAdmins(sesion, clubId);
+  if (permiso || !sesion) {
+    return { ok: false, error: permiso ?? "Tenés que ingresar de nuevo." };
   }
 
   const supabase = await supabaseServidor();
@@ -364,6 +370,7 @@ export async function invitarAdminClub(
   }
 
   revalidatePath(`/super-admin/clubes/${club.slug}/admins`);
+  revalidatePath(`/c/${club.slug}/admin/admins`);
   revalidatePath(`/c/${club.slug}/admin`);
 
   const envio = await enviarLinkInvitacion(email, club.slug);
@@ -379,11 +386,9 @@ export async function reenviarLinkInvitacionClub(
   invitacionId: string,
 ): Promise<ResultadoReenviarLink> {
   const sesion = await cargarSesion();
-  if (!sesion) {
-    return { ok: false, error: "Tenés que ingresar de nuevo." };
-  }
-  if (!sesion.esSuperAdmin) {
-    return { ok: false, error: "Solo el Super Admin puede reenviar el link." };
+  const permiso = errorSiNoPuedeAdministrarAdmins(sesion, clubId);
+  if (permiso || !sesion) {
+    return { ok: false, error: permiso ?? "Tenés que ingresar de nuevo." };
   }
 
   const supabase = await supabaseServidor();
@@ -424,8 +429,9 @@ export async function quitarAdminClub(
   usuarioId: string,
 ): Promise<ResultadoSimple> {
   const sesion = await cargarSesion();
-  if (!sesion) {
-    return { ok: false, error: "Tenés que ingresar de nuevo." };
+  const permiso = errorSiNoPuedeAdministrarAdmins(sesion, clubId);
+  if (permiso || !sesion) {
+    return { ok: false, error: permiso ?? "Tenés que ingresar de nuevo." };
   }
 
   const supabase = await supabaseServidor();
@@ -436,6 +442,23 @@ export async function quitarAdminClub(
     .maybeSingle();
   if (!club) {
     return { ok: false, error: "No encontramos ese club." };
+  }
+
+  const { count, error: errorConteo } = await supabase
+    .from("club_miembro")
+    .select("id", { count: "exact", head: true })
+    .eq("club_id", clubId)
+    .eq("rol", "admin");
+  if (errorConteo) {
+    return { ok: false, error: "No se pudo quitar. Probá de nuevo." };
+  }
+  const mensajeUltimo = errorAlQuitarAdmin({
+    actorUsuarioId: sesion.usuarioId,
+    objetivoUsuarioId: usuarioId,
+    cantidadAdmins: count ?? 0,
+  });
+  if (mensajeUltimo) {
+    return { ok: false, error: mensajeUltimo };
   }
 
   const { error } = await supabase
@@ -449,6 +472,7 @@ export async function quitarAdminClub(
   }
 
   revalidatePath(`/super-admin/clubes/${club.slug}/admins`);
+  revalidatePath(`/c/${club.slug}/admin/admins`);
   revalidatePath(`/c/${club.slug}/admin`);
   return { ok: true };
 }
@@ -458,8 +482,9 @@ export async function cancelarInvitacionClub(
   invitacionId: string,
 ): Promise<ResultadoSimple> {
   const sesion = await cargarSesion();
-  if (!sesion) {
-    return { ok: false, error: "Tenés que ingresar de nuevo." };
+  const permiso = errorSiNoPuedeAdministrarAdmins(sesion, clubId);
+  if (permiso || !sesion) {
+    return { ok: false, error: permiso ?? "Tenés que ingresar de nuevo." };
   }
 
   const supabase = await supabaseServidor();
@@ -484,5 +509,6 @@ export async function cancelarInvitacionClub(
   }
 
   revalidatePath(`/super-admin/clubes/${club.slug}/admins`);
+  revalidatePath(`/c/${club.slug}/admin/admins`);
   return { ok: true };
 }

@@ -120,7 +120,7 @@ export default async function PaginaSuperAdmin() {
                       variant="ghost"
                       className="h-11 flex-1 rounded-none text-sm"
                     >
-                      <Link href={`/super-admin/clubes/${club.slug}/admins`}>
+                      <Link href={`/c/${club.slug}/admin/admins`}>
                         Admins
                       </Link>
                     </Button>

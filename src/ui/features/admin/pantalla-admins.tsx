@@ -18,6 +18,7 @@ import { EscudoClub } from "@/ui/features/mocks-roles/escudo-club";
 import {
   RUTAS_SHELL_APP,
   ShellAdmin,
+  type RolShell,
 } from "@/ui/features/mocks-roles/shell-admin";
 import { avisoTrasInvitar } from "@/dominio/ingreso-email";
 import { inicialesDesdeNombre } from "@/dominio/slug";
@@ -44,6 +45,10 @@ export function PantallaAdminsReal({
   club,
   admins,
   invitaciones,
+  usuarioId,
+  rol,
+  atras,
+  esMultiClub = false,
   invitar,
   quitar,
   cancelar,
@@ -52,6 +57,10 @@ export function PantallaAdminsReal({
   club: ClubVisible;
   admins: AdminVisible[];
   invitaciones: InvitacionVisible[];
+  usuarioId: string;
+  rol: RolShell;
+  atras: { href: string; etiqueta: string };
+  esMultiClub?: boolean;
   invitar: (
     email: string,
   ) => Promise<
@@ -179,10 +188,11 @@ export function PantallaAdminsReal({
     <ShellAdmin
       titulo="Admins"
       subtitulo={club.nombre}
-      atras={{ href: "/super-admin", etiqueta: "Volver a clubes" }}
+      atras={atras}
       club={clubShell}
-      rol="super-admin"
+      rol={rol}
       activo="admins"
+      esMultiClub={esMultiClub}
       salirHref="/auth/salir"
       rutas={RUTAS_SHELL_APP}
       pie={null}
@@ -265,14 +275,20 @@ export function PantallaAdminsReal({
                     {admin.email}
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-11 px-3 text-sm"
-                  onClick={() => pedirQuitar(admin)}
-                >
-                  Quitar
-                </Button>
+                {admins.length === 1 && admin.usuarioId === usuarioId ? (
+                  <p className="max-w-40 text-right text-xs text-muted-foreground">
+                    Sos el último Admin
+                  </p>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-11 px-3 text-sm"
+                    onClick={() => pedirQuitar(admin)}
+                  >
+                    Quitar
+                  </Button>
+                )}
               </li>
             ))}
             {invitaciones.map((invitacion) => (

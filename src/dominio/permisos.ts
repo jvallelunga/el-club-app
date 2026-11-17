@@ -69,3 +69,28 @@ export function destinoTrasIngreso(params: {
 export function rutaClub(slug: string, superficie: SuperficieApp = "admin"): string {
   return rutaFallbackClub(slug, superficie);
 }
+
+/** Mensaje si no puede gestionar Admins de ese club, o null si está habilitado. */
+export function errorSiNoPuedeAdministrarAdmins(
+  sesion: SesionApp | null,
+  clubId: string,
+): string | null {
+  if (!sesion) return "Tenés que ingresar de nuevo.";
+  if (!puedeAdministrarClub(sesion, clubId)) {
+    return "No tenés permiso para administrar los Admins de este club.";
+  }
+  return null;
+}
+
+/** Mensaje si no se puede quitar a ese Admin, o null si se puede. */
+export function errorAlQuitarAdmin(params: {
+  actorUsuarioId: string;
+  objetivoUsuarioId: string;
+  cantidadAdmins: number;
+}): string | null {
+  if (params.cantidadAdmins > 1) return null;
+  if (params.actorUsuarioId === params.objetivoUsuarioId) {
+    return "No podés quitarte: sos el último Admin de este club.";
+  }
+  return "No se puede quitar al último Admin del club.";
+}

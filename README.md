@@ -123,6 +123,8 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 
 - El 17/11/2026 11:50 Jerónimo aprobó que, al invitar a un Admin, la app le mande el mismo magic link que «Enviarme el link» en `/ingreso` (`signInWithOtp`, `shouldCreateUser: true`, `emailRedirectTo` al `/auth/callback` del origen actual, con destino al admin del club). Si el envío falla (por ejemplo el cupo de 2 correos por hora), la invitación se mantiene y se avisa en la pantalla de Admins, con la acción «Reenviar link» en las pendientes. Todavía no hay una UI para invitar Super Admins; cuando exista, debe usar el mismo envío (17/11/2026 11:50).
 
+- El 17/11/2026 12:24 Jerónimo aprobó que un Admin pueda invitar y quitar Admins solo de su club (nunca de otros). El Super Admin sigue teniendo acceso completo. La pantalla vive en `/c/<slug>/admin/admins` (la ruta vieja de Super Admin redirige ahí) y el menú del club muestra «Admins» también para el Admin del club. Las actions y el RLS limitan insert/delete de `club_invitacion` y delete de `club_miembro` al club que administra; al invitar se manda el mismo magic link, con «Reenviar link». No se puede quitar al último Admin del club (si es uno mismo, el mensaje lo dice claramente) y quitar sigue pidiendo confirmación (17/11/2026 12:24).
+
 ### Dominio
 
 - El dominio raíz del club (por ejemplo `clubejemplo.com.ar`) es el **sitio web** del club, no la app (16/11/2026 17:43).

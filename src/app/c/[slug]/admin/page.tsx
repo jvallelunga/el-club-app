@@ -87,16 +87,14 @@ export default async function PaginaAdminClub({
           </p>
         )}
 
-        {sesion.esSuperAdmin ? (
-          <p className="text-sm">
-            <Link
-              href={`/super-admin/clubes/${club.slug}/admins`}
-              className="underline-offset-4 hover:underline"
-            >
-              Administrar Admins
-            </Link>
-          </p>
-        ) : null}
+        <p className="text-sm">
+          <Link
+            href={`/c/${club.slug}/admin/admins`}
+            className="underline-offset-4 hover:underline"
+          >
+            Administrar Admins
+          </Link>
+        </p>
       </div>
     </ShellAdmin>
   );

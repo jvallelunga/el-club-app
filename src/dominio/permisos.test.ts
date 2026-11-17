@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   destinoTrasIngreso,
+  errorAlQuitarAdmin,
+  errorSiNoPuedeAdministrarAdmins,
   puedeAdministrarClub,
   siguienteSeguro,
   tieneAccesoApp,
@@ -109,5 +111,49 @@ describe("siguienteSeguro", () => {
     expect(siguienteSeguro("https://evil.example/x")).toBe(null);
     expect(siguienteSeguro("//evil.example")).toBe(null);
     expect(siguienteSeguro("/ingreso")).toBe(null);
+  });
+});
+
+describe("errorSiNoPuedeAdministrarAdmins", () => {
+  it("permite al Super Admin y al Admin de ese club, no al de otro", () => {
+    expect(
+      errorSiNoPuedeAdministrarAdmins(sesion({ esSuperAdmin: true }), "club-norte"),
+    ).toBeNull();
+    expect(
+      errorSiNoPuedeAdministrarAdmins(sesion({ membresias: [norte] }), "club-norte"),
+    ).toBeNull();
+    expect(
+      errorSiNoPuedeAdministrarAdmins(sesion({ membresias: [norte] }), "club-ejemplo"),
+    ).toMatch(/permiso/);
+    expect(errorSiNoPuedeAdministrarAdmins(null, "club-norte")).toMatch(/ingresar/);
+  });
+});
+
+describe("errorAlQuitarAdmin", () => {
+  it("bloquea quitarse si es el último Admin, y también quitar al último", () => {
+    expect(
+      errorAlQuitarAdmin({
+        actorUsuarioId: "u1",
+        objetivoUsuarioId: "u1",
+        cantidadAdmins: 1,
+      }),
+    ).toMatch(/último Admin de este club/);
+    expect(
+      errorAlQuitarAdmin({
+        actorUsuarioId: "super",
+        objetivoUsuarioId: "u1",
+        cantidadAdmins: 1,
+      }),
+    ).toMatch(/último Admin del club/);
+  });
+
+  it("permite quitar si queda al menos otro Admin", () => {
+    expect(
+      errorAlQuitarAdmin({
+        actorUsuarioId: "u1",
+        objetivoUsuarioId: "u2",
+        cantidadAdmins: 2,
+      }),
+    ).toBeNull();
   });
 });

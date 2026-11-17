@@ -52,7 +52,21 @@ from (
 returning id, email
 ;
 
--- El trigger debió crear public.usuario. Guardamos los ids.
+-- Si el trigger no creó el perfil (solo se crea con invitación), lo insertamos acá.
+insert into public.usuario (id, nombre, email)
+select
+  u.id,
+  coalesce(u.raw_user_meta_data->>'full_name', u.email),
+  lower(u.email)
+from auth.users u
+where u.email in (
+  'rls-super@ejemplo.test',
+  'rls-admin-a@ejemplo.test',
+  'rls-admin-b@ejemplo.test',
+  'rls-nadie@ejemplo.test'
+)
+on conflict (id) do nothing;
+
 insert into _t (clave, id)
 select 'super', u.id from public.usuario u where u.email = 'rls-super@ejemplo.test';
 insert into _t (clave, id)
@@ -65,10 +79,10 @@ select 'nadie', u.id from public.usuario u where u.email = 'rls-nadie@ejemplo.te
 insert into public.super_admin (usuario_id)
 select id from _t where clave = 'super';
 
-insert into public.club (slug, nombre)
+insert into public.club (slug, nombre, color_principal, color_claro)
 values
-  ('rls-club-a', 'Club RLS A'),
-  ('rls-club-b', 'Club RLS B')
+  ('rls-club-a', 'Club RLS A', '#1c1917', '#ffffff'),
+  ('rls-club-b', 'Club RLS B', '#1c1917', '#ffffff')
 returning id, slug
 ;
 
@@ -196,6 +210,84 @@ begin
   end if;
 end;
 $$;
+
+-- Admin A no puede invitar ni quitar Admins del club B.
+do $$
+begin
+  insert into public.club_invitacion (club_id, email, rol)
+  values (
+    (select id from _t where clave = 'club_b'),
+    'rls-invitado-b@ejemplo.test',
+    'admin'
+  );
+  raise exception 'Admin A no debería poder invitar al club B';
+exception
+  when others then
+    if sqlerrm like 'Admin A no debería%' then
+      raise;
+    end if;
+end;
+$$;
+
+do $$
+declare
+  v_borrados int;
+begin
+  delete from public.club_miembro
+  where club_id = (select id from _t where clave = 'club_b')
+    and usuario_id = (select id from _t where clave = 'admin_b');
+  get diagnostics v_borrados = row_count;
+  if v_borrados <> 0 then
+    raise exception 'Admin A no debería poder quitar Admins del club B';
+  end if;
+exception
+  when others then
+    if sqlerrm like 'Admin A no debería%' then
+      raise;
+    end if;
+end;
+$$;
+
+-- Admin A sí puede invitar en su club.
+insert into public.club_invitacion (club_id, email, rol)
+values (
+  (select id from _t where clave = 'club_a'),
+  'rls-nuevo-a@ejemplo.test',
+  'admin'
+);
+
+do $$
+declare
+  n int;
+begin
+  select count(*) into n
+  from public.club_invitacion
+  where club_id = (select id from _t where clave = 'club_a')
+    and email = 'rls-nuevo-a@ejemplo.test'
+    and aceptada_en is null;
+  if n <> 1 then
+    raise exception 'Admin A debería poder invitar en su club, hay %', n;
+  end if;
+end;
+$$;
+
+-- Admin A no puede quitarse si es el último Admin del club.
+do $$
+begin
+  delete from public.club_miembro
+  where club_id = (select id from _t where clave = 'club_a')
+    and usuario_id = (select id from _t where clave = 'admin_a');
+  raise exception 'No debería poderse quitar al último Admin';
+exception
+  when others then
+    if sqlerrm like 'No debería%' then
+      raise;
+    end if;
+    if sqlerrm not like '%último Admin%' then
+      raise exception 'Error inesperado al quitar al último Admin: %', sqlerrm;
+    end if;
+end;
+$$;
 select pg_temp.salir();
 
 -- Invitación por email se acepta de inmediato si el usuario ya existe.
@@ -229,6 +321,26 @@ begin
   end if;
 end;
 $$;
+
+-- Con dos Admins en el club A, Admin A puede quitar a Admin B.
+select pg_temp.entrar('admin_a');
+do $$
+declare
+  n int;
+begin
+  delete from public.club_miembro
+  where club_id = (select id from _t where clave = 'club_a')
+    and usuario_id = (select id from _t where clave = 'admin_b');
+  select count(*) into n
+  from public.club_miembro
+  where club_id = (select id from _t where clave = 'club_a')
+    and usuario_id = (select id from _t where clave = 'admin_b');
+  if n <> 0 then
+    raise exception 'Admin A debería poder quitar a otro Admin de su club';
+  end if;
+end;
+$$;
+select pg_temp.salir();
 
 select 'Pruebas de RLS: ok' as resultado;
 

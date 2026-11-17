@@ -28,7 +28,7 @@ export const RUTAS_SHELL_APP: RutasShell = {
   inicioClub: (slug) => `/c/${slug}/admin`,
   superAdmin: "/super-admin",
   elegirClub: "/elegir-club",
-  admins: (slug) => `/super-admin/clubes/${slug}/admins`,
+  admins: (slug) => `/c/${slug}/admin/admins`,
 };
 
 /** Cabeceras de escritorio (sidebar y barra superior): misma altura fija para que el borde inferior quede alineado. */
@@ -81,7 +81,7 @@ function itemsNav({
     });
   }
 
-  if (club && rol === "super-admin") {
+  if (club) {
     items.push({
       etiqueta: "Admins",
       href: rutas.admins(club.slug),
