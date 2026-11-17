@@ -2,7 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { emailValido, normalizarEmail } from "@/dominio/email";
-import { slugDesdeNombre } from "@/dominio/slug";
+import {
+  BUCKET_ESCUDOS,
+  coloresParaGuardar,
+  primerError,
+  rutaEscudo,
+  validarArchivoEscudo,
+  validarDatosNuevoClub,
+} from "@/dominio/nuevo-club";
 import { cargarSesion } from "../consultas/sesion";
 import { supabaseServidor } from "../supabase-servidor";
 
@@ -10,32 +17,130 @@ export type ResultadoCrearClub =
   | { ok: true; slug: string }
   | { ok: false; error: string };
 
-export async function crearClub(nombreCrudo: string): Promise<ResultadoCrearClub> {
-  const nombre = nombreCrudo.trim();
-  const slug = slugDesdeNombre(nombre);
-  if (!nombre || !slug) {
-    return { ok: false, error: "Escribí el nombre del club." };
-  }
+function textoForm(formData: FormData, clave: string): string {
+  const valor = formData.get(clave);
+  return typeof valor === "string" ? valor : "";
+}
+
+export async function crearClub(formData: FormData): Promise<ResultadoCrearClub> {
+  const nombre = textoForm(formData, "nombre");
+  const slug = textoForm(formData, "slug");
+  const colorPrincipal = textoForm(formData, "colorPrincipal");
+  const colorClaro = textoForm(formData, "colorClaro");
+  const color2 = textoForm(formData, "color2");
+  const color3 = textoForm(formData, "color3");
+  const dominioBase = textoForm(formData, "dominioBase");
+  const escudoCrudo = formData.get("escudo");
+  const escudo =
+    escudoCrudo instanceof File && escudoCrudo.size > 0 ? escudoCrudo : null;
 
   const sesion = await cargarSesion();
   if (!sesion?.esSuperAdmin) {
     return { ok: false, error: "Solo el Super Admin puede crear un club." };
   }
 
+  const errores = validarDatosNuevoClub({
+    nombre,
+    slug,
+    slugManual: true,
+    marca: colorPrincipal,
+    claro: colorClaro || "#ffffff",
+    extras: [color2, color3],
+    dominioBase,
+  });
+  const mensaje = primerError(errores);
+  if (mensaje) {
+    return { ok: false, error: mensaje };
+  }
+
+  if (escudo) {
+    const errorEscudo = validarArchivoEscudo(escudo.type, escudo.size);
+    if (errorEscudo) {
+      return { ok: false, error: errorEscudo };
+    }
+  }
+
+  const colores = coloresParaGuardar(colorPrincipal, colorClaro, [color2, color3]);
+  const dominio = dominioBase.trim() ? dominioBase.trim().toLowerCase() : null;
+  const slugLimpio = slug.trim();
   const supabase = await supabaseServidor();
-  const { error } = await supabase.from("club").insert({ nombre, slug });
-  if (error) {
-    if (error.code === "23505") {
+
+  const { data: slugExistente } = await supabase
+    .from("club")
+    .select("id")
+    .eq("slug", slugLimpio)
+    .maybeSingle();
+  if (slugExistente) {
+    return {
+      ok: false,
+      error: "Ya hay un club con ese identificador. Probá uno distinto.",
+    };
+  }
+
+  if (dominio) {
+    const { data: dominioExistente } = await supabase
+      .from("club")
+      .select("id")
+      .eq("dominio_base", dominio)
+      .maybeSingle();
+    if (dominioExistente) {
       return {
         ok: false,
-        error: "Ya hay un club con ese identificador. Probá un nombre distinto.",
+        error: "Ya hay un club con ese dominio. Probá uno distinto.",
+      };
+    }
+  }
+
+  const id = crypto.randomUUID();
+  let escudoRuta: string | null = null;
+
+  if (escudo) {
+    escudoRuta = rutaEscudo(id, escudo.type);
+    const { error: errorSubida } = await supabase.storage
+      .from(BUCKET_ESCUDOS)
+      .upload(escudoRuta, escudo, {
+        contentType: escudo.type,
+        upsert: false,
+      });
+    if (errorSubida) {
+      return { ok: false, error: "No se pudo subir el escudo. Probá de nuevo." };
+    }
+  }
+
+  const { error } = await supabase.from("club").insert({
+    id,
+    nombre: nombre.trim(),
+    slug: slugLimpio,
+    dominio_base: dominio,
+    escudo_ruta: escudoRuta,
+    color_principal: colores.colorPrincipal,
+    color_claro: colores.colorClaro,
+    color_2: colores.color2,
+    color_3: colores.color3,
+  });
+
+  if (error) {
+    if (escudoRuta) {
+      await supabase.storage.from(BUCKET_ESCUDOS).remove([escudoRuta]);
+    }
+    if (error.code === "23505") {
+      const detalle = `${error.message} ${error.details ?? ""}`.toLowerCase();
+      if (detalle.includes("dominio_base")) {
+        return {
+          ok: false,
+          error: "Ya hay un club con ese dominio. Probá uno distinto.",
+        };
+      }
+      return {
+        ok: false,
+        error: "Ya hay un club con ese identificador. Probá uno distinto.",
       };
     }
     return { ok: false, error: "No se pudo crear el club. Probá de nuevo." };
   }
 
   revalidatePath("/super-admin");
-  return { ok: true, slug };
+  return { ok: true, slug: slugLimpio };
 }
 
 export type ResultadoInvitar =

@@ -1,4 +1,4 @@
-/** Utilidades de paleta para el mock de crear club. No es la implementación real. */
+/** Utilidades de paleta del club: normalización HEX, contraste AA y colores derivados. */
 
 export const COLOR_MARCA_VACIO = "#1c1917";
 export const COLOR_CLARO_DEFAULT = "#ffffff";

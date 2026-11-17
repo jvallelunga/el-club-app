@@ -1,5 +1,5 @@
-%% El Club — modelo aplicado (16/11/2026).
-%% Tablas migradas: club (con dominio_base), usuario, super_admin,
+%% El Club — modelo aplicado (17/11/2026).
+%% Tablas migradas: club (con dominio_base, escudo_ruta y paleta), usuario, super_admin,
 %% super_admin_invitacion, club_miembro, club_invitacion.
 %% usuario.id coincide con el usuario de Supabase Auth.
 %% rol_club es un enum que por ahora solo tiene el valor admin.
@@ -8,6 +8,11 @@
 %% es el SITIO WEB del club. La app vive en subdominios por superficie
 %% (admin.<dominio_base>, vivo.<dominio_base>), resueltos en código.
 %% Sin dominio propio, el fallback es /c/<slug>/<superficie>.
+%%
+%% club.escudo_ruta es la ruta en el bucket público escudos
+%% (p. ej. <id>/escudo.png). La paleta tiene color_principal (obligatorio),
+%% color_claro (default #ffffff) y color_2 / color_3 opcionales
+%% (null = se derivan en la app).
 %%
 %% El email del Super Admin no se guarda en el repo: el alta se hace
 %% directo en la base (ver scripts/sembrar-super-admin.sql).
@@ -18,6 +23,11 @@ erDiagram
         string slug UK
         string nombre
         string dominio_base UK
+        string escudo_ruta
+        string color_principal
+        string color_claro
+        string color_2
+        string color_3
         timestamptz creado_en
     }
     USUARIO {

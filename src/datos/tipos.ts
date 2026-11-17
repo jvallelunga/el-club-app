@@ -20,6 +20,11 @@ export type Database = {
           slug: string;
           nombre: string;
           dominio_base: string | null;
+          escudo_ruta: string | null;
+          color_principal: string;
+          color_claro: string;
+          color_2: string | null;
+          color_3: string | null;
           creado_en: string;
         };
         Insert: {
@@ -27,6 +32,11 @@ export type Database = {
           slug: string;
           nombre: string;
           dominio_base?: string | null;
+          escudo_ruta?: string | null;
+          color_principal: string;
+          color_claro?: string;
+          color_2?: string | null;
+          color_3?: string | null;
           creado_en?: string;
         };
         Update: {
@@ -34,6 +44,11 @@ export type Database = {
           slug?: string;
           nombre?: string;
           dominio_base?: string | null;
+          escudo_ruta?: string | null;
+          color_principal?: string;
+          color_claro?: string;
+          color_2?: string | null;
+          color_3?: string | null;
           creado_en?: string;
         };
         Relationships: [];

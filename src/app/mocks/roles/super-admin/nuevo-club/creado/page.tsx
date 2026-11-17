@@ -12,11 +12,9 @@ import {
   BotonPrincipal,
   EtiquetaEjemplo,
 } from "@/ui/features/mocks-roles/marco-mock";
-import {
-  CLAVE_ESCUDO,
-  VistaPreviaClub,
-} from "@/ui/features/mocks-roles/formulario-nuevo-club";
-import { derivarPaleta } from "@/ui/features/mocks-roles/paleta";
+import { CLAVE_ESCUDO } from "@/ui/features/mocks-roles/formulario-nuevo-club";
+import { VistaPreviaClub } from "@/ui/features/club/vista-previa-club";
+import { derivarPaleta } from "@/dominio/paleta";
 import { ShellAdmin } from "@/ui/features/mocks-roles/shell-admin";
 import { Button } from "@/ui/nativos/button";
 

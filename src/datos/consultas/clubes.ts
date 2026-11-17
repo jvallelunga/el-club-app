@@ -7,7 +7,7 @@ export async function listarClubes(): Promise<Club[]> {
   const supabase = await supabaseServidor();
   const { data, error } = await supabase
     .from("club")
-    .select("id, slug, nombre, dominio_base, creado_en")
+    .select("id, slug, nombre, dominio_base, escudo_ruta, color_principal, color_claro, color_2, color_3, creado_en")
     .order("nombre", { ascending: true });
   if (error) throw error;
   return data ?? [];
@@ -17,7 +17,7 @@ export async function clubPorSlug(slug: string): Promise<Club | null> {
   const supabase = await supabaseServidor();
   const { data, error } = await supabase
     .from("club")
-    .select("id, slug, nombre, dominio_base, creado_en")
+    .select("id, slug, nombre, dominio_base, escudo_ruta, color_principal, color_claro, color_2, color_3, creado_en")
     .eq("slug", slug)
     .maybeSingle();
   if (error) throw error;
