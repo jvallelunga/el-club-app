@@ -7,10 +7,17 @@ import {
 
 export const dynamic = "force-dynamic";
 
-async function salir(request: NextRequest) {
+/**
+ * El cierre de sesión tiene que ser POST. Un GET (el prefetch de un
+ * <Link href="/auth/salir">) cerraba la sesión apenas entrabas al admin.
+ */
+export async function GET(request: NextRequest) {
+  return NextResponse.redirect(new URL("/ingreso", request.nextUrl.origin), 303);
+}
+
+export async function POST(request: NextRequest) {
   const origen = request.nextUrl.origin;
   const seguro = request.nextUrl.protocol === "https:";
-  // 303 por si el cierre de sesión llega por POST (un 307 reenviaría el POST).
   const respuesta = NextResponse.redirect(new URL("/ingreso", origen), 303);
 
   if (hayConfiguracionSupabase()) {
@@ -20,12 +27,4 @@ async function salir(request: NextRequest) {
   }
   guardarSiguiente(respuesta, null, seguro);
   return respuesta;
-}
-
-export async function GET(request: NextRequest) {
-  return salir(request);
-}
-
-export async function POST(request: NextRequest) {
-  return salir(request);
 }

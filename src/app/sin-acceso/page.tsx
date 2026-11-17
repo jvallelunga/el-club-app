@@ -1,7 +1,6 @@
-import Link from "next/link";
+import { BotonSalir } from "@/ui/features/mocks-roles/boton-salir";
 import { ShieldOff } from "lucide-react";
 import {
-  BotonPrincipal,
   ContenidoMock,
   MarcoAcceso,
 } from "@/ui/features/mocks-roles/marco-mock";
@@ -34,9 +33,13 @@ export default async function PaginaSinAcceso() {
             vez que entres ya vas a ver tu club.
           </p>
         </div>
-        <BotonPrincipal asChild variant="outline">
-          <Link href="/auth/salir">Cerrar sesión</Link>
-        </BotonPrincipal>
+        <BotonSalir
+          href="/auth/salir"
+          variant="outline"
+          className="h-12 w-full rounded-xl text-base"
+        >
+          Cerrar sesión
+        </BotonSalir>
       </ContenidoMock>
     </MarcoAcceso>
   );

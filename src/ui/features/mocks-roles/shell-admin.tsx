@@ -4,6 +4,7 @@ import { Button } from "@/ui/nativos/button";
 import { cn } from "@/lib/utils";
 import { RUTAS_MOCK } from "./datos-ejemplo";
 import { EscudoClub, type ClubConEscudo } from "./escudo-club";
+import { BotonSalir, EnlaceSalir } from "./boton-salir";
 import { PieMock } from "./marco-mock";
 
 export type RolShell = "super-admin" | "admin";
@@ -152,17 +153,16 @@ export function ShellAdmin({
           </div>
           {accion ? <div className="hidden md:block">{accion}</div> : null}
           {salirEnMobile ? (
-            <Button asChild variant="ghost" className="h-11 px-3 text-sm">
-              <Link href={salirHref}>Salir</Link>
-            </Button>
+            <BotonSalir href={salirHref} className="h-11 px-3 text-sm">
+              Salir
+            </BotonSalir>
           ) : (
-            <Button
-              asChild
-              variant="ghost"
+            <BotonSalir
+              href={salirHref}
               className="hidden h-11 px-3 text-sm md:inline-flex lg:hidden"
             >
-              <Link href={salirHref}>Salir</Link>
-            </Button>
+              Salir
+            </BotonSalir>
           )}
         </div>
         {items.length > 0 ? (
@@ -226,13 +226,13 @@ export function ShellAdmin({
             ))}
           </nav>
           <div className="border-t border-border p-3">
-            <Link
+            <EnlaceSalir
               href={salirHref}
-              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted/60 hover:text-foreground"
             >
               <LogOut className="size-4" />
               Salir
-            </Link>
+            </EnlaceSalir>
           </div>
         </aside>
 

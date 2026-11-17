@@ -41,11 +41,20 @@ export function siguienteSeguro(valor?: string | null): string | null {
   return valor;
 }
 
+export function tieneAccesoApp(params: {
+  esSuperAdmin: boolean;
+  clubes: { slug: string }[];
+}): boolean {
+  return params.esSuperAdmin || params.clubes.length > 0;
+}
+
 export function destinoTrasIngreso(params: {
   esSuperAdmin: boolean;
   clubes: { slug: string }[];
   siguiente?: string | null;
 }): string {
+  // Sin invitación (ni Super Admin ni Admin) no se entra a ningún destino.
+  if (!tieneAccesoApp(params)) return "/sin-acceso";
   const siguiente = siguienteSeguro(params.siguiente);
   if (siguiente) return siguiente;
   if (params.esSuperAdmin) return "/super-admin";

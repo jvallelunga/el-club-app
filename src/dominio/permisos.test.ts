@@ -3,6 +3,7 @@ import {
   destinoTrasIngreso,
   puedeAdministrarClub,
   siguienteSeguro,
+  tieneAccesoApp,
   type SesionApp,
 } from "./permisos";
 
@@ -74,6 +75,19 @@ describe("destinoTrasIngreso", () => {
     expect(destinoTrasIngreso({ esSuperAdmin: false, clubes: [] })).toBe(
       "/sin-acceso",
     );
+  });
+
+  it("ignora el destino siguiente si entró sin invitación", () => {
+    expect(
+      destinoTrasIngreso({
+        esSuperAdmin: false,
+        clubes: [],
+        siguiente: "/super-admin/nuevo-club",
+      }),
+    ).toBe("/sin-acceso");
+    expect(
+      tieneAccesoApp({ esSuperAdmin: false, clubes: [] }),
+    ).toBe(false);
   });
 
   it("respeta un destino siguiente seguro", () => {

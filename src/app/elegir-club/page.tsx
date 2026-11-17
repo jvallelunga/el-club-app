@@ -7,7 +7,7 @@ import {
   ContenidoMock,
   MarcoPagina,
 } from "@/ui/features/mocks-roles/marco-mock";
-import { Button } from "@/ui/nativos/button";
+import { BotonSalir } from "@/ui/features/mocks-roles/boton-salir";
 import { destinoTrasIngreso } from "@/dominio/permisos";
 import { inicialesDesdeNombre } from "@/dominio/slug";
 import { sesionRequerida } from "@/datos/consultas/acceso";
@@ -36,9 +36,9 @@ export default async function PaginaElegirClub() {
         <CabeceraMock
           titulo="El Club App"
           accion={
-            <Button asChild variant="ghost" className="h-11 px-3 text-sm">
-              <Link href="/auth/salir">Salir</Link>
-            </Button>
+            <BotonSalir href="/auth/salir" className="h-11 px-3 text-sm">
+              Salir
+            </BotonSalir>
           }
         />
       }
