@@ -10,13 +10,27 @@ import {
 import { Input } from "@/ui/nativos/input";
 import { Label } from "@/ui/nativos/label";
 import { Button } from "@/ui/nativos/button";
-import { BotonPrincipal } from "@/ui/features/mocks-roles/marco-mock";
+import { BotonPrincipal } from "@/ui/compartidos/marco";
 import { cn } from "@/lib/utils";
 import {
   REDES_SOCIALES,
   type IdRedSocial,
 } from "@/dominio/contacto";
-import { CONTACTO_VACIO, type ContactoClubEjemplo, type RedSocialEjemplo } from "./datos-ejemplo";
+
+export type RedSocialFormulario = {
+  id: string;
+  red: IdRedSocial;
+  etiqueta?: string;
+  valor: string;
+};
+
+export type ContactoClubFormulario = {
+  telefono: string;
+  email: string;
+  direccion: string;
+  web: string;
+  redes: RedSocialFormulario[];
+};
 
 const CAMPO = "h-12 rounded-xl px-3 text-base";
 const SELECT = cn(CAMPO, "w-full border border-input bg-background");
@@ -25,7 +39,7 @@ export type ResultadoGuardarContacto =
   | { ok: true }
   | { ok: false; error: string };
 
-function nuevaRed(): RedSocialEjemplo {
+function nuevaRed(): RedSocialFormulario {
   return {
     id: `r-${crypto.randomUUID()}`,
     red: "instagram",
@@ -37,14 +51,14 @@ export function FormularioContactoClub({
   inicial,
   guardar,
 }: {
-  inicial: ContactoClubEjemplo;
-  guardar?: (formData: FormData) => Promise<ResultadoGuardarContacto>;
+  inicial: ContactoClubFormulario;
+  guardar: (formData: FormData) => Promise<ResultadoGuardarContacto>;
 }) {
   const [telefono, setTelefono] = useState(inicial.telefono);
   const [email, setEmail] = useState(inicial.email);
   const [direccion, setDireccion] = useState(inicial.direccion);
   const [web, setWeb] = useState(inicial.web);
-  const [redes, setRedes] = useState<RedSocialEjemplo[]>(inicial.redes);
+  const [redes, setRedes] = useState<RedSocialFormulario[]>(inicial.redes);
   const [guardado, setGuardado] = useState(false);
   const [errorServidor, setErrorServidor] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -54,7 +68,7 @@ export function FormularioContactoClub({
     setErrorServidor(null);
   }
 
-  function actualizarRed(id: string, cambio: Partial<RedSocialEjemplo>) {
+  function actualizarRed(id: string, cambio: Partial<RedSocialFormulario>) {
     marcarCambio();
     setRedes((actual) =>
       actual.map((red) => (red.id === id ? { ...red, ...cambio } : red)),
@@ -79,10 +93,6 @@ export function FormularioContactoClub({
       className="flex flex-col gap-6"
       onSubmit={(evento) => {
         evento.preventDefault();
-        if (!guardar) {
-          setGuardado(true);
-          return;
-        }
         const formData = new FormData();
         formData.set("telefono", telefono);
         formData.set("email", email);
@@ -331,9 +341,7 @@ export function FormularioContactoClub({
         </p>
       ) : guardado ? (
         <p className="text-sm text-muted-foreground" role="status">
-          {guardar
-            ? "Contacto guardado."
-            : "En el mock no se guarda de verdad. Así se vería el aviso al guardar."}
+          Contacto guardado.
         </p>
       ) : null}
 
@@ -343,5 +351,3 @@ export function FormularioContactoClub({
     </form>
   );
 }
-
-export { CONTACTO_VACIO };

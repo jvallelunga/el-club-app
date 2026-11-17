@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronRight } from "lucide-react";
-import { EscudoClub } from "@/ui/features/mocks-roles/escudo-club";
+import { EscudoClub } from "@/ui/compartidos/escudo-club";
 import {
-  CabeceraMock,
-  ContenidoMock,
+  Cabecera,
+  Contenido,
   MarcoPagina,
-} from "@/ui/features/mocks-roles/marco-mock";
-import { BotonSalir } from "@/ui/features/mocks-roles/boton-salir";
+} from "@/ui/compartidos/marco";
+import { BotonSalir } from "@/ui/compartidos/boton-salir";
 import { destinoTrasIngreso } from "@/dominio/permisos";
 import { inicialesDesdeNombre } from "@/dominio/slug";
 import { sesionRequerida } from "@/datos/consultas/acceso";
@@ -33,18 +33,18 @@ export default async function PaginaElegirClub() {
     <MarcoPagina
       ancho="completo"
       cabecera={
-        <CabeceraMock
+        <Cabecera
           logo
           titulo="El Club App"
           accion={
-            <BotonSalir href="/auth/salir" className="h-11 px-3 text-sm">
+            <BotonSalir className="h-11 px-3 text-sm">
               Salir
             </BotonSalir>
           }
         />
       }
     >
-      <ContenidoMock className="mx-auto w-full max-w-5xl gap-6">
+      <Contenido className="mx-auto w-full max-w-5xl gap-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-medium tracking-tight">
             Hola, {primerNombre}
@@ -77,7 +77,7 @@ export default async function PaginaElegirClub() {
             </li>
           ))}
         </ul>
-      </ContenidoMock>
+      </Contenido>
     </MarcoPagina>
   );
 }

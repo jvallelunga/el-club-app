@@ -4,9 +4,8 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/ui/nativos/input";
 import { Label } from "@/ui/nativos/label";
-import { BotonPrincipal } from "@/ui/features/mocks-roles/marco-mock";
+import { BotonPrincipal } from "@/ui/compartidos/marco";
 import { MapaEstatico } from "./mapa-estatico";
-import type { SedeEjemplo } from "./datos-ejemplo";
 
 const CAMPO = "h-12 rounded-xl px-3 text-base";
 
@@ -20,10 +19,10 @@ export function FormularioSede({
   destinoCreada,
   guardar,
 }: {
-  inicial?: Pick<SedeEjemplo, "nombre" | "direccion" | "mapsUrl">;
+  inicial?: { nombre: string; direccion: string; mapsUrl: string };
   destino: string;
   destinoCreada?: (id: string) => string;
-  guardar?: (formData: FormData) => Promise<ResultadoGuardarSede>;
+  guardar: (formData: FormData) => Promise<ResultadoGuardarSede>;
 }) {
   const router = useRouter();
   const [nombre, setNombre] = useState(inicial?.nombre ?? "");
@@ -47,10 +46,6 @@ export function FormularioSede({
         setIntento(true);
         setErrorServidor(null);
         if (errorNombre) return;
-        if (!guardar) {
-          router.push(destino);
-          return;
-        }
         const formData = new FormData();
         formData.set("nombre", nombre);
         formData.set("direccion", direccion);

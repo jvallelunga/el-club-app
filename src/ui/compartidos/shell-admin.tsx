@@ -2,10 +2,8 @@ import Link from "next/link";
 import { ChevronLeft, LogOut } from "lucide-react";
 import { Button } from "@/ui/nativos/button";
 import { cn } from "@/lib/utils";
-import { RUTAS_MOCK } from "./datos-ejemplo";
 import { EscudoClub, type ClubConEscudo } from "./escudo-club";
 import { BotonSalir, EnlaceSalir } from "./boton-salir";
-import { PieMock } from "./marco-mock";
 import { LogoElClub } from "@/ui/marca/logo-el-club";
 import { MenuMovil } from "./menu-movil";
 
@@ -17,17 +15,8 @@ export type RutasShell = {
   superAdmin: string;
   elegirClub: string;
   club: (slug: string) => string;
-  sedes?: (slug: string) => string;
+  sedes: (slug: string) => string;
   admins: (slug: string) => string;
-};
-
-const RUTAS_SHELL_MOCK: RutasShell = {
-  inicioClub: RUTAS_MOCK.inicioClub,
-  superAdmin: RUTAS_MOCK.superAdmin,
-  elegirClub: RUTAS_MOCK.elegirClub,
-  club: RUTAS_MOCK.club,
-  sedes: RUTAS_MOCK.sedes,
-  admins: RUTAS_MOCK.admins,
 };
 
 export const RUTAS_SHELL_APP: RutasShell = {
@@ -96,13 +85,11 @@ export function itemsNav({
       href: `${rutas.club(club.slug)}${queryClub}`,
       activo: activo === "club",
     });
-    if (rutas.sedes) {
-      items.push({
-        etiqueta: "Sedes",
-        href: `${rutas.sedes(club.slug)}${queryClub}`,
-        activo: activo === "sedes",
-      });
-    }
+    items.push({
+      etiqueta: "Sedes",
+      href: `${rutas.sedes(club.slug)}${queryClub}`,
+      activo: activo === "sedes",
+    });
     items.push({
       etiqueta: "Admins",
       href: `${rutas.admins(club.slug)}${queryClub}`,
@@ -177,12 +164,10 @@ function ContenidoBarra({
   club,
   rol,
   items,
-  salirHref,
 }: {
   club?: ClubConEscudo & { slug: string };
   rol: RolShell;
   items: ItemNav[];
-  salirHref: string;
 }) {
   return (
     <div className="flex h-full flex-col">
@@ -192,7 +177,6 @@ function ContenidoBarra({
       <NavegacionBarra items={items} />
       <div className="border-t border-border p-3">
         <EnlaceSalir
-          href={salirHref}
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted/60 hover:text-foreground"
         >
           <LogOut className="size-4" />
@@ -216,10 +200,9 @@ export function ShellAdmin({
   como,
   esMultiClub,
   accion,
-  salirHref = RUTAS_MOCK.ingreso,
   salirEnMobile = true,
-  rutas = RUTAS_SHELL_MOCK,
-  pie = <PieMock />,
+  rutas = RUTAS_SHELL_APP,
+  pie,
 }: {
   children: React.ReactNode;
   titulo: string;
@@ -233,7 +216,6 @@ export function ShellAdmin({
   como?: string;
   esMultiClub?: boolean;
   accion?: React.ReactNode;
-  salirHref?: string;
   salirEnMobile?: boolean;
   rutas?: RutasShell;
   pie?: React.ReactNode;
@@ -242,7 +224,7 @@ export function ShellAdmin({
   const tituloMenu = club?.nombre ?? "El Club App";
   const descripcionMenu =
     rol === "super-admin" ? "Super Admin" : "Admin";
-  const propsBarra = { club, rol, items, salirHref };
+  const propsBarra = { club, rol, items };
 
   return (
     <div className="flex min-h-svh flex-col bg-background">
@@ -275,7 +257,7 @@ export function ShellAdmin({
           </div>
           {accion ? <div className="hidden md:block">{accion}</div> : null}
           {salirEnMobile ? (
-            <BotonSalir href={salirHref} className="h-11 px-3 text-sm">
+            <BotonSalir className="h-11 px-3 text-sm">
               Salir
             </BotonSalir>
           ) : null}

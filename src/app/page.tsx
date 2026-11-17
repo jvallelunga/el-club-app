@@ -9,20 +9,11 @@ export default function Inicio() {
         <h1 className="text-4xl font-medium tracking-tight">El Club App</h1>
       </div>
       <p className="text-sm text-muted-foreground">
-        App del club para organizar torneos y, más adelante, el día a día del
-        club.
+        App de gestión de clubes.
       </p>
       <p className="text-sm">
         <Link href="/ingreso" className="underline-offset-4 hover:underline">
           Ingresar
-        </Link>
-      </p>
-      <p className="text-sm text-muted-foreground">
-        <Link
-          href="/mocks/roles"
-          className="underline-offset-4 hover:underline"
-        >
-          Mocks de roles y permisos
         </Link>
       </p>
     </main>

@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { EscudoClub } from "@/ui/features/mocks-roles/escudo-club";
+import { EscudoClub } from "@/ui/compartidos/escudo-club";
 import {
-  RUTAS_SHELL_APP,
   ShellAdmin,
-} from "@/ui/features/mocks-roles/shell-admin";
+} from "@/ui/compartidos/shell-admin";
 import { inicialesDesdeNombre } from "@/dominio/slug";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
 import {
@@ -48,9 +47,6 @@ export default async function PaginaAdminClub({
       rol={sesion.esSuperAdmin ? "super-admin" : "admin"}
       activo="inicio"
       esMultiClub={!sesion.esSuperAdmin && sesion.membresias.length > 1}
-      salirHref="/auth/salir"
-      rutas={RUTAS_SHELL_APP}
-      pie={null}
     >
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <div className="flex items-center gap-3">

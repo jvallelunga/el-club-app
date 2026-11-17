@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@/ui/nativos/input";
 import { Label } from "@/ui/nativos/label";
-import { BotonPrincipal } from "@/ui/features/mocks-roles/marco-mock";
+import { BotonPrincipal } from "@/ui/compartidos/marco";
 import { CampoColor } from "@/ui/features/club/campo-color";
 import { VistaPreviaClub } from "@/ui/features/club/vista-previa-club";
 import { slugDesdeNombre } from "@/dominio/slug";

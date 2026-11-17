@@ -13,13 +13,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/nativos/dialog";
-import { BotonPrincipal } from "@/ui/features/mocks-roles/marco-mock";
-import { EscudoClub } from "@/ui/features/mocks-roles/escudo-club";
+import { BotonPrincipal } from "@/ui/compartidos/marco";
+import { EscudoClub } from "@/ui/compartidos/escudo-club";
 import {
-  RUTAS_SHELL_APP,
   ShellAdmin,
   type RolShell,
-} from "@/ui/features/mocks-roles/shell-admin";
+} from "@/ui/compartidos/shell-admin";
 import { avisoTrasInvitar } from "@/dominio/ingreso-email";
 import { inicialesDesdeNombre } from "@/dominio/slug";
 
@@ -193,9 +192,6 @@ export function PantallaAdminsReal({
       rol={rol}
       activo="admins"
       esMultiClub={esMultiClub}
-      salirHref="/auth/salir"
-      rutas={RUTAS_SHELL_APP}
-      pie={null}
       salirEnMobile={false}
     >
       <div className="flex max-w-3xl flex-col gap-6">

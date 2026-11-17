@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
 import {
-  RUTAS_SHELL_APP,
   ShellAdmin,
-} from "@/ui/features/mocks-roles/shell-admin";
+} from "@/ui/compartidos/shell-admin";
 import { FormularioNuevoClubReal } from "@/ui/features/admin/formulario-nuevo-club";
 import { actualizarClub } from "@/datos/comandos/clubes";
 import { superAdminRequerido } from "@/datos/consultas/acceso";
@@ -36,9 +35,6 @@ export default async function PaginaEditarClub({
       atras={{ href: "/super-admin", etiqueta: "Volver a clubes" }}
       rol="super-admin"
       activo="clubes"
-      salirHref="/auth/salir"
-      rutas={RUTAS_SHELL_APP}
-      pie={null}
       salirEnMobile={false}
     >
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
