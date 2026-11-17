@@ -174,6 +174,10 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 - Los partidos que le quedan a un equipo descalificado se tratan como W.O. a favor del rival. Los ya finalizados se mantienen.
 - Solo el admin puede descalificar, con motivo obligatorio y un registro que no se borra.
 
+### Issues
+
+- El 17/11/2026 16:49 Jerónimo definió el estado de los issues con tres etiquetas: `backlog` (idea a futuro, todavía no especificada), `ready` (especificada, con frame y criterios de aceptación; Claude puede tomarla) e `in progress` (en desarrollo). Claude solo toma issues `ready`; al empezar, pasa la etiqueta a `in progress` y saca `ready`. No toma `backlog`. Al mergear el PR, el issue se cierra con «Closes #N». Los issues anteriores se borraron (17/11/2026 16:49).
+
 ### Redacción
 
 - Se dice **«Staff M17 y M19»**, nunca «Bloque».
@@ -188,3 +192,4 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 - Merge normal, nunca squash. Producción solo con el OK explícito de Jerónimo.
 - Los mocks de UI se aprueban antes de aplicarlos.
 - Rama de integración: `desarrollo`. `main` es producción, cuando exista.
+- Los issues se etiquetan con `backlog`, `ready` o `in progress`. El desarrollo solo toma los `ready` (17/11/2026 16:49).

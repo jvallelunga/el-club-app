@@ -2,7 +2,7 @@
 name: Feature
 about: Nueva funcionalidad o cambio de producto, con criterios de aceptación y frame.
 title: ""
-labels: ""
+labels: "backlog"
 assignees: ""
 ---
 

@@ -61,11 +61,21 @@ Antes de cada commit: lint solo de los archivos cambiados y `npm run typecheck`.
 
 Se trabaja de a una cosa, en el orden del roadmap de `README.md` / `features/README.md`.
 
-1. Tomá un issue de GitHub.
-2. Leé `features/<feature>.md` y el frame (si hay, en `docs/frames/` o linkeado en el issue).
-3. Si hay UI nueva: primero los **mocks** (pantallas pulidas, con layout real de mobile, tablet y desktop) en un PR. Esperá la **aprobación de Jerónimo en ese PR** antes de implementar de verdad (migración, RLS, pantallas reales).
-4. Recién después implementá, en el mismo issue o en un PR siguiente, según lo que pida el issue.
-5. No inventes requisitos, datos de un club, ni decisiones de producto. Si falta algo, preguntá en el issue o en el PR y dejalo como pregunta abierta.
+Los issues llevan una etiqueta de estado:
+
+- `backlog`: idea a futuro, todavía no especificada. **No la tomes.**
+- `ready`: especificada, con frame y criterios de aceptación. **Solo tomás issues `ready`.**
+- `in progress`: se está desarrollando.
+
+Al empezar un issue `ready`, cambiá la etiqueta a `in progress` y sacá `ready`. En el PR usá `Closes #N` para que el issue se cierre al mergear.
+
+1. Tomá un issue de GitHub que esté en `ready` (nunca uno en `backlog`).
+2. Pasalo a `in progress` y sacá `ready`.
+3. Leé `features/<feature>.md` y el frame (si hay, en `docs/frames/` o linkeado en el issue).
+4. Si hay UI nueva: primero los **mocks** (pantallas pulidas, con layout real de mobile, tablet y desktop) en un PR. Esperá la **aprobación de Jerónimo en ese PR** antes de implementar de verdad (migración, RLS, pantallas reales).
+5. Recién después implementá, en el mismo issue o en un PR siguiente, según lo que pida el issue.
+6. El PR contra `desarrollo` incluye `Closes #N`. Al mergear, el issue se cierra.
+7. No inventes requisitos, datos de un club, ni decisiones de producto. Si falta algo, preguntá en el issue o en el PR y dejalo como pregunta abierta.
 
 ## Reglas
 
