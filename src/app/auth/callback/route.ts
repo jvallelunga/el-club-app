@@ -1,34 +1,47 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { destinoTrasIngreso } from "@/dominio/permisos";
 import { hayConfiguracionSupabase } from "@/datos/env-supabase";
 import { cargarSesion } from "@/datos/consultas/sesion";
-import { supabaseServidor } from "@/datos/supabase-servidor";
+import {
+  clienteAuthConCookies,
+  guardarSiguiente,
+  leerSiguiente,
+} from "@/datos/supabase-auth-http";
 
-export async function GET(request: Request) {
-  const url = new URL(request.url);
+export const dynamic = "force-dynamic";
+
+export async function GET(request: NextRequest) {
+  const url = request.nextUrl;
   const origen = url.origin;
   const code = url.searchParams.get("code");
-  const siguiente = url.searchParams.get("siguiente");
+  const errorOAuth = url.searchParams.get("error") ?? url.searchParams.get("error_code");
 
   if (!hayConfiguracionSupabase()) {
     return NextResponse.redirect(new URL("/ingreso?error=config", origen));
   }
 
-  if (!code) {
+  if (errorOAuth || !code) {
     return NextResponse.redirect(new URL("/ingreso?error=google", origen));
   }
 
-  const supabase = await supabaseServidor();
+  const { supabase, aplicarCookies } = clienteAuthConCookies(request);
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    return NextResponse.redirect(new URL("/ingreso?error=google", origen));
+    const fallo = NextResponse.redirect(new URL("/ingreso?error=google", origen));
+    aplicarCookies(fallo);
+    return fallo;
   }
 
   const sesion = await cargarSesion(supabase);
+  const siguiente =
+    leerSiguiente(request) ?? url.searchParams.get("siguiente");
   const destino = destinoTrasIngreso({
     esSuperAdmin: Boolean(sesion?.esSuperAdmin),
     clubes: sesion?.membresias ?? [],
     siguiente,
   });
-  return NextResponse.redirect(new URL(destino, origen));
+  const respuesta = NextResponse.redirect(new URL(destino, origen));
+  aplicarCookies(respuesta);
+  guardarSiguiente(respuesta, null, url.protocol === "https:");
+  return respuesta;
 }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import {
-  CLUB_CARDOS,
+  CLUB_NORTE,
   CLUB_EJEMPLO,
   PERSONA_MARTIN,
   RUTAS_MOCK,
@@ -16,7 +16,7 @@ import {
 } from "@/ui/features/mocks-roles/marco-mock";
 import { Button } from "@/ui/nativos/button";
 
-const CLUBES_DE_MARTIN = [CLUB_CARDOS, CLUB_EJEMPLO];
+const CLUBES_DE_MARTIN = [CLUB_NORTE, CLUB_EJEMPLO];
 
 export default function PaginaElegirClub() {
   return (

@@ -39,7 +39,7 @@ Dejar en este repo el stack que ya funcionó en [copa-raices](https://github.com
 - copa-raices queda congelado como base y ejemplo; el código se copia cuando haga falta (15/11/2026).
 - Se trabaja de a una cosa: este ítem es solo la base (15/11/2026).
 - La columna de alta se llama `creado_en`, como en copa-raices, no `created_at` (15/11/2026).
-- No se siembra Los Cardos todavía: eso entra con la personalización del ítem 2.
+- No se siembra ningún club fijo (tampoco Los Cardos): el primer club real se crea con el formulario cuando toque (17/11/2026 08:26).
 - Tipografía de arranque: solo Inter. Bodoni y Montserrat eran de la identidad de Copa Raíces.
 
 ## Decisión: mobile first, y optimizado para tablet y desktop

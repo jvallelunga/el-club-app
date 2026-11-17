@@ -2,7 +2,7 @@
 -- Idempotente. Se aplica solo en el proyecto de desarrollo, con OK explícito
 -- para producción.
 --
--- El dominio raíz del club (ej. loscardosrc.com.ar) es el SITIO WEB del club,
+-- El dominio raíz del club (ej. clubejemplo.com.ar) es el SITIO WEB del club,
 -- no la app. La app vive en subdominios por superficie:
 --   admin.<dominio_base>  → administrador
 --   vivo.<dominio_base>   → partidos en vivo / tablero
@@ -29,7 +29,7 @@ alter table public.club
   add column if not exists dominio_base text;
 
 comment on column public.club.dominio_base is
-  'Dominio base del club, sin esquema ni www (ej. loscardosrc.com.ar). El sitio web vive en ese dominio; la app usa <superficie>.<dominio_base>. Nullable hasta que el club tenga dominio propio.';
+  'Dominio base del club, sin esquema ni www (ej. clubejemplo.com.ar). El sitio web vive en ese dominio; la app usa <superficie>.<dominio_base>. Nullable hasta que el club tenga dominio propio.';
 
 create unique index if not exists club_dominio_base_key
   on public.club (dominio_base)

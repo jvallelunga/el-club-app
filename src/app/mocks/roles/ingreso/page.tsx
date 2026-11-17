@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Button } from "@/ui/nativos/button";
 import { Separator } from "@/ui/nativos/separator";
 import {
-  CLUB_CARDOS,
+  CLUB_NORTE,
   PERSONA_LUCIA,
   RUTAS_MOCK,
 } from "@/ui/features/mocks-roles/datos-ejemplo";
@@ -19,7 +19,7 @@ const CASOS = [
     etiqueta: "Entrar como Super Admin",
   },
   {
-    href: `${RUTAS_MOCK.inicioClub(CLUB_CARDOS.slug)}?como=${PERSONA_LUCIA.id}`,
+    href: `${RUTAS_MOCK.inicioClub(CLUB_NORTE.slug)}?como=${PERSONA_LUCIA.id}`,
     etiqueta: "Entrar como Admin de un club",
   },
   {
@@ -37,7 +37,7 @@ export default function PaginaIngreso() {
     <MarcoAcceso
       panel={
         <div className="flex max-w-sm flex-col gap-8">
-          <EscudoClub club={CLUB_CARDOS} tamano="xl" />
+          <EscudoClub club={CLUB_NORTE} tamano="xl" />
           <div className="flex flex-col gap-3">
             <p className="text-sm font-medium tracking-wide text-muted-foreground">
               El Club App

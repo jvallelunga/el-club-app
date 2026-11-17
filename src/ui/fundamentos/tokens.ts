@@ -2,7 +2,7 @@
  * Tokens de tema de El Club.
  * La paleta de cada club se carga en el ítem 2 (personalización).
  * Estos valores son un neutro provisional para que la app renderice,
- * no son la marca de Los Cardos ni de ningún otro club.
+ * no son la marca de ningún club.
  */
 
 export type PaletaClub = {

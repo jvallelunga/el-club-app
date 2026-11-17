@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Button } from "@/ui/nativos/button";
 import { IconoGoogle } from "@/ui/features/mocks-roles/icono-google";
@@ -30,10 +29,6 @@ export default async function PaginaIngreso({
       );
     }
   }
-
-  const hrefGoogle = params.siguiente
-    ? `/auth/google?siguiente=${encodeURIComponent(params.siguiente)}`
-    : "/auth/google";
 
   const mensajeError =
     params.error === "google"
@@ -79,16 +74,19 @@ export default async function PaginaIngreso({
           </p>
         ) : null}
 
-        <Button
-          asChild
-          variant="outline"
-          className="h-12 w-full rounded-xl border-border bg-white text-base text-foreground hover:bg-muted"
-        >
-          <Link href={hrefGoogle}>
+        <form action="/auth/google" method="post">
+          {params.siguiente ? (
+            <input type="hidden" name="siguiente" value={params.siguiente} />
+          ) : null}
+          <Button
+            type="submit"
+            variant="outline"
+            className="h-12 w-full rounded-xl border-border bg-white text-base text-foreground hover:bg-muted"
+          >
             <IconoGoogle className="size-5" />
             Continuar con Google
-          </Link>
-        </Button>
+          </Button>
+        </form>
       </ContenidoMock>
     </MarcoAcceso>
   );

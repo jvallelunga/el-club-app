@@ -1,12 +1,22 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { hayConfiguracionSupabase } from "@/datos/env-supabase";
-import { supabaseServidor } from "@/datos/supabase-servidor";
+import {
+  clienteAuthConCookies,
+  guardarSiguiente,
+} from "@/datos/supabase-auth-http";
 
-export async function GET(request: Request) {
-  const origen = new URL(request.url).origin;
+export const dynamic = "force-dynamic";
+
+export async function GET(request: NextRequest) {
+  const origen = request.nextUrl.origin;
+  const seguro = request.nextUrl.protocol === "https:";
+  const respuesta = NextResponse.redirect(new URL("/ingreso", origen));
+
   if (hayConfiguracionSupabase()) {
-    const supabase = await supabaseServidor();
+    const { supabase, aplicarCookies } = clienteAuthConCookies(request);
     await supabase.auth.signOut();
+    aplicarCookies(respuesta);
   }
-  return NextResponse.redirect(new URL("/ingreso", origen));
+  guardarSiguiente(respuesta, null, seguro);
+  return respuesta;
 }

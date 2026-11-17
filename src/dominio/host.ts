@@ -1,10 +1,10 @@
 /**
  * Resolución de hosts de la app.
  *
- * El dominio raíz del club (ej. loscardosrc.com.ar) es el SITIO WEB del club,
+ * El dominio raíz del club (ej. clubejemplo.com.ar) es el SITIO WEB del club,
  * no la app. La app vive en subdominios por superficie:
- *   admin.loscardosrc.com.ar → administrador
- *   vivo.loscardosrc.com.ar  → partidos en vivo / tablero
+ *   admin.clubejemplo.com.ar → administrador
+ *   vivo.clubejemplo.com.ar  → partidos en vivo / tablero
  *
  * En la base se guarda solo el dominio base (`club.dominio_base`). Las
  * superficies conocidas viven acá, en código, y se pueden sumar después.
@@ -76,4 +76,28 @@ export function hostSuperficie(
   superficie: SuperficieApp,
 ): string {
   return `${superficie}.${normalizarHost(dominioBase)}`;
+}
+
+const FORMATO_DOMINIO_BASE =
+  /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
+
+/**
+ * Valida un dominio base de club (sin esquema ni www). Vacío es válido
+ * porque el campo es opcional: sin dominio, se usa /c/<slug>.
+ * Devuelve el mensaje de error, o null si está bien.
+ */
+export function validarDominioBase(valor: string): string | null {
+  const recortado = valor.trim();
+  if (!recortado) return null;
+  const normalizado = recortado.toLowerCase();
+  if (normalizado.startsWith("www.")) {
+    return "El dominio base va sin www. El sitio web puede usar www; en la app se guarda el dominio raíz.";
+  }
+  if (normalizado !== recortado) {
+    return "Escribí el dominio en minúsculas, sin esquema (sin https://).";
+  }
+  if (!FORMATO_DOMINIO_BASE.test(normalizado)) {
+    return "Ese dominio no se ve válido. Ej.: clubejemplo.com.ar";
+  }
+  return null;
 }

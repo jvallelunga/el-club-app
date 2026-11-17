@@ -14,12 +14,12 @@ que ya circularon (por ejemplo por Instagram).
 ## Alcance
 
 - Guardar en `club.dominio_base` el dominio base del club, nullable y único
-  (por ejemplo `loscardosrc.com.ar`), sin esquema, sin `www` y en minúsculas.
+  (por ejemplo `clubejemplo.com.ar`), sin esquema, sin `www` y en minúsculas.
 - Resolver el host `<superficie>.<dominio_base>` a `(club, superficie)`. Las
   superficies conocidas viven en código: `admin` (administrador) y `vivo`
   (partidos en vivo / tablero). Se pueden sumar después sin cambiar el
   modelo.
-- El dominio raíz (`loscardosrc.com.ar`) y `www.` no se interpretan como app:
+- El dominio raíz (`clubejemplo.com.ar`) y `www.` no se interpretan como app:
   son el sitio web del club.
 - Si un club todavía no tiene dominio propio, el fallback es
   `/c/<slug>/admin` y `/c/<slug>/vivo`.

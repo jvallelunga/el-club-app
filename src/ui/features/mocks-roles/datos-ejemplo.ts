@@ -2,6 +2,7 @@
  * Datos de ejemplo para los mocks de roles y permisos.
  * Los nombres y emails son ficticios y están rotulados como ejemplo.
  * El email real del Super Admin no va en el repo.
+ * Ningún club real va hardcodeado: los mocks usan clubes de ejemplo.
  */
 
 export type ClubEjemplo = {
@@ -19,23 +20,26 @@ export type PersonaEjemplo = {
   esEjemplo: true;
 };
 
-export const CLUB_CARDOS: ClubEjemplo = {
-  slug: "los-cardos",
-  nombre: "Los Cardos Rugby Club",
-  esEjemplo: false,
-  escudo: "/mocks/roles/los-cardos.png",
-  iniciales: "LC",
+export const CLUB_NORTE: ClubEjemplo = {
+  slug: "club-de-ejemplo-del-norte",
+  nombre: "Club de ejemplo del Norte",
+  esEjemplo: true,
+  escudo: null,
+  iniciales: "EN",
 };
 
-export const CLUB_EJEMPLO: ClubEjemplo = {
-  slug: "club-ejemplo-del-sur",
-  nombre: "Club Ejemplo del Sur",
+export const CLUB_SUR: ClubEjemplo = {
+  slug: "club-de-ejemplo-del-sur",
+  nombre: "Club de ejemplo del Sur",
   esEjemplo: true,
   escudo: null,
   iniciales: "ES",
 };
 
-export const CLUBES_EJEMPLO: ClubEjemplo[] = [CLUB_CARDOS, CLUB_EJEMPLO];
+/** @deprecated usá CLUB_SUR. Se deja un alias para no romper imports viejos. */
+export const CLUB_EJEMPLO = CLUB_SUR;
+
+export const CLUBES_EJEMPLO: ClubEjemplo[] = [CLUB_NORTE, CLUB_SUR];
 
 export const PERSONA_LUCIA: PersonaEjemplo = {
   id: "lucia-fernandez",
@@ -66,22 +70,12 @@ export const PERSONA_ANA: PersonaEjemplo = {
 };
 
 export const ADMINS_POR_CLUB: Record<string, PersonaEjemplo[]> = {
-  [CLUB_CARDOS.slug]: [PERSONA_LUCIA, PERSONA_MARTIN],
-  [CLUB_EJEMPLO.slug]: [PERSONA_MARTIN, PERSONA_SOFIA],
+  [CLUB_NORTE.slug]: [PERSONA_LUCIA, PERSONA_MARTIN],
+  [CLUB_SUR.slug]: [PERSONA_MARTIN, PERSONA_SOFIA],
 };
 
 export function clubPorSlug(slug: string): ClubEjemplo | undefined {
   return CLUBES_EJEMPLO.find((club) => club.slug === slug);
-}
-
-export function slugDesdeNombre(nombre: string): string {
-  return nombre
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 }
 
 export const RUTAS_MOCK = {
@@ -91,7 +85,16 @@ export const RUTAS_MOCK = {
   elegirClub: "/mocks/roles/elegir-club",
   superAdmin: "/mocks/roles/super-admin",
   nuevoClub: "/mocks/roles/super-admin/nuevo-club",
+  nuevoClubErrores: "/mocks/roles/super-admin/nuevo-club?errores=1",
   nuevoClubCreado: "/mocks/roles/super-admin/nuevo-club/creado",
   admins: (slug: string) => `/mocks/roles/super-admin/clubes/${slug}/admins`,
   inicioClub: (slug: string) => `/mocks/roles/clubes/${slug}`,
+} as const;
+
+export const CLUB_CREADO_EJEMPLO = {
+  nombre: "Club de ejemplo",
+  slug: "club-de-ejemplo",
+  primario: "#1f4b3a",
+  secundario: "#d8a017",
+  dominioBase: "clubejemplo.com.ar",
 } as const;

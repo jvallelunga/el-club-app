@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  CLUB_CARDOS,
+  CLUB_NORTE,
   CLUB_EJEMPLO,
   PERSONA_LUCIA,
   PERSONA_MARTIN,
@@ -102,7 +102,7 @@ export default async function PaginaInicioClub({
           </Button>
         ) : null}
 
-        {club.slug === CLUB_CARDOS.slug && esMultiClub ? (
+        {club.slug === CLUB_NORTE.slug && esMultiClub ? (
           <p className="text-xs text-muted-foreground md:hidden">
             También sos Admin de {CLUB_EJEMPLO.nombre}.{" "}
             <Link href={RUTAS_MOCK.elegirClub} className="underline-offset-2 hover:underline">

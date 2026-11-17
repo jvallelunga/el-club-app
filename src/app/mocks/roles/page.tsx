@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import {
-  CLUB_CARDOS,
+  CLUB_NORTE,
   PERSONA_ANA,
   PERSONA_LUCIA,
   PERSONA_MARTIN,
@@ -20,14 +20,19 @@ const RECORRIDOS = [
     href: RUTAS_MOCK.ingreso,
   },
   {
+    titulo: "Crear un club",
+    detalle: "Formulario completo: nombre, identificador, escudo, paleta y dominio.",
+    href: RUTAS_MOCK.nuevoClub,
+  },
+  {
     titulo: "Super Admin",
-    detalle: "Lista de clubes, crear un club y nombrar Admins.",
+    detalle: "Lista de clubes, crear un club (formulario completo) y nombrar Admins.",
     href: RUTAS_MOCK.superAdmin,
   },
   {
     titulo: "Admin de un club",
-    detalle: `${PERSONA_LUCIA.nombre} entra directo a ${CLUB_CARDOS.nombre}.`,
-    href: `${RUTAS_MOCK.inicioClub(CLUB_CARDOS.slug)}?como=${PERSONA_LUCIA.id}`,
+    detalle: `${PERSONA_LUCIA.nombre} entra directo a ${CLUB_NORTE.nombre}.`,
+    href: `${RUTAS_MOCK.inicioClub(CLUB_NORTE.slug)}?como=${PERSONA_LUCIA.id}`,
   },
   {
     titulo: "Admin de dos clubes",
@@ -46,22 +51,23 @@ const PANTALLAS = [
   { nombre: "Sin acceso", href: RUTAS_MOCK.sinAcceso },
   { nombre: "Elegir club", href: RUTAS_MOCK.elegirClub },
   { nombre: "Clubes (Super Admin)", href: RUTAS_MOCK.superAdmin },
-  { nombre: "Nuevo club", href: RUTAS_MOCK.nuevoClub },
+  { nombre: "Crear club", href: RUTAS_MOCK.nuevoClub },
+  { nombre: "Crear club (con errores)", href: RUTAS_MOCK.nuevoClubErrores },
   {
     nombre: "Club creado",
-    href: `${RUTAS_MOCK.nuevoClubCreado}?nombre=${encodeURIComponent("Club Nuevo Ejemplo")}&slug=club-nuevo-ejemplo`,
+    href: `${RUTAS_MOCK.nuevoClubCreado}?nombre=${encodeURIComponent("Club de ejemplo")}&slug=club-de-ejemplo&primario=${encodeURIComponent("#1f4b3a")}&secundario=${encodeURIComponent("#d8a017")}&dominio=clubejemplo.com.ar`,
   },
   {
-    nombre: "Admins de Los Cardos",
-    href: RUTAS_MOCK.admins(CLUB_CARDOS.slug),
+    nombre: "Admins del club de ejemplo",
+    href: RUTAS_MOCK.admins(CLUB_NORTE.slug),
   },
   {
     nombre: "Confirmar quitar Admin",
-    href: `${RUTAS_MOCK.admins(CLUB_CARDOS.slug)}?confirmar=lucia-fernandez`,
+    href: `${RUTAS_MOCK.admins(CLUB_NORTE.slug)}?confirmar=lucia-fernandez`,
   },
   {
-    nombre: "Inicio del admin (Los Cardos)",
-    href: `${RUTAS_MOCK.inicioClub(CLUB_CARDOS.slug)}?como=${PERSONA_LUCIA.id}`,
+    nombre: "Inicio del admin (club de ejemplo)",
+    href: `${RUTAS_MOCK.inicioClub(CLUB_NORTE.slug)}?como=${PERSONA_LUCIA.id}`,
   },
 ];
 

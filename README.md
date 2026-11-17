@@ -1,6 +1,6 @@
 # El Club
 
-App del club para organizar torneos y, más adelante, el día a día del club. Las funcionalidades son las mismas para todos los clubes; cada uno personaliza su marca. El primer caso es **Los Cardos Rugby Club** (Tandil).
+App del club para organizar torneos y, más adelante, el día a día del club. Las funcionalidades son las mismas para todos los clubes; cada uno personaliza su marca. El primer club real va a ser **Los Cardos Rugby Club** (Tandil), pero ningún club va fijo en el código, los mocks ni los datos de ejemplo.
 
 Este repo arranca de cero. [copa-raices](https://github.com/jvallelunga/copa-raices) queda congelado como base y ejemplo: el código se copia de ahí cuando haga falta.
 
@@ -22,7 +22,7 @@ Cada club define lo suyo, sin cambiar las funcionalidades:
 - **Dominio** propio.
 - **Nombre e ícono de la PWA** (En vivo, equipo, mesa, admin).
 
-El primer club es Los Cardos. Hasta que haya más de uno, la app lleva su nombre y su escudo.
+El primer club real va a ser Los Cardos Rugby Club (Tandil). Ningún club —tampoco ese— va fijo en el código, los mocks ni los datos de ejemplo: cada uno se crea con el formulario (17/11/2026 08:26).
 
 ## Cómo levantarla en local
 
@@ -50,7 +50,7 @@ Se trabaja **de a una cosa**. No se arranca el siguiente ítem hasta que el ante
 
 1. [Base del proyecto](features/base-del-proyecto.md) ([#1](https://github.com/jvallelunga/el-club-app/issues/1)): copiar el stack Next.js + Supabase desde copa-raices. Los ambientes separados de desarrollo y producción quedan para después.
 2. [Roles y permisos por club](features/roles-y-permisos.md) ([#15](https://github.com/jvallelunga/el-club-app/issues/15)): un Super Admin con acceso a todo, y un Admin por club con acceso a todo lo de su club.
-3. [Personalización por club](features/personalizacion-por-club.md) ([#2](https://github.com/jvallelunga/el-club-app/issues/2)): paleta, escudo, nombre y PWA, con Los Cardos como primer club.
+3. [Personalización por club](features/personalizacion-por-club.md) ([#2](https://github.com/jvallelunga/el-club-app/issues/2)): paleta, escudo, nombre y PWA. Los Cardos es el primer club real, pero no va fijo en el código (17/11/2026 08:26).
 4. [Dominio](features/dominio.md) ([#9](https://github.com/jvallelunga/el-club-app/issues/9)): el dominio raíz es el sitio web del club; la app usa subdominios por superficie (`admin`, `vivo`). El link viejo de copa-raices redirige.
 
 ### Paso 2
@@ -71,7 +71,7 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 ### Producto
 
 - El producto es una **app del club**, no una app de un solo torneo.
-- Es **multi-club** a futuro: cada club personaliza nombre, escudo o logo, paleta de colores, dominio y PWA. Las funcionalidades son las mismas para todos. Los Cardos Rugby Club (Tandil) es el primer caso.
+- Es **multi-club** a futuro: cada club personaliza nombre, escudo o logo, paleta de colores, dominio y PWA. Las funcionalidades son las mismas para todos. Los Cardos Rugby Club (Tandil) es el primer club real, pero no va fijo en el código (17/11/2026 08:26).
 - [copa-raices](https://github.com/jvallelunga/copa-raices) queda como base y ejemplo. El código se copia de ahí cuando haga falta.
 - Se trabaja **de a una cosa**.
 
@@ -91,7 +91,8 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 ### Personalización por club
 
 - Cada club tiene nombre, escudo o logo, paleta, dominio, y nombre e ícono de la PWA.
-- Hasta que exista el ítem de personalización, Los Cardos es el club con el que se prueba todo.
+- Hasta que exista el ítem de personalización, se prueba con datos genéricos de ejemplo, no con un club real fijo (17/11/2026 08:26).
+- Ningún club (tampoco Los Cardos) puede quedar hardcodeado en el código, los mocks, el copy ni los datos de ejemplo. Los Cardos Rugby Club (Tandil) es el primer club real, y se va a crear con el formulario cuando toque, no aparece precargado (17/11/2026 08:26).
 
 ### Roles y permisos
 
@@ -105,11 +106,13 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 - El DER oficial solo refleja lo migrado. El modelo de roles está en [features/roles-y-permisos-der-propuesto.mmd](features/roles-y-permisos-der-propuesto.mmd) hasta que haya migración (16/11/2026).
 - Los mocks de las pantallas están en `/mocks/roles`, para aprobarlos antes de implementar el login y la migración.
 - Se implementó el modelo (`usuario`, `super_admin`, `club_miembro`, invitaciones), la migración idempotente, las políticas RLS, el ingreso con Google y las pantallas reales. El DER oficial se actualizó en el mismo commit (16/11/2026 18:00).
+- El formulario real de crear club todavía no se arma completo: primero se aprueban los mocks en `/mocks/roles/super-admin/nuevo-club` (también en `/mocks/crear-club`). Incluyen el formulario vacío (nombre, identificador editable, escudo, paleta y dominio base opcional), el estado con errores de validación y la pantalla de club creado, con botón para nombrar Admins (17/11/2026 08:26).
+- El ingreso con Google arranca solo por POST (no por un `<Link>` que prefetch) y el `redirect_to` de OAuth es una URL limpia (`/auth/callback`), sin `?siguiente=`. El destino interno va en una cookie httpOnly. Las cookies de PKCE y de sesión se copian al `NextResponse` de redirección, para que no se pierda el state ni la sesión (17/11/2026 08:34).
 - El email del Super Admin no va en el repo; se siembra en la base de desarrollo con la plantilla `scripts/sembrar-super-admin.sql` (16/11/2026 18:00).
 
 ### Dominio
 
-- El dominio raíz del club (por ejemplo `loscardosrc.com.ar`) es el **sitio web** del club, no la app (16/11/2026 17:43).
+- El dominio raíz del club (por ejemplo `clubejemplo.com.ar`) es el **sitio web** del club, no la app (16/11/2026 17:43).
 - La app vive en subdominios por superficie: `admin.<dominio_base>` (administrador) y `vivo.<dominio_base>` (partidos en vivo / tablero). Más adelante se pueden sumar superficies en código, sin cambiar el modelo (16/11/2026 17:43).
 - En la base se guarda `club.dominio_base` (nullable, único), no cada host. Se eligió esa columna en vez de una tabla `club_dominio` porque un club tiene un solo dominio base y las superficies se derivan en código (16/11/2026 17:43).
 - Sin dominio propio, el fallback es `/c/<slug>/admin` y `/c/<slug>/vivo` (16/11/2026 17:43).

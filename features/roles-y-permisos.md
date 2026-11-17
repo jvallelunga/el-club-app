@@ -35,7 +35,7 @@ Las funciones `interno.es_super_admin()` e `interno.es_admin_club(club_id)` son 
 
 ## Pantallas (mocks)
 
-Pensadas primero para celular y optimizadas para tablet y desktop (mismo markup, por breakpoints). Viven en `/mocks/roles` y se recorren desde el [índice](/mocks/roles). En escritorio, el ingreso va en una tarjeta centrada (con un panel del club a partir de `lg`); las listas de clubes usan una grilla; el admin entra en una cáscara reutilizable (barra superior en tablet, sidebar en desktop). Usan datos de ejemplo (nombres y emails ficticios, rotulados como ejemplo). No hay login real.
+Pensadas primero para celular y optimizadas para tablet y desktop (mismo markup, por breakpoints). Viven en `/mocks/roles` y se recorren desde el [índice](/mocks/roles). En escritorio, el ingreso va en una tarjeta centrada (con un panel del club a partir de `lg`); las listas de clubes usan una grilla; el admin entra en una cáscara reutilizable (barra superior en tablet, sidebar en desktop). Usan datos de ejemplo (nombres y emails ficticios, rotulados como ejemplo). Ningún club real —tampoco Los Cardos— aparece fijo en estos mocks. No hay login real.
 
 | Pantalla | Ruta |
 | --- | --- |
@@ -44,7 +44,8 @@ Pensadas primero para celular y optimizadas para tablet y desktop (mismo markup,
 | Sin acceso | `/mocks/roles/sin-acceso` |
 | Elegir club (solo si es Admin de más de un club) | `/mocks/roles/elegir-club` |
 | Lista de clubes (Super Admin) | `/mocks/roles/super-admin` |
-| Crear club | `/mocks/roles/super-admin/nuevo-club` |
+| Crear club (formulario completo) | `/mocks/roles/super-admin/nuevo-club` (también `/mocks/crear-club`) |
+| Crear club con errores de validación | `/mocks/roles/super-admin/nuevo-club?errores=1` |
 | Club creado | `/mocks/roles/super-admin/nuevo-club/creado` |
 | Admins de un club (agregar por email / quitar, con confirmación) | `/mocks/roles/super-admin/clubes/[slug]/admins` |
 | Inicio del admin del club (placeholder) | `/mocks/roles/clubes/[slug]` |
@@ -77,3 +78,7 @@ Flujos:
 - Toda la app es mobile first y se optimiza para tablet y desktop: no se deja una columna de celular en pantallas grandes (16/11/2026 17:31 y 17:32).
 - Se implementó el modelo, la migración (con invitaciones y `club.dominio_base`), las políticas RLS, el ingreso con Google vía Supabase Auth y las pantallas reales con la misma cáscara responsive (16/11/2026 18:00).
 - El email del Super Admin se siembra directo en la base de desarrollo, con la plantilla `scripts/sembrar-super-admin.sql` (sin el email en el repo) (16/11/2026 18:00).
+- El formulario real de crear club no se implementa hasta aprobar los mocks del formulario completo: vacío (nombre, identificador sugerido y editable, escudo con vista previa, paleta primario/secundario con vista previa, dominio base opcional con la explicación de `admin.` / `vivo.` y el fallback `/c/<slug>`), estado con errores de validación, y club creado con lo cargado y un botón para nombrar Admins (17/11/2026 08:26).
+- Ningún club (tampoco Los Cardos) puede quedar hardcodeado en el código, los mocks, el copy ni los datos de ejemplo (17/11/2026 08:26).
+- El ingreso con Google arranca solo por POST; el `redirect_to` de OAuth es `/auth/callback` sin query; el destino interno va en cookie; las cookies de PKCE y de sesión se aplican en la redirección (17/11/2026 08:34).
+

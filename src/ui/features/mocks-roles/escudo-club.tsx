@@ -41,7 +41,6 @@ export function EscudoClub({
       )}
     >
       {club.escudo ? (
-        // Escudo de Los Cardos, copiado de los mocks de copa-raices.
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={club.escudo}
