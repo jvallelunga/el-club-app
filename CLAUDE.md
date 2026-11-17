@@ -12,14 +12,16 @@ El mapa de features está en `features/README.md`. El modelo aplicado está en `
 
 ## Estado actual (rama `desarrollo`)
 
-En `desarrollo` está la base del proyecto (home «El Club App», migración inicial de `club` con RLS y sin políticas, paleta neutra provisional). Roles, login, personalización por club y el resto del paso 1 **todavía no están mergeados**. No asumas que una pantalla o una tabla existe: confirmalo en el código y en el DER de esta rama.
+En `desarrollo` ya están implementados, además de la base: roles (Super Admin y Admin por club), ingreso solo por invitación (Google y magic link), personalización estética del club, datos de contacto y redes, sedes e instalaciones, el tema de producto naranja y el cajón ☰ de navegación debajo de `lg`. El DER oficial refleja ese modelo (club, usuario, membresías, invitaciones, redes, sedes, tipos de instalación e instalaciones), con RLS. Si dudás de una pantalla o una tabla puntual, confirmalo en el código y en el DER; no trates roles, login, tema, cajón o RLS como trabajo pendiente de la base.
+
+Rutas reales de referencia: `/ingreso`, `/super-admin`, `/c/<slug>/admin` (Club, Sedes, Admins). Los mocks de UI siguen en `/mocks/roles`.
 
 ## Stack
 
 - Node 22 (`.nvmrc`; `nvm use`).
 - Next.js 16.4.3 (App Router), React 19.3.1, TypeScript, Tailwind 4, shadcn (estilo radix-nova, `baseColor` neutral, componentes en `src/ui/nativos`).
 - Vitest, ESLint (`eslint-config-next` 16.4.3) con reglas de capas.
-- Supabase. Hoy el cliente es `@supabase/supabase-js` (`src/datos/supabase.ts`). Cuando haya sesión en el servidor, usá `@supabase/ssr` (cookies), no el cliente de browser.
+- Supabase, con `@supabase/supabase-js` y `@supabase/ssr`. La sesión del servidor va en `src/datos/supabase-servidor.ts` (`createServerClient` de `@supabase/ssr`, cookies). No uses el cliente de browser para la sesión de servidor.
 - Vercel (`vercel.json`, región `gru1`).
 
 ## Estructura del repo
@@ -111,4 +113,4 @@ Se trabaja de a una cosa, en el orden del roadmap de `README.md` / `features/REA
 
 ## Cómo levantarla
 
-Hace falta Node 22. Copiá `.env.example` a `.env.local` (las claves no van al repo). `npm install` y `npm run dev`. La home anda sin claves de Supabase; los helpers de `src/datos/supabase.ts` fallan solo si alguna ruta los llama. Para la base local: `supabase start` aplica las migraciones de `supabase/migrations`.
+Hace falta Node 22. Copiá `.env.example` a `.env.local` (las claves no van al repo). `npm install` y `npm run dev`. Las pantallas con sesión (ingreso, admin, Super Admin) necesitan las claves de Supabase del entorno de **desarrollo**. Para la base local: `supabase start` aplica las migraciones de `supabase/migrations`. Las migraciones remotas se aplican solo en el proyecto de desarrollo, nunca en producción sin el OK de Jerónimo.
