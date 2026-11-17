@@ -7,6 +7,7 @@ import { EscudoClub, type ClubConEscudo } from "./escudo-club";
 import { BotonSalir, EnlaceSalir } from "./boton-salir";
 import { PieMock } from "./marco-mock";
 import { LogoElClub } from "@/ui/marca/logo-el-club";
+import { MenuMovil } from "./menu-movil";
 
 export type RolShell = "super-admin" | "admin";
 export type ActivoShell = "clubes" | "inicio" | "admins";
@@ -36,13 +37,13 @@ export const RUTAS_SHELL_APP: RutasShell = {
 const CABECERA_ESCRITORIO =
   "flex h-[72px] shrink-0 items-center border-b border-border";
 
-type ItemNav = {
+export type ItemNav = {
   etiqueta: string;
   href: string;
   activo: boolean;
 };
 
-function itemsNav({
+export function itemsNav({
   club,
   rol,
   activo,
@@ -93,6 +94,96 @@ function itemsNav({
   return items;
 }
 
+function CabeceraBarra({
+  club,
+  rol,
+}: {
+  club?: ClubConEscudo & { slug: string };
+  rol: RolShell;
+}) {
+  if (club) {
+    return (
+      <>
+        <EscudoClub club={club} tamano="sm" />
+        <div className="min-w-0">
+          <p className="text-sm leading-snug font-medium">{club.nombre}</p>
+          <p className="text-xs text-muted-foreground">
+            {rol === "super-admin" ? "Super Admin" : "Admin"}
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <LogoElClub />
+      <div className="min-w-0">
+        <p className="text-sm font-medium">El Club App</p>
+        <p className="text-xs text-muted-foreground">
+          {rol === "super-admin" ? "Super Admin" : "Admin"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function NavegacionBarra({
+  items,
+}: {
+  items: ItemNav[];
+}) {
+  return (
+    <nav className="flex flex-1 flex-col gap-1 p-3">
+      {items.map((item) => (
+        <Link
+          key={`${item.etiqueta}-${item.href}`}
+          href={item.href}
+          aria-current={item.activo ? "page" : undefined}
+          className={cn(
+            "rounded-lg px-3 py-2.5 text-sm",
+            item.activo
+              ? "bg-muted font-medium text-foreground"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+          )}
+        >
+          {item.etiqueta}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+function ContenidoBarra({
+  club,
+  rol,
+  items,
+  salirHref,
+}: {
+  club?: ClubConEscudo & { slug: string };
+  rol: RolShell;
+  items: ItemNav[];
+  salirHref: string;
+}) {
+  return (
+    <div className="flex h-full flex-col">
+      <div className={cn(CABECERA_ESCRITORIO, "gap-3 px-4")}>
+        <CabeceraBarra club={club} rol={rol} />
+      </div>
+      <NavegacionBarra items={items} />
+      <div className="border-t border-border p-3">
+        <EnlaceSalir
+          href={salirHref}
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+        >
+          <LogOut className="size-4" />
+          Salir
+        </EnlaceSalir>
+      </div>
+    </div>
+  );
+}
+
 export function ShellAdmin({
   children,
   titulo,
@@ -129,11 +220,18 @@ export function ShellAdmin({
   pie?: React.ReactNode;
 }) {
   const items = itemsNav({ club, rol, activo, como, esMultiClub, rutas });
+  const tituloMenu = club?.nombre ?? "El Club App";
+  const descripcionMenu =
+    rol === "super-admin" ? "Super Admin" : "Admin";
+  const propsBarra = { club, rol, items, salirHref };
 
   return (
     <div className="flex min-h-svh flex-col bg-background">
-      <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur lg:hidden">
+      <header className="sticky top-0 z-20 border-b border-border bg-background/90 pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] backdrop-blur lg:hidden">
         <div className="flex items-center gap-2 px-3 py-2">
+          <MenuMovil titulo={tituloMenu} descripcion={descripcionMenu}>
+            <ContenidoBarra {...propsBarra} />
+          </MenuMovil>
           {atras ? (
             <Button
               asChild
@@ -161,87 +259,13 @@ export function ShellAdmin({
             <BotonSalir href={salirHref} className="h-11 px-3 text-sm">
               Salir
             </BotonSalir>
-          ) : (
-            <BotonSalir
-              href={salirHref}
-              className="hidden h-11 px-3 text-sm md:inline-flex lg:hidden"
-            >
-              Salir
-            </BotonSalir>
-          )}
+          ) : null}
         </div>
-        {items.length > 0 ? (
-          <nav className="hidden gap-1 border-t border-border px-3 py-1.5 md:flex lg:hidden">
-            {items.map((item) => (
-              <Link
-                key={`${item.etiqueta}-${item.href}`}
-                href={item.href}
-                aria-current={item.activo ? "page" : undefined}
-                className={cn(
-                  "rounded-lg px-3 py-2 text-sm",
-                  item.activo
-                    ? "bg-muted font-medium text-foreground"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                )}
-              >
-                {item.etiqueta}
-              </Link>
-            ))}
-          </nav>
-        ) : null}
       </header>
 
       <div className="flex flex-1 flex-col lg:flex-row">
         <aside className="sticky top-0 hidden h-svh w-64 shrink-0 flex-col border-r border-border bg-background lg:flex">
-          <div className={cn(CABECERA_ESCRITORIO, "gap-3 px-4")}>
-            {club ? (
-              <>
-                <EscudoClub club={club} tamano="sm" />
-                <div className="min-w-0">
-                  <p className="text-sm leading-snug font-medium">{club.nombre}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {rol === "super-admin" ? "Super Admin" : "Admin"}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <div className="flex min-w-0 items-center gap-3">
-                <LogoElClub />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">El Club App</p>
-                  <p className="text-xs text-muted-foreground">
-                    {rol === "super-admin" ? "Super Admin" : "Admin"}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-          <nav className="flex flex-1 flex-col gap-1 p-3">
-            {items.map((item) => (
-              <Link
-                key={`${item.etiqueta}-${item.href}`}
-                href={item.href}
-                aria-current={item.activo ? "page" : undefined}
-                className={cn(
-                  "rounded-lg px-3 py-2.5 text-sm",
-                  item.activo
-                    ? "bg-muted font-medium text-foreground"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                )}
-              >
-                {item.etiqueta}
-              </Link>
-            ))}
-          </nav>
-          <div className="border-t border-border p-3">
-            <EnlaceSalir
-              href={salirHref}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-            >
-              <LogOut className="size-4" />
-              Salir
-            </EnlaceSalir>
-          </div>
+          <ContenidoBarra {...propsBarra} />
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { cn } from "cn";
 import { ProveedorConsulta } from "@/datos/proveedor-consulta";
@@ -18,6 +18,10 @@ export const metadata: Metadata = {
   title: "El Club App",
   description: "App del club para organizar torneos y el día a día del club.",
   other: { google: "notranslate" },
+};
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({
