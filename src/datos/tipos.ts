@@ -194,7 +194,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      puede_solicitar_ingreso_email: {
+        Args: { p_email: string };
+        Returns: boolean;
+      };
     };
     Enums: {
       rol_club: RolClub;
