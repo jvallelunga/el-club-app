@@ -19,6 +19,7 @@ import {
   RUTAS_SHELL_APP,
   ShellAdmin,
 } from "@/ui/features/mocks-roles/shell-admin";
+import { avisoTrasInvitar } from "@/dominio/ingreso-email";
 import { inicialesDesdeNombre } from "@/dominio/slug";
 
 export type AdminVisible = {
@@ -46,15 +47,25 @@ export function PantallaAdminsReal({
   invitar,
   quitar,
   cancelar,
+  reenviar,
 }: {
   club: ClubVisible;
   admins: AdminVisible[];
   invitaciones: InvitacionVisible[];
   invitar: (
     email: string,
-  ) => Promise<{ ok: true; aceptadaDeInmediato: boolean } | { ok: false; error: string }>;
+  ) => Promise<
+    | {
+        ok: true;
+        aceptadaDeInmediato: boolean;
+        linkEnviado: boolean;
+        errorLink?: string;
+      }
+    | { ok: false; error: string }
+  >;
   quitar: (usuarioId: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   cancelar: (id: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+  reenviar: (id: string) => Promise<{ ok: true } | { ok: false; error: string }>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -99,6 +110,20 @@ export function PantallaAdminsReal({
     });
   }
 
+  function reenviarLink(invitacion: InvitacionVisible) {
+    if (pending) return;
+    startTransition(async () => {
+      const resultado = await reenviar(invitacion.id);
+      if (!resultado.ok) {
+        setAviso(null);
+        setError(resultado.error);
+        return;
+      }
+      setError(null);
+      setAviso(`Le mandamos el link a ${invitacion.email}.`);
+    });
+  }
+
   function cancelarInvitacion(invitacion: InvitacionVisible) {
     if (pending) return;
     startTransition(async () => {
@@ -125,11 +150,19 @@ export function PantallaAdminsReal({
         return;
       }
       setEmail("");
-      setAviso(
-        resultado.aceptadaDeInmediato
-          ? `Listo, ${valor} ya es Admin de este club.`
-          : `Agregamos a ${valor}. Cuando entre con Google, ya tiene el club.`,
-      );
+      const aviso = avisoTrasInvitar({
+        email: valor,
+        aceptadaDeInmediato: resultado.aceptadaDeInmediato,
+        linkEnviado: resultado.linkEnviado,
+        errorLink: resultado.errorLink,
+      });
+      if (resultado.linkEnviado) {
+        setError(null);
+        setAviso(aviso);
+      } else {
+        setAviso(null);
+        setError(aviso);
+      }
       router.refresh();
     });
   }
@@ -194,8 +227,8 @@ export function PantallaAdminsReal({
             </BotonPrincipal>
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Si esa persona todavía no entró, queda invitada. La primera vez que
-            entre con Google, ya tiene el club asignado.
+            Si esa persona todavía no entró, queda invitada y le mandamos un
+            link por email para entrar. También puede pedirlo desde Ingresá.
           </p>
         </form>
 
@@ -256,15 +289,26 @@ export function PantallaAdminsReal({
                     Invitación pendiente
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-11 px-3 text-sm"
-                  onClick={() => cancelarInvitacion(invitacion)}
-                  disabled={pending}
-                >
-                  Cancelar
-                </Button>
+                <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-11 px-3 text-sm"
+                    onClick={() => reenviarLink(invitacion)}
+                    disabled={pending}
+                  >
+                    Reenviar link
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-11 px-3 text-sm"
+                    onClick={() => cancelarInvitacion(invitacion)}
+                    disabled={pending}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>

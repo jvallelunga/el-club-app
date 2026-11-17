@@ -121,6 +121,8 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 
 - El 17/11/2026 11:11 Jerónimo aprobó sumar ingreso por email (magic link de Supabase Auth) junto al de Google, en `/ingreso`. El formulario pide el email y «Enviarme el link»; si el formato es válido se muestra siempre el mismo mensaje neutro («Te mandamos un link a …»), esté o no invitada esa persona, para no revelar si el email está de alta. El correo solo se envía si hay invitación (pendiente o aceptada), o si ya es Super Admin o miembro de un club (`shouldCreateUser` solo en ese caso). El callback reusa `/auth/callback`, la cookie `el_club_siguiente` y redirecciones 303; también acepta `token_hash` con `verifyOtp`. La invitación se vincula por el email exacto (incluye alias `+`). Sin acceso, el destino sigue siendo `/sin-acceso`. En desarrollo se usa el SMTP incluido de Supabase (cupo bajo de correos por hora); no se configuró un SMTP propio (17/11/2026 11:11).
 
+- El 17/11/2026 11:50 Jerónimo aprobó que, al invitar a un Admin, la app le mande el mismo magic link que «Enviarme el link» en `/ingreso` (`signInWithOtp`, `shouldCreateUser: true`, `emailRedirectTo` al `/auth/callback` del origen actual, con destino al admin del club). Si el envío falla (por ejemplo el cupo de 2 correos por hora), la invitación se mantiene y se avisa en la pantalla de Admins, con la acción «Reenviar link» en las pendientes. Todavía no hay una UI para invitar Super Admins; cuando exista, debe usar el mismo envío (17/11/2026 11:50).
+
 ### Dominio
 
 - El dominio raíz del club (por ejemplo `clubejemplo.com.ar`) es el **sitio web** del club, no la app (16/11/2026 17:43).

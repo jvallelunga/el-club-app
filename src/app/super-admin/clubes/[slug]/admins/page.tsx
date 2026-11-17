@@ -4,6 +4,7 @@ import {
   cancelarInvitacionClub,
   invitarAdminClub,
   quitarAdminClub,
+  reenviarLinkInvitacionClub,
 } from "@/datos/comandos/clubes";
 import { superAdminRequerido } from "@/datos/consultas/acceso";
 import { adminsYInvitaciones, clubPorSlug } from "@/datos/consultas/clubes";
@@ -46,6 +47,11 @@ export default async function PaginaAdminsClub({
     return cancelarInvitacionClub(clubId, id);
   }
 
+  async function reenviar(id: string) {
+    "use server";
+    return reenviarLinkInvitacionClub(clubId, id);
+  }
+
   return (
     <PantallaAdminsReal
       club={clubVisible}
@@ -54,6 +60,7 @@ export default async function PaginaAdminsClub({
       invitar={invitar}
       quitar={quitar}
       cancelar={cancelar}
+      reenviar={reenviar}
     />
   );
 }

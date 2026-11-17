@@ -11,7 +11,10 @@ import {
   validarArchivoEscudo,
   validarDatosNuevoClub,
 } from "@/dominio/nuevo-club";
+import { rutaFallbackClub } from "@/dominio/host";
 import { cargarSesion } from "../consultas/sesion";
+import { enviarMagicLinkIngreso } from "../enviar-link-ingreso";
+import { origenDePeticion } from "../origen-peticion";
 import { supabaseServidor } from "../supabase-servidor";
 
 export type ResultadoCrearClub =
@@ -272,8 +275,38 @@ export async function actualizarClub(
 }
 
 export type ResultadoInvitar =
-  | { ok: true; aceptadaDeInmediato: boolean }
+  | {
+      ok: true;
+      aceptadaDeInmediato: boolean;
+      linkEnviado: boolean;
+      errorLink?: string;
+    }
   | { ok: false; error: string };
+
+export type ResultadoReenviarLink =
+  | { ok: true }
+  | { ok: false; error: string };
+
+async function enviarLinkInvitacion(
+  email: string,
+  slug: string,
+): Promise<{ linkEnviado: boolean; errorLink?: string }> {
+  const origen = await origenDePeticion();
+  if (!origen) {
+    return {
+      linkEnviado: false,
+      errorLink: "No se pudo enviar el link. Probá de nuevo con «Reenviar link».",
+    };
+  }
+  const envio = await enviarMagicLinkIngreso(email, {
+    origen,
+    siguiente: rutaFallbackClub(slug, "admin"),
+  });
+  if (!envio.ok) {
+    return { linkEnviado: false, errorLink: envio.error };
+  }
+  return { linkEnviado: true };
+}
 
 export async function invitarAdminClub(
   clubId: string,
@@ -332,7 +365,56 @@ export async function invitarAdminClub(
 
   revalidatePath(`/super-admin/clubes/${club.slug}/admins`);
   revalidatePath(`/c/${club.slug}/admin`);
-  return { ok: true, aceptadaDeInmediato: Boolean(data?.aceptada_en) };
+
+  const envio = await enviarLinkInvitacion(email, club.slug);
+  return {
+    ok: true,
+    aceptadaDeInmediato: Boolean(data?.aceptada_en),
+    ...envio,
+  };
+}
+
+export async function reenviarLinkInvitacionClub(
+  clubId: string,
+  invitacionId: string,
+): Promise<ResultadoReenviarLink> {
+  const sesion = await cargarSesion();
+  if (!sesion) {
+    return { ok: false, error: "Tenés que ingresar de nuevo." };
+  }
+  if (!sesion.esSuperAdmin) {
+    return { ok: false, error: "Solo el Super Admin puede reenviar el link." };
+  }
+
+  const supabase = await supabaseServidor();
+  const { data: club } = await supabase
+    .from("club")
+    .select("id, slug")
+    .eq("id", clubId)
+    .maybeSingle();
+  if (!club) {
+    return { ok: false, error: "No encontramos ese club." };
+  }
+
+  const { data: invitacion } = await supabase
+    .from("club_invitacion")
+    .select("id, email")
+    .eq("id", invitacionId)
+    .eq("club_id", clubId)
+    .is("aceptada_en", null)
+    .maybeSingle();
+  if (!invitacion) {
+    return { ok: false, error: "No encontramos esa invitación pendiente." };
+  }
+
+  const envio = await enviarLinkInvitacion(invitacion.email, club.slug);
+  if (!envio.linkEnviado) {
+    return {
+      ok: false,
+      error: envio.errorLink ?? "No se pudo enviar el link. Probá de nuevo con «Reenviar link».",
+    };
+  }
+  return { ok: true };
 }
 
 export type ResultadoSimple = { ok: true } | { ok: false; error: string };
