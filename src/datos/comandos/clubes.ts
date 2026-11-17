@@ -15,6 +15,8 @@ import { rutaFallbackClub } from "@/dominio/host";
 import {
   errorAlQuitarAdmin,
   errorSiNoPuedeAdministrarAdmins,
+  errorSiNoPuedeEditarClub,
+  puedeEditarRutasDelClub,
 } from "@/dominio/permisos";
 import { cargarSesion } from "../consultas/sesion";
 import { enviarMagicLinkIngreso } from "../enviar-link-ingreso";
@@ -167,19 +169,23 @@ export async function actualizarClub(
     escudoCrudo instanceof File && escudoCrudo.size > 0 ? escudoCrudo : null;
 
   const sesion = await cargarSesion();
-  if (!sesion?.esSuperAdmin) {
-    return { ok: false, error: "Solo el Super Admin puede editar un club." };
+  const permiso = errorSiNoPuedeEditarClub(sesion, clubId);
+  if (permiso || !sesion) {
+    return { ok: false, error: permiso ?? "Tenés que ingresar de nuevo." };
   }
 
   const supabase = await supabaseServidor();
   const { data: club, error: errorClub } = await supabase
     .from("club")
-    .select("id, slug, escudo_ruta")
+    .select("id, slug, escudo_ruta, dominio_base")
     .eq("id", clubId)
     .maybeSingle();
   if (errorClub || !club) {
     return { ok: false, error: "No encontramos ese club." };
   }
+
+  const editaRutas = puedeEditarRutasDelClub(sesion);
+  const dominioParaValidar = editaRutas ? dominioBase : (club.dominio_base ?? "");
 
   const errores = validarDatosNuevoClub({
     nombre,
@@ -188,7 +194,7 @@ export async function actualizarClub(
     marca: colorPrincipal,
     claro: colorClaro || "#ffffff",
     extras: [color2, color3],
-    dominioBase,
+    dominioBase: dominioParaValidar,
   });
   const mensaje = primerError(errores);
   if (mensaje) {
@@ -203,9 +209,11 @@ export async function actualizarClub(
   }
 
   const colores = coloresParaGuardar(colorPrincipal, colorClaro, [color2, color3]);
-  const dominio = dominioBase.trim() ? dominioBase.trim().toLowerCase() : null;
+  const dominio = editaRutas
+    ? (dominioBase.trim() ? dominioBase.trim().toLowerCase() : null)
+    : club.dominio_base;
 
-  if (dominio) {
+  if (editaRutas && dominio) {
     const { data: dominioExistente } = await supabase
       .from("club")
       .select("id")
@@ -240,15 +248,26 @@ export async function actualizarClub(
 
   const { error } = await supabase
     .from("club")
-    .update({
-      nombre: nombre.trim(),
-      dominio_base: dominio,
-      escudo_ruta: escudoRuta,
-      color_principal: colores.colorPrincipal,
-      color_claro: colores.colorClaro,
-      color_2: colores.color2,
-      color_3: colores.color3,
-    })
+    .update(
+      editaRutas
+        ? {
+            nombre: nombre.trim(),
+            dominio_base: dominio,
+            escudo_ruta: escudoRuta,
+            color_principal: colores.colorPrincipal,
+            color_claro: colores.colorClaro,
+            color_2: colores.color2,
+            color_3: colores.color3,
+          }
+        : {
+            nombre: nombre.trim(),
+            escudo_ruta: escudoRuta,
+            color_principal: colores.colorPrincipal,
+            color_claro: colores.colorClaro,
+            color_2: colores.color2,
+            color_3: colores.color3,
+          },
+    )
     .eq("id", clubId);
 
   if (error) {
@@ -273,6 +292,7 @@ export async function actualizarClub(
 
   revalidatePath("/super-admin");
   revalidatePath(`/c/${club.slug}/admin`);
+  revalidatePath(`/c/${club.slug}/admin/club`);
   revalidatePath(`/super-admin/clubes/${club.slug}/editar`);
   revalidatePath(`/super-admin/clubes/${club.slug}/admins`);
   revalidatePath(`/c/${club.slug}/admin/admins`);

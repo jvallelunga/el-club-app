@@ -342,6 +342,91 @@ end;
 $$;
 select pg_temp.salir();
 
+
+-- Admin A puede actualizar la estética de su club, no slug ni dominio, ni el club B.
+select pg_temp.entrar('admin_a');
+do $$
+declare
+  v_nombre text;
+  v_slug text;
+  v_dominio text;
+  v_n int;
+begin
+  update public.club
+  set
+    nombre = 'Club RLS A editado',
+    color_principal = '#334155',
+    color_claro = '#f8fafc'
+  where id = (select id from _t where clave = 'club_a');
+  get diagnostics v_n = row_count;
+  if v_n <> 1 then
+    raise exception 'Admin A debería poder editar la estética de su club, actualizó %', v_n;
+  end if;
+  select nombre into v_nombre from public.club where id = (select id from _t where clave = 'club_a');
+  if v_nombre is distinct from 'Club RLS A editado' then
+    raise exception 'Admin A no dejó grabado el nombre estético, quedó %', v_nombre;
+  end if;
+
+  begin
+    update public.club
+    set slug = 'rls-club-a-hack'
+    where id = (select id from _t where clave = 'club_a');
+    raise exception 'Admin A no debería poder cambiar el slug';
+  exception
+    when others then
+      if sqlerrm like 'Admin A no debería%' then
+        raise;
+      end if;
+  end;
+  select slug into v_slug from public.club where id = (select id from _t where clave = 'club_a');
+  if v_slug is distinct from 'rls-club-a' then
+    raise exception 'El slug del club A no debería haber cambiado, quedó %', v_slug;
+  end if;
+
+  begin
+    update public.club
+    set dominio_base = 'hack-a.ejemplo.test'
+    where id = (select id from _t where clave = 'club_a');
+    raise exception 'Admin A no debería poder cambiar el dominio';
+  exception
+    when others then
+      if sqlerrm like 'Admin A no debería%' then
+        raise;
+      end if;
+  end;
+  select dominio_base into v_dominio from public.club where id = (select id from _t where clave = 'club_a');
+  if v_dominio is not null then
+    raise exception 'El dominio del club A no debería haber cambiado, quedó %', v_dominio;
+  end if;
+
+  update public.club
+  set nombre = 'No debe'
+  where id = (select id from _t where clave = 'club_b');
+  get diagnostics v_n = row_count;
+  if v_n <> 0 then
+    raise exception 'Admin A no debería poder editar el club B';
+  end if;
+end;
+$$;
+select pg_temp.salir();
+
+-- Super Admin sí puede cambiar el dominio (el slug de la app se deja quieto, pero a nivel de base está habilitado).
+select pg_temp.entrar('super');
+do $$
+declare
+  v_dominio text;
+begin
+  update public.club
+  set dominio_base = 'club-rls-a.ejemplo.test'
+  where id = (select id from _t where clave = 'club_a');
+  select dominio_base into v_dominio from public.club where id = (select id from _t where clave = 'club_a');
+  if v_dominio is distinct from 'club-rls-a.ejemplo.test' then
+    raise exception 'El Super Admin debería poder cambiar el dominio, quedó %', v_dominio;
+  end if;
+end;
+$$;
+select pg_temp.salir();
+
 select 'Pruebas de RLS: ok' as resultado;
 
 rollback;

@@ -20,7 +20,7 @@ describe("itemsNav", () => {
     ]);
   });
 
-  it("en Super Admin dentro de un club muestra Inicio, Clubes y Admins", () => {
+  it("en Super Admin dentro de un club muestra Inicio, Clubes, Club y Admins", () => {
     expect(
       itemsNav({
         club: CLUB,
@@ -36,6 +36,11 @@ describe("itemsNav", () => {
       },
       { etiqueta: "Clubes", href: "/super-admin", activo: false },
       {
+        etiqueta: "Club",
+        href: "/c/club-de-ejemplo-del-norte/admin/club",
+        activo: false,
+      },
+      {
         etiqueta: "Admins",
         href: "/c/club-de-ejemplo-del-norte/admin/admins",
         activo: false,
@@ -43,7 +48,7 @@ describe("itemsNav", () => {
     ]);
   });
 
-  it("en Admin de un solo club muestra Inicio y Admins, sin Clubes", () => {
+  it("en Admin de un solo club muestra Inicio, Club y Admins, sin Clubes", () => {
     expect(
       itemsNav({
         club: CLUB,
@@ -55,6 +60,11 @@ describe("itemsNav", () => {
       {
         etiqueta: "Inicio",
         href: "/c/club-de-ejemplo-del-norte/admin",
+        activo: false,
+      },
+      {
+        etiqueta: "Club",
+        href: "/c/club-de-ejemplo-del-norte/admin/club",
         activo: false,
       },
       {
@@ -75,6 +85,7 @@ describe("itemsNav", () => {
     expect(items.map((item) => item.etiqueta)).toEqual([
       "Inicio",
       "Clubes",
+      "Club",
       "Admins",
     ]);
     expect(items[1]).toEqual({

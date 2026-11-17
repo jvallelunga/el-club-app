@@ -87,7 +87,13 @@ export default async function PaginaAdminClub({
           </p>
         )}
 
-        <p className="text-sm">
+        <p className="flex flex-col gap-2 text-sm sm:flex-row sm:gap-4">
+          <Link
+            href={`/c/${club.slug}/admin/club`}
+            className="underline-offset-4 hover:underline"
+          >
+            Datos del club
+          </Link>
           <Link
             href={`/c/${club.slug}/admin/admins`}
             className="underline-offset-4 hover:underline"

@@ -3,7 +3,9 @@ import {
   destinoTrasIngreso,
   errorAlQuitarAdmin,
   errorSiNoPuedeAdministrarAdmins,
+  errorSiNoPuedeEditarClub,
   puedeAdministrarClub,
+  puedeEditarRutasDelClub,
   siguienteSeguro,
   tieneAccesoApp,
   type SesionApp,
@@ -155,5 +157,27 @@ describe("errorAlQuitarAdmin", () => {
         cantidadAdmins: 2,
       }),
     ).toBeNull();
+  });
+});
+
+describe("errorSiNoPuedeEditarClub", () => {
+  it("permite al Super Admin y al Admin de ese club, no al de otro", () => {
+    expect(
+      errorSiNoPuedeEditarClub(sesion({ esSuperAdmin: true }), "club-norte"),
+    ).toBeNull();
+    expect(
+      errorSiNoPuedeEditarClub(sesion({ membresias: [norte] }), "club-norte"),
+    ).toBeNull();
+    expect(
+      errorSiNoPuedeEditarClub(sesion({ membresias: [norte] }), "club-ejemplo"),
+    ).toMatch(/permiso/);
+    expect(errorSiNoPuedeEditarClub(null, "club-norte")).toMatch(/ingresar/);
+  });
+});
+
+describe("puedeEditarRutasDelClub", () => {
+  it("solo el Super Admin puede cambiar identificador o dominio", () => {
+    expect(puedeEditarRutasDelClub(sesion({ esSuperAdmin: true }))).toBe(true);
+    expect(puedeEditarRutasDelClub(sesion({ membresias: [norte] }))).toBe(false);
   });
 });

@@ -42,12 +42,17 @@ export function FormularioNuevoClubReal({
   crear,
   inicial,
   modo = "crear",
+  puedeEditarRutas = true,
+  despuesDeGuardar = "/super-admin",
 }: {
   crear: (formData: FormData) => Promise<ResultadoCrearClubCliente>;
   inicial?: DatosInicialesClub;
   modo?: "crear" | "editar";
+  puedeEditarRutas?: boolean;
+  despuesDeGuardar?: string;
 }) {
   const esEdicion = modo === "editar";
+  const dominioSoloLectura = esEdicion && !puedeEditarRutas;
   const router = useRouter();
   const [nombre, setNombre] = useState(inicial?.nombre ?? "");
   const [slugManual, setSlugManual] = useState(inicial?.slug ?? "");
@@ -142,7 +147,7 @@ export function FormularioNuevoClubReal({
         return;
       }
       if (esEdicion) {
-        router.push("/super-admin");
+        router.push(despuesDeGuardar);
         router.refresh();
         return;
       }
@@ -354,28 +359,68 @@ export function FormularioNuevoClubReal({
             id="dominio-club"
             name="dominioBase"
             value={dominioBase}
-            onChange={(evento) => setDominioBase(evento.target.value)}
+            onChange={
+              dominioSoloLectura
+                ? undefined
+                : (evento) => setDominioBase(evento.target.value)
+            }
             placeholder="clubejemplo.com.ar"
             autoComplete="off"
             spellCheck={false}
+            readOnly={dominioSoloLectura}
+            aria-readonly={dominioSoloLectura || undefined}
             aria-invalid={mostrarErrores && Boolean(errores.dominioBase)}
-            className="h-12 rounded-xl px-3 font-mono text-base"
+            className={
+              dominioSoloLectura
+                ? "h-12 rounded-xl bg-muted px-3 font-mono text-base"
+                : "h-12 rounded-xl px-3 font-mono text-base"
+            }
           />
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Es el dominio del sitio web del club, sin https ni www. La app usa
-            subdominios:{" "}
-            <span className="font-medium text-foreground">
-              admin.{dominioBase.trim() || "dominio"}
-            </span>{" "}
-            y{" "}
-            <span className="font-medium text-foreground">
-              vivo.{dominioBase.trim() || "dominio"}
-            </span>
-            . Si todavía no tiene, se entra por{" "}
-            <span className="font-medium text-foreground">
-              /c/{slug || "identificador"}/admin
-            </span>
-            .
+            {dominioSoloLectura ? (
+              <>
+                Es el dominio del sitio web del club. Solo el Super Admin puede
+                cambiarlo.{" "}
+                {dominioBase.trim() ? (
+                  <>
+                    La app usa{" "}
+                    <span className="font-medium text-foreground">
+                      admin.{dominioBase.trim()}
+                    </span>{" "}
+                    y{" "}
+                    <span className="font-medium text-foreground">
+                      vivo.{dominioBase.trim()}
+                    </span>
+                    .
+                  </>
+                ) : (
+                  <>
+                    Todavía no tiene dominio propio: se entra por{" "}
+                    <span className="font-medium text-foreground">
+                      /c/{slug || "identificador"}/admin
+                    </span>
+                    .
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                Es el dominio del sitio web del club, sin https ni www. La app usa
+                subdominios:{" "}
+                <span className="font-medium text-foreground">
+                  admin.{dominioBase.trim() || "dominio"}
+                </span>{" "}
+                y{" "}
+                <span className="font-medium text-foreground">
+                  vivo.{dominioBase.trim() || "dominio"}
+                </span>
+                . Si todavía no tiene, se entra por{" "}
+                <span className="font-medium text-foreground">
+                  /c/{slug || "identificador"}/admin
+                </span>
+                .
+              </>
+            )}
           </p>
           {mostrarErrores && errores.dominioBase ? (
             <p className="text-sm text-destructive" role="alert">

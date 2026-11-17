@@ -71,6 +71,14 @@ const PANTALLAS = [
     nombre: "Inicio del admin (club de ejemplo)",
     href: `${RUTAS_MOCK.inicioClub(CLUB_NORTE.slug)}?como=${PERSONA_LUCIA.id}`,
   },
+  {
+    nombre: "Datos del club (Admin)",
+    href: `${RUTAS_MOCK.club(CLUB_NORTE.slug)}?como=${PERSONA_LUCIA.id}`,
+  },
+  {
+    nombre: "Datos del club (Super Admin)",
+    href: `${RUTAS_MOCK.club(CLUB_NORTE.slug)}?como=super-admin`,
+  },
 ];
 
 export default function IndiceMocksRoles() {

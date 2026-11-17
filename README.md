@@ -131,6 +131,8 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 
 - El 17/11/2026 12:24 Jerónimo aprobó que un Admin pueda invitar y quitar Admins solo de su club (nunca de otros). El Super Admin sigue teniendo acceso completo. La pantalla vive en `/c/<slug>/admin/admins` (la ruta vieja de Super Admin redirige ahí) y el menú del club muestra «Admins» también para el Admin del club. Las actions y el RLS limitan insert/delete de `club_invitacion` y delete de `club_miembro` al club que administra; al invitar se manda el mismo magic link, con «Reenviar link». No se puede quitar al último Admin del club (si es uno mismo, el mensaje lo dice claramente) y quitar sigue pidiendo confirmación (17/11/2026 12:24).
 
+- El 17/11/2026 13:24 Jerónimo aprobó que un Admin pueda editar los datos estéticos de su club (nombre, escudo, color principal, color claro, color 2 y color 3) con el mismo formulario y vista previa, desde `/c/<slug>/admin/club` (ítem «Club» en el menú). El identificador, el dominio y cualquier dato que afecte las rutas de acceso quedan en solo lectura para el Admin y solo los edita el Super Admin. La action y un trigger + RLS en la base bloquean esos cambios, y un Admin no puede editar otro club (17/11/2026 13:24).
+
 ### Dominio
 
 - El dominio raíz del club (por ejemplo `clubejemplo.com.ar`) es el **sitio web** del club, no la app (16/11/2026 17:43).

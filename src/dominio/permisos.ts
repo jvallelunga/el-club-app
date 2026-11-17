@@ -70,6 +70,23 @@ export function rutaClub(slug: string, superficie: SuperficieApp = "admin"): str
   return rutaFallbackClub(slug, superficie);
 }
 
+/** Mensaje si no puede editar los datos de ese club, o null si está habilitado. */
+export function errorSiNoPuedeEditarClub(
+  sesion: SesionApp | null,
+  clubId: string,
+): string | null {
+  if (!sesion) return "Tenés que ingresar de nuevo.";
+  if (!puedeAdministrarClub(sesion, clubId)) {
+    return "No tenés permiso para editar los datos de este club.";
+  }
+  return null;
+}
+
+/** Solo el Super Admin puede cambiar identificador o dominio (rutas de acceso). */
+export function puedeEditarRutasDelClub(sesion: SesionApp): boolean {
+  return sesion.esSuperAdmin;
+}
+
 /** Mensaje si no puede gestionar Admins de ese club, o null si está habilitado. */
 export function errorSiNoPuedeAdministrarAdmins(
   sesion: SesionApp | null,

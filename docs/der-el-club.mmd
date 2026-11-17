@@ -18,6 +18,9 @@
 %%
 %% Un Admin puede invitar y quitar Admins solo de su club
 %% (interno.es_admin_club). No se puede quitar al último Admin.
+%% Un Admin también puede actualizar los datos estéticos de su club
+%% (nombre, escudo_ruta, paleta). slug y dominio_base solo los cambia
+%% el Super Admin (trigger impedir_cambio_de_rutas_del_club).
 %% El email del Super Admin no se guarda en el repo: el alta se hace
 %% directo en la base (ver scripts/sembrar-super-admin.sql).
 %% copa-raices queda como base y ejemplo: https://github.com/jvallelunga/copa-raices
