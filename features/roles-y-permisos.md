@@ -50,7 +50,10 @@ Pensadas primero para celular y optimizadas para tablet y desktop (mismo markup,
 | Club creado | `/mocks/roles/super-admin/nuevo-club/creado` |
 | Admins de un club (agregar por email / quitar, con confirmación) | `/mocks/roles/super-admin/clubes/[slug]/admins` |
 | Inicio del admin del club (placeholder) | `/mocks/roles/clubes/[slug]` |
-| Datos del club (editar nombre, escudo y paleta; identificador y dominio en solo lectura para el Admin) | `/mocks/roles/clubes/[slug]/club` |
+| Datos del club (estética, contacto y redes) | `/mocks/roles/clubes/[slug]/club` |
+| Sedes del club | `/mocks/roles/clubes/[slug]/sedes` |
+| Sede (edición, mapa e instalaciones) | `/mocks/roles/clubes/[slug]/sedes/[sedeId]` |
+| Agregar instalación | `/mocks/roles/clubes/[slug]/sedes/[sedeId]/instalaciones/nueva` |
 
 Flujos:
 
@@ -95,3 +98,4 @@ Flujos:
 - El 17/11/2026 12:24 Jerónimo aprobó que un Admin pueda invitar y quitar Admins solo de su club (nunca de otros). El Super Admin sigue teniendo acceso completo. La pantalla vive en `/c/<slug>/admin/admins` (la ruta vieja de Super Admin redirige ahí) y el menú del club muestra «Admins» también para el Admin del club. Las actions y el RLS limitan insert/delete de `club_invitacion` y delete de `club_miembro` al club que administra; al invitar se manda el mismo magic link, con «Reenviar link». No se puede quitar al último Admin del club (si es uno mismo, el mensaje lo dice claramente) y quitar sigue pidiendo confirmación (17/11/2026 12:24).
 - El 17/11/2026 13:18 Jerónimo aprobó el menú ☰ en la cáscara de admin (Super Admin y admin de un club): a la izquierda de la barra superior, un botón con `aria-label` «Abrir menú» abre un cajón izquierdo (Sheet de shadcn) con el mismo contenido que el sidebar de escritorio — logo de producto + «El Club App» o, dentro de un club, escudo/iniciales y nombre con el tema del club; los ítems según el rol (Inicio, Clubes, Admins); y «Salir» con POST al pie. El cajón cubre **todo viewport por debajo de `lg` (1024px)**, celular y tablet; desde `lg` se usa el sidebar fijo. El ítem activo se destaca; el cajón se cierra al navegar, al tocar el fondo o con Escape; el foco queda atrapado y el layout respeta el área segura (17/11/2026 13:18).
 - El 17/11/2026 13:24 Jerónimo aprobó que un Admin pueda editar los datos estéticos de su club (nombre, escudo, color principal, color claro, color 2 y color 3) con el mismo formulario y vista previa. La pantalla vive en `/c/<slug>/admin/club` y el menú del club muestra «Club». El identificador (`slug`), el dominio (`dominio_base`) y cualquier dato que afecte rutas de acceso quedan en solo lectura para el Admin y solo los puede cambiar el Super Admin. La action del servidor ignora esos campos si quien guarda no es Super Admin, y un trigger + RLS en la base impiden el cambio aunque se llame a la API: un Admin no puede tocar slug ni dominio, ni editar otro club (17/11/2026 13:24).
+- El 17/11/2026 14:39–14:43 Jerónimo pidió contacto, redes y sedes con instalaciones. Por ahora solo hay mocks (ver [sedes-e-instalaciones](sedes-e-instalaciones.md)); no se implementa ni se migra hasta aprobarlos (17/11/2026 14:39–14:43).

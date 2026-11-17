@@ -9,6 +9,13 @@ import {
   clubPorSlug,
 } from "@/ui/features/mocks-roles/datos-ejemplo";
 import { ShellAdmin } from "@/ui/features/mocks-roles/shell-admin";
+import {
+  FormularioContactoClub,
+} from "@/ui/features/sedes/formulario-contacto-club";
+import {
+  CONTACTO_CLUB_NORTE,
+  CONTACTO_VACIO,
+} from "@/ui/features/sedes/datos-ejemplo";
 
 const PERSONAS = {
   [PERSONA_LUCIA.id]: PERSONA_LUCIA,
@@ -21,10 +28,10 @@ export default async function PaginaDatosDelClubMock({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ como?: string }>;
+  searchParams: Promise<{ como?: string; vacio?: string }>;
 }) {
   const { slug } = await params;
-  const { como } = await searchParams;
+  const { como, vacio } = await searchParams;
   const club = clubPorSlug(slug);
   if (!club) notFound();
 
@@ -91,6 +98,25 @@ export default async function PaginaDatosDelClubMock({
             dominioBase: CLUB_CREADO_EJEMPLO.dominioBase,
           }}
         />
+
+        <section
+          id="contacto"
+          className="flex flex-col gap-4 border-t border-border pt-8 scroll-mt-28"
+        >
+          <div className="max-w-2xl">
+            <h2 className="text-lg font-medium tracking-tight">
+              Contacto y redes
+            </h2>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              Todos los campos son opcionales. Los puede editar un Admin del
+              club o un Super Admin. Las redes se eligen de una lista (y se
+              puede agregar otra) y se reordenan.
+            </p>
+          </div>
+          <FormularioContactoClub
+            inicial={vacio === "1" ? CONTACTO_VACIO : CONTACTO_CLUB_NORTE}
+          />
+        </section>
       </div>
     </ShellAdmin>
   );

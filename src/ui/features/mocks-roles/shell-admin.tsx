@@ -10,13 +10,14 @@ import { LogoElClub } from "@/ui/marca/logo-el-club";
 import { MenuMovil } from "./menu-movil";
 
 export type RolShell = "super-admin" | "admin";
-export type ActivoShell = "clubes" | "inicio" | "club" | "admins";
+export type ActivoShell = "clubes" | "inicio" | "club" | "sedes" | "admins";
 
 export type RutasShell = {
   inicioClub: (slug: string) => string;
   superAdmin: string;
   elegirClub: string;
   club: (slug: string) => string;
+  sedes?: (slug: string) => string;
   admins: (slug: string) => string;
 };
 
@@ -25,6 +26,7 @@ const RUTAS_SHELL_MOCK: RutasShell = {
   superAdmin: RUTAS_MOCK.superAdmin,
   elegirClub: RUTAS_MOCK.elegirClub,
   club: RUTAS_MOCK.club,
+  sedes: RUTAS_MOCK.sedes,
   admins: RUTAS_MOCK.admins,
 };
 
@@ -87,14 +89,22 @@ export function itemsNav({
   }
 
   if (club) {
+    const queryClub = como ? `?como=${como}` : "";
     items.push({
       etiqueta: "Club",
-      href: rutas.club(club.slug),
+      href: `${rutas.club(club.slug)}${queryClub}`,
       activo: activo === "club",
     });
+    if (rutas.sedes) {
+      items.push({
+        etiqueta: "Sedes",
+        href: `${rutas.sedes(club.slug)}${queryClub}`,
+        activo: activo === "sedes",
+      });
+    }
     items.push({
       etiqueta: "Admins",
-      href: rutas.admins(club.slug),
+      href: `${rutas.admins(club.slug)}${queryClub}`,
       activo: activo === "admins",
     });
   }

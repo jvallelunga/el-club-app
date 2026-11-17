@@ -133,6 +133,8 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 
 - El 17/11/2026 13:24 Jerónimo aprobó que un Admin pueda editar los datos estéticos de su club (nombre, escudo, color principal, color claro, color 2 y color 3) con el mismo formulario y vista previa, desde `/c/<slug>/admin/club` (ítem «Club» en el menú). El identificador, el dominio y cualquier dato que afecte las rutas de acceso quedan en solo lectura para el Admin y solo los edita el Super Admin. La action y un trigger + RLS en la base bloquean esos cambios, y un Admin no puede editar otro club (17/11/2026 13:24).
 
+- El 17/11/2026 14:39–14:43 Jerónimo pidió los datos de contacto del club (teléfono, email, dirección, web y redes sociales, todos opcionales) y las sedes con instalaciones. Las redes se eligen de una lista (Instagram, Facebook, X, YouTube, TikTok, WhatsApp, LinkedIn u otra) y se pueden agregar, quitar y reordenar. Cada sede tiene nombre, dirección y un link de Google Maps, con una vista previa del pin (en los mocks, un mapa estático sin API). Las instalaciones tienen tipo (lista de base + tipos propios del club), nombre (por ejemplo «Cancha 1») y notas opcionales. Por ahora solo hay mocks, a la espera de aprobación; el DER propuesto está en [sedes-e-instalaciones](features/sedes-e-instalaciones.md) y no se aplica migración (17/11/2026 14:39–14:43).
+
 ### Dominio
 
 - El dominio raíz del club (por ejemplo `clubejemplo.com.ar`) es el **sitio web** del club, no la app (16/11/2026 17:43).

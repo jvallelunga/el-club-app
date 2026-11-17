@@ -94,4 +94,27 @@ describe("itemsNav", () => {
       activo: false,
     });
   });
+
+  it("en los mocks, si hay ruta de sedes, suma el ítem Sedes", () => {
+    const items = itemsNav({
+      club: CLUB,
+      rol: "admin",
+      activo: "sedes",
+      rutas: {
+        ...RUTAS_SHELL_APP,
+        sedes: (slug) => `/mocks/roles/clubes/${slug}/sedes`,
+      },
+    });
+    expect(items.map((item) => item.etiqueta)).toEqual([
+      "Inicio",
+      "Club",
+      "Sedes",
+      "Admins",
+    ]);
+    expect(items[2]).toEqual({
+      etiqueta: "Sedes",
+      href: "/mocks/roles/clubes/club-de-ejemplo-del-norte/sedes",
+      activo: true,
+    });
+  });
 });

@@ -79,6 +79,34 @@ const PANTALLAS = [
     nombre: "Datos del club (Super Admin)",
     href: `${RUTAS_MOCK.club(CLUB_NORTE.slug)}?como=super-admin`,
   },
+  {
+    nombre: "Datos del club (contacto y redes)",
+    href: `${RUTAS_MOCK.club(CLUB_NORTE.slug)}?como=${PERSONA_LUCIA.id}#contacto`,
+  },
+  {
+    nombre: "Datos del club (contacto vacío)",
+    href: `${RUTAS_MOCK.club(CLUB_NORTE.slug)}?como=${PERSONA_LUCIA.id}&vacio=1#contacto`,
+  },
+  {
+    nombre: "Sedes del club de ejemplo",
+    href: `${RUTAS_MOCK.sedes(CLUB_NORTE.slug)}?como=${PERSONA_LUCIA.id}`,
+  },
+  {
+    nombre: "Sedes (vacío)",
+    href: `${RUTAS_MOCK.sedes(CLUB_NORTE.slug)}?como=${PERSONA_LUCIA.id}&vacio=1`,
+  },
+  {
+    nombre: "Nueva sede",
+    href: `${RUTAS_MOCK.sedeNueva(CLUB_NORTE.slug)}?como=${PERSONA_LUCIA.id}`,
+  },
+  {
+    nombre: "Sede (campo de deportes)",
+    href: `${RUTAS_MOCK.sede(CLUB_NORTE.slug, "campo-de-deportes")}?como=${PERSONA_LUCIA.id}`,
+  },
+  {
+    nombre: "Agregar instalación",
+    href: `${RUTAS_MOCK.instalacionNueva(CLUB_NORTE.slug, "campo-de-deportes")}?como=${PERSONA_LUCIA.id}`,
+  },
 ];
 
 export default function IndiceMocksRoles() {

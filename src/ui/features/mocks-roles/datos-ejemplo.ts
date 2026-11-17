@@ -91,6 +91,11 @@ export const RUTAS_MOCK = {
   admins: (slug: string) => `/mocks/roles/super-admin/clubes/${slug}/admins`,
   inicioClub: (slug: string) => `/mocks/roles/clubes/${slug}`,
   club: (slug: string) => `/mocks/roles/clubes/${slug}/club`,
+  sedes: (slug: string) => `/mocks/roles/clubes/${slug}/sedes`,
+  sede: (slug: string, id: string) => `/mocks/roles/clubes/${slug}/sedes/${id}`,
+  sedeNueva: (slug: string) => `/mocks/roles/clubes/${slug}/sedes/nueva`,
+  instalacionNueva: (slug: string, sedeId: string) =>
+    `/mocks/roles/clubes/${slug}/sedes/${sedeId}/instalaciones/nueva`,
 } as const;
 
 export const CLUB_CREADO_EJEMPLO = {
