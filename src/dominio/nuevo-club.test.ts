@@ -5,6 +5,7 @@ import {
   coloresParaGuardar,
   primerError,
   rutaEscudo,
+  rutaEscudoObsoleta,
   urlEscudoPublico,
   validarArchivoEscudo,
   validarDatosNuevoClub,
@@ -138,5 +139,19 @@ describe("escudo", () => {
     );
     expect(urlEscudoPublico("https://ejemplo.supabase.co", null)).toBeNull();
     expect(BUCKET_ESCUDOS).toBe("escudos");
+  });
+});
+
+describe("rutaEscudoObsoleta", () => {
+  it("no borra nada si no había escudo o si la ruta no cambia", () => {
+    expect(rutaEscudoObsoleta(null, "abc/escudo.jpg")).toBeNull();
+    expect(rutaEscudoObsoleta(undefined, "abc/escudo.jpg")).toBeNull();
+    expect(rutaEscudoObsoleta("abc/escudo.jpg", "abc/escudo.jpg")).toBeNull();
+  });
+
+  it("devuelve la ruta anterior si el archivo nuevo va a otra extensión", () => {
+    expect(rutaEscudoObsoleta("abc/escudo.jpg", "abc/escudo.png")).toBe(
+      "abc/escudo.jpg",
+    );
   });
 });

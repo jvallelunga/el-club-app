@@ -27,31 +27,57 @@ export type ResultadoCrearClubCliente =
   | { ok: true; slug: string }
   | { ok: false; error: string };
 
+export type DatosInicialesClub = {
+  nombre: string;
+  slug: string;
+  escudo: string | null;
+  colorPrincipal: string;
+  colorClaro: string;
+  color2: string | null;
+  color3: string | null;
+  dominioBase: string | null;
+};
+
 export function FormularioNuevoClubReal({
   crear,
+  inicial,
+  modo = "crear",
 }: {
   crear: (formData: FormData) => Promise<ResultadoCrearClubCliente>;
+  inicial?: DatosInicialesClub;
+  modo?: "crear" | "editar";
 }) {
+  const esEdicion = modo === "editar";
   const router = useRouter();
-  const [nombre, setNombre] = useState("");
-  const [slugManual, setSlugManual] = useState("");
-  const [editaSlug, setEditaSlug] = useState(false);
+  const [nombre, setNombre] = useState(inicial?.nombre ?? "");
+  const [slugManual, setSlugManual] = useState(inicial?.slug ?? "");
+  const [editaSlug, setEditaSlug] = useState(esEdicion);
   const [escudoArchivo, setEscudoArchivo] = useState<File | null>(null);
-  const [escudo, setEscudo] = useState<string | null>(null);
-  const [nombreArchivo, setNombreArchivo] = useState<string | null>(null);
+  const [escudo, setEscudo] = useState<string | null>(inicial?.escudo ?? null);
+  const [nombreArchivo, setNombreArchivo] = useState<string | null>(
+    esEdicion && inicial?.escudo ? "Escudo actual" : null,
+  );
   const [errorEscudo, setErrorEscudo] = useState<string | null>(null);
-  const [marca, setMarca] = useState<string>(COLOR_MARCA_VACIO);
-  const [claro, setClaro] = useState<string>(COLOR_CLARO_DEFAULT);
-  const [color2, setColor2] = useState("");
-  const [color3, setColor3] = useState("");
-  const [dominioBase, setDominioBase] = useState("");
+  const [marca, setMarca] = useState<string>(
+    inicial?.colorPrincipal ?? COLOR_MARCA_VACIO,
+  );
+  const [claro, setClaro] = useState<string>(
+    inicial?.colorClaro ?? COLOR_CLARO_DEFAULT,
+  );
+  const [color2, setColor2] = useState(inicial?.color2 ?? "");
+  const [color3, setColor3] = useState(inicial?.color3 ?? "");
+  const [dominioBase, setDominioBase] = useState(inicial?.dominioBase ?? "");
   const [intento, setIntento] = useState(false);
   const [previewAbierta, setPreviewAbierta] = useState(true);
   const [errorServidor, setErrorServidor] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const slugSugerido = useMemo(() => slugDesdeNombre(nombre), [nombre]);
-  const slug = editaSlug ? slugManual : slugSugerido;
+  const slug = esEdicion
+    ? (inicial?.slug ?? slugManual)
+    : editaSlug
+      ? slugManual
+      : slugSugerido;
   const paleta = useMemo(
     () => derivarPaleta(marca, claro, [color2, color3]),
     [marca, claro, color2, color3],
@@ -60,7 +86,7 @@ export function FormularioNuevoClubReal({
   const errores = validarDatosNuevoClub({
     nombre,
     slug,
-    slugManual: editaSlug,
+    slugManual: esEdicion || editaSlug,
     marca,
     claro,
     extras: [color2, color3],
@@ -75,7 +101,6 @@ export function FormularioNuevoClubReal({
     const error = validarArchivoEscudo(archivo.type, archivo.size);
     if (error) {
       setEscudoArchivo(null);
-      setEscudo(null);
       setNombreArchivo(archivo.name);
       setErrorEscudo(error);
       return;
@@ -114,6 +139,11 @@ export function FormularioNuevoClubReal({
       const resultado = await crear(formData);
       if (!resultado.ok) {
         setErrorServidor(resultado.error);
+        return;
+      }
+      if (esEdicion) {
+        router.push("/super-admin");
+        router.refresh();
         return;
       }
       const params = new URLSearchParams({ slug: resultado.slug });
@@ -157,23 +187,46 @@ export function FormularioNuevoClubReal({
             id="slug-club"
             name="slug"
             value={slug}
-            onChange={(evento) => {
-              setEditaSlug(true);
-              setSlugManual(evento.target.value.toLowerCase());
-            }}
+            onChange={
+              esEdicion
+                ? undefined
+                : (evento) => {
+                    setEditaSlug(true);
+                    setSlugManual(evento.target.value.toLowerCase());
+                  }
+            }
             placeholder="club-de-ejemplo"
             autoComplete="off"
             spellCheck={false}
+            readOnly={esEdicion}
+            aria-readonly={esEdicion || undefined}
             aria-invalid={mostrarErrores && Boolean(errores.slug)}
-            className="h-12 rounded-xl px-3 font-mono text-base"
+            className={
+              esEdicion
+                ? "h-12 rounded-xl bg-muted px-3 font-mono text-base"
+                : "h-12 rounded-xl px-3 font-mono text-base"
+            }
           />
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Se sugiere a partir del nombre. Lo podés editar: aparece en las
-            URLs, por ejemplo{" "}
-            <span className="font-medium text-foreground">
-              /c/{slug || "identificador"}/admin
-            </span>
-            .
+            {esEdicion ? (
+              <>
+                Es el identificador del club y no se puede cambiar. Aparece en
+                las URLs, por ejemplo{" "}
+                <span className="font-medium text-foreground">
+                  /c/{slug || "identificador"}/admin
+                </span>
+                .
+              </>
+            ) : (
+              <>
+                Se sugiere a partir del nombre. Lo podés editar: aparece en las
+                URLs, por ejemplo{" "}
+                <span className="font-medium text-foreground">
+                  /c/{slug || "identificador"}/admin
+                </span>
+                .
+              </>
+            )}
           </p>
           {mostrarErrores && errores.slug ? (
             <p className="text-sm text-destructive" role="alert">
@@ -191,7 +244,7 @@ export function FormularioNuevoClubReal({
             className="flex h-12 cursor-pointer items-center gap-3 rounded-xl border border-input bg-background px-3 text-sm"
           >
             <span className="rounded-lg bg-muted px-3 py-1.5 font-medium">
-              Subir imagen
+              {esEdicion ? "Reemplazar imagen" : "Subir imagen"}
             </span>
             <span className="min-w-0 truncate text-muted-foreground">
               {nombreArchivo ?? "Ningún archivo elegido"}
@@ -206,8 +259,20 @@ export function FormularioNuevoClubReal({
             />
           </label>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Un archivo a color, PNG si podés (también JPG, WebP o GIF, hasta 2
-            MB). Si no hay escudo, se muestran las iniciales del nombre.
+            {esEdicion ? (
+              <>
+                Si no subís otra imagen, se mantiene el escudo actual. Si subís
+                una nueva (PNG, JPG, WebP o GIF, hasta 2 MB), reemplaza a la
+                anterior. Si no hay escudo, se muestran las iniciales del
+                nombre.
+              </>
+            ) : (
+              <>
+                Un archivo a color, PNG si podés (también JPG, WebP o GIF,
+                hasta 2 MB). Si no hay escudo, se muestran las iniciales del
+                nombre.
+              </>
+            )}
           </p>
           {mostrarErrores && errores.escudo ? (
             <p className="text-sm text-destructive" role="alert">
@@ -356,7 +421,13 @@ export function FormularioNuevoClubReal({
           </p>
         ) : null}
         <BotonPrincipal type="submit" disabled={pending}>
-          {pending ? "Creando…" : "Crear club"}
+          {esEdicion
+            ? pending
+              ? "Guardando…"
+              : "Guardar cambios"
+            : pending
+              ? "Creando…"
+              : "Crear club"}
         </BotonPrincipal>
       </div>
     </form>

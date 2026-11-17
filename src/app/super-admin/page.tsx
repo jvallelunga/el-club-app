@@ -87,7 +87,8 @@ export default async function PaginaSuperAdmin() {
                   className="overflow-hidden rounded-xl border border-border bg-card"
                 >
                   <Link
-                    href={`/c/${club.slug}/admin`}
+                    href={`/super-admin/clubes/${club.slug}/editar`}
+                    aria-label={`Editar ${club.nombre}`}
                     className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/50"
                   >
                     <EscudoClub

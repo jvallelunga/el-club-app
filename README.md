@@ -94,6 +94,8 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 - Hasta que exista el ítem de personalización, se prueba con datos genéricos de ejemplo, no con un club real fijo (17/11/2026 08:26).
 - Ningún club (tampoco Los Cardos) puede quedar hardcodeado en el código, los mocks, el copy ni los datos de ejemplo. Los Cardos Rugby Club (Tandil) es el primer club real, y se va a crear con el formulario cuando toque, no aparece precargado (17/11/2026 08:26).
 
+- El 17/11/2026 10:54 Jerónimo aprobó editar un club desde la lista del Super Admin: la fila de la tarjeta (incluido el chevron) entra a `/super-admin/clubes/<slug>/editar`; «Entrar» sigue yendo al admin del club (`/c/<slug>/admin`); no hay un botón «Editar». El formulario reusa el de crear club, con los datos precargados (nombre, escudo que se puede mantener o reemplazar, color principal, color claro, colores 2 y 3, y dominio opcional) y el identificador en solo lectura. Un action solo de Super Admin actualiza el club y, si se sube un escudo nuevo, reemplaza el archivo en el Storage para no dejar el anterior (17/11/2026 10:54).
+
 ### Roles y permisos
 
 - Van después de la base y antes de la personalización ([#15](https://github.com/jvallelunga/el-club-app/issues/15)).

@@ -142,3 +142,12 @@ export function urlEscudoPublico(
   const base = supabaseUrl.replace(/\/$/, "");
   return `${base}/storage/v1/object/public/${BUCKET_ESCUDOS}/${ruta}`;
 }
+
+/** Si el escudo nuevo va a otra ruta, hay que borrar la anterior para no dejar un archivo viejo. */
+export function rutaEscudoObsoleta(
+  rutaAnterior: string | null | undefined,
+  rutaNueva: string,
+): string | null {
+  if (!rutaAnterior || rutaAnterior === rutaNueva) return null;
+  return rutaAnterior;
+}
