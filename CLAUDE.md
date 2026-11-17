@@ -61,21 +61,24 @@ Antes de cada commit: lint solo de los archivos cambiados y `npm run typecheck`.
 
 Se trabaja de a una cosa, en el orden del roadmap de `README.md` / `features/README.md`.
 
-Los issues llevan una etiqueta de estado:
+Cada issue tiene exactamente una etiqueta de estado a la vez:
 
-- `backlog`: idea a futuro, todavía no especificada. **No la tomes.**
-- `ready`: especificada, con frame y criterios de aceptación. **Solo tomás issues `ready`.**
-- `in progress`: se está desarrollando.
+1. `backlog`: idea a futuro, todavía no especificada. **No la tomes.**
+2. `refinement`: el PO (El Club App) está preparando el ticket (contexto, frame, criterios de aceptación, modelo de datos, permisos, fuera de alcance, preguntas abiertas). **No la tomes.** El PO no usa `in progress`.
+3. `ready`: hay información suficiente para desarrollarlo sin inventar nada. Cuando el PO lo pasa a `ready`, saca `refinement`. **Solo tomás issues `ready`**, empezando por el más viejo. Revisá cada 2 horas. El PO no pasa a `ready` un issue que todavía tenga preguntas abiertas sin responder.
+4. `in progress`: exclusiva del desarrollo. La ponés cuando tomás el issue: sacá `ready` y comentá en el issue «Tomado. Rama: …».
+5. `done`: la ponés cuando terminás y abrís el PR contra `desarrollo`, y sacás `in progress`.
+6. Cerrado: el issue se cierra solo cuando Jerónimo mergea el PR (`Closes #n`). **Nunca mergees.**
 
-Al empezar un issue `ready`, cambiá la etiqueta a `in progress` y sacá `ready`. En el PR usá `Closes #N` para que el issue se cierre al mergear.
+Mientras el issue está en `in progress`, si te falta algo, dejá las preguntas en los comentarios del issue y esperá la respuesta del PO. El PO responde ahí, sin cambiar la etiqueta.
 
-1. Tomá un issue de GitHub que esté en `ready` (nunca uno en `backlog`).
-2. Pasalo a `in progress` y sacá `ready`.
+1. Cada 2 horas, revisá los issues `ready` y tomá el más viejo.
+2. Poné `in progress`, sacá `ready` y comentá «Tomado. Rama: …».
 3. Leé `features/<feature>.md` y el frame (si hay, en `docs/frames/` o linkeado en el issue).
 4. Si hay UI nueva: primero los **mocks** (pantallas pulidas, con layout real de mobile, tablet y desktop) en un PR. Esperá la **aprobación de Jerónimo en ese PR** antes de implementar de verdad (migración, RLS, pantallas reales).
 5. Recién después implementá, en el mismo issue o en un PR siguiente, según lo que pida el issue.
-6. El PR contra `desarrollo` incluye `Closes #N`. Al mergear, el issue se cierra.
-7. No inventes requisitos, datos de un club, ni decisiones de producto. Si falta algo, preguntá en el issue o en el PR y dejalo como pregunta abierta.
+6. Cuando termines, poné `done`, sacá `in progress` y abrí el PR contra `desarrollo` con `Closes #n`. No mergees: el issue se cierra cuando Jerónimo mergea.
+7. No inventes requisitos, datos de un club, ni decisiones de producto. Si falta algo, preguntá en los comentarios del issue y esperá la respuesta, sin cambiar la etiqueta.
 
 ## Reglas
 

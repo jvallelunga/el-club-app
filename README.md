@@ -176,7 +176,15 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 
 ### Issues
 
-- El 17/11/2026 16:49 Jerónimo definió el estado de los issues con tres etiquetas: `backlog` (idea a futuro, todavía no especificada), `ready` (especificada, con frame y criterios de aceptación; Claude puede tomarla) e `in progress` (en desarrollo). Claude solo toma issues `ready`; al empezar, pasa la etiqueta a `in progress` y saca `ready`. No toma `backlog`. Al mergear el PR, el issue se cierra con «Closes #N». Los issues anteriores se borraron (17/11/2026 16:49).
+- El 17/11/2026 16:55 Jerónimo actualizó el flujo de issues (reemplaza el de las 16:49). Cada issue tiene exactamente una etiqueta de estado a la vez:
+  1. `backlog`: idea a futuro, todavía no especificada.
+  2. `refinement`: el PO (El Club App) está preparando el ticket (contexto, frame, criterios de aceptación, modelo de datos, permisos, fuera de alcance, preguntas abiertas). El PO no usa `in progress`.
+  3. `ready`: hay información suficiente para desarrollarlo sin inventar nada. Al pasarlo a `ready`, se saca `refinement`. El desarrollo toma solo los `ready`, empezando por el más viejo, y revisa cada 2 horas. El PO no pasa a `ready` un issue con preguntas abiertas sin responder.
+  4. `in progress`: exclusiva del desarrollo. Se pone cuando el desarrollo toma el issue y comenta «Tomado. Rama: …» (saca `ready`).
+  5. `done`: la pone el desarrollo cuando termina y abre el PR contra `desarrollo` (saca `in progress`).
+  6. Cerrado: el issue se cierra solo cuando Jerónimo mergea el PR («Closes #n»). El desarrollo nunca mergea.
+- Mientras un issue está en `in progress`, el desarrollo puede dejar preguntas en los comentarios; el PO las responde en el issue, sin cambiar la etiqueta.
+- Los issues anteriores se habían borrado el 17/11/2026 16:49.
 
 ### Redacción
 
@@ -192,4 +200,4 @@ Agrupadas por feature. Fecha: 15/11/2026 (hora de Argentina), con Jerónimo.
 - Merge normal, nunca squash. Producción solo con el OK explícito de Jerónimo.
 - Los mocks de UI se aprueban antes de aplicarlos.
 - Rama de integración: `desarrollo`. `main` es producción, cuando exista.
-- Los issues se etiquetan con `backlog`, `ready` o `in progress`. El desarrollo solo toma los `ready` (17/11/2026 16:49).
+- Los issues se etiquetan con exactamente una de: `backlog`, `refinement`, `ready`, `in progress` o `done`. El desarrollo solo toma los `ready` (el más viejo primero; revisa cada 2 horas). El issue se cierra cuando Jerónimo mergea el PR (17/11/2026 16:55).

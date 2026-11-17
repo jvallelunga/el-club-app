@@ -4,6 +4,8 @@
 
 Closes #
 
+El issue queda en `done` (se saca `in progress`) al abrir este PR. No se mergea: el issue se cierra cuando Jerónimo mergea.
+
 ## Checklist
 
 - [ ] Si hay cambio de modelo: migración idempotente y DER actualizado (`docs/der-el-club.mmd` + `docs/der-el-club.png`) en el mismo commit.
