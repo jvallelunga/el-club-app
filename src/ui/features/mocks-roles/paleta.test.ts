@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   COLOR_CLARO_DEFAULT,
+  acentoVisible,
+  colorAlternativoDesdeMarca,
   colorHover,
   colorPressed,
   derivarPaleta,
   esHexValido,
   fondoOscuro,
+  hexAHsl,
+  hslAHex,
   luminanciaRelativa,
   normalizarHex,
   ratioContraste,
@@ -44,5 +48,30 @@ describe("derivados", () => {
     expect(ratioContraste(paleta.marca, paleta.textoSobreMarca)).toBeGreaterThanOrEqual(
       4.5,
     );
+  });
+});
+
+describe("paleta de hasta 4 colores", () => {
+  it("deriva 2, 3 y 4 desde el principal si no se cargan", () => {
+    const paleta = derivarPaleta("#1f4b3a", "#ffffff");
+    expect(paleta.colores[0]).toBe("#1f4b3a");
+    expect(paleta.explicitos).toEqual([true, false, false, false]);
+    expect(new Set(paleta.colores).size).toBe(4);
+    expect(paleta.colores[1]).toBe(colorAlternativoDesdeMarca("#1f4b3a", 2));
+  });
+
+  it("respeta los colores opcionales que sí se cargaron", () => {
+    const paleta = derivarPaleta("#1f4b3a", "#ffffff", ["#c47a2c", "", "#6a4a78"]);
+    expect(paleta.colores[1]).toBe("#c47a2c");
+    expect(paleta.colores[3]).toBe("#6a4a78");
+    expect(paleta.explicitos).toEqual([true, true, false, true]);
+    expect(paleta.colores[2]).toBe(colorAlternativoDesdeMarca("#1f4b3a", 3));
+  });
+
+  it("ajusta un acento para que se lea sobre un fondo oscuro", () => {
+    const visible = acentoVisible("#1f4b3a", "#0a0a0a");
+    expect(ratioContraste(visible, "#0a0a0a")).toBeGreaterThanOrEqual(3);
+    expect(hslAHex(0, 0, 1)).toBe("#ffffff");
+    expect(hexAHsl("#ffffff")?.l).toBeCloseTo(1, 2);
   });
 });

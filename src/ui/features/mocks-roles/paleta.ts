@@ -106,9 +106,91 @@ export function fondoOscuro(marca: string): string {
   return actual;
 }
 
+export function hexAHsl(hex: string): { h: number; s: number; l: number } | null {
+  const rgb = hexARgb(hex);
+  if (!rgb) return null;
+  const [r, g, b] = rgb.map((c) => c / 255) as [number, number, number];
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return { h: 0, s: 0, l };
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h = 0;
+  if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+  else if (max === g) h = ((b - r) / d + 2) / 6;
+  else h = ((r - g) / d + 4) / 6;
+  return { h: h * 360, s, l };
+}
+
+function hueARgb(p: number, q: number, t: number): number {
+  let tono = t;
+  if (tono < 0) tono += 1;
+  if (tono > 1) tono -= 1;
+  if (tono < 1 / 6) return p + (q - p) * 6 * tono;
+  if (tono < 1 / 2) return q;
+  if (tono < 2 / 3) return p + (q - p) * (2 / 3 - tono) * 6;
+  return p;
+}
+
+export function hslAHex(h: number, s: number, l: number): string {
+  const hh = ((h % 360) + 360) % 360;
+  const ss = Math.max(0, Math.min(1, s));
+  const ll = Math.max(0, Math.min(1, l));
+  if (ss === 0) {
+    const v = Math.round(ll * 255);
+    return rgbAHex(v, v, v);
+  }
+  const q = ll < 0.5 ? ll * (1 + ss) : ll + ss - ll * ss;
+  const p = 2 * ll - q;
+  const hk = hh / 360;
+  const r = Math.round(hueARgb(p, q, hk + 1 / 3) * 255);
+  const g = Math.round(hueARgb(p, q, hk) * 255);
+  const b = Math.round(hueARgb(p, q, hk - 1 / 3) * 255);
+  return rgbAHex(r, g, b);
+}
+
+/** Alternativas 2, 3 y 4 cuando el usuario no las carga: se derivan del color principal. */
+export function colorAlternativoDesdeMarca(
+  marca: string,
+  indice: 2 | 3 | 4,
+): string {
+  const origen = normalizarHex(marca) ?? COLOR_MARCA_VACIO;
+  const hsl = hexAHsl(origen) ?? { h: 150, s: 0.25, l: 0.18 };
+  const giro = indice === 2 ? 38 : indice === 3 ? 210 : 300;
+  const s = Math.min(0.85, Math.max(0.35, hsl.s * 1.12 + 0.08));
+  const l =
+    indice === 2
+      ? hsl.l < 0.4
+        ? Math.min(0.55, hsl.l + 0.22)
+        : Math.max(0.32, hsl.l - 0.08)
+      : indice === 3
+        ? hsl.l < 0.45
+          ? Math.min(0.5, hsl.l + 0.16)
+          : Math.max(0.3, hsl.l - 0.12)
+        : hsl.l < 0.4
+          ? Math.min(0.48, hsl.l + 0.2)
+          : Math.max(0.28, hsl.l - 0.1);
+  return hslAHex(hsl.h + giro, s, l);
+}
+
+/** Ajusta un acento para que se lea sobre un fondo (objetivo ~3:1, piezas de UI). */
+export function acentoVisible(color: string, fondo: string): string {
+  const origen = normalizarHex(color) ?? COLOR_MARCA_VACIO;
+  if (ratioContraste(origen, fondo) >= 3) return origen;
+  const hacia = luminanciaRelativa(fondo) < 0.25 ? "#ffffff" : "#000000";
+  let actual = origen;
+  for (let i = 0; i < 6 && ratioContraste(actual, fondo) < 3; i += 1) {
+    actual = mezclarHex(actual, hacia, 0.18);
+  }
+  return actual;
+}
+
 export type PaletaDerivada = {
   marca: string;
   claro: string;
+  colores: [string, string, string, string];
+  explicitos: [boolean, boolean, boolean, boolean];
   hover: string;
   pressed: string;
   oscuro: string;
@@ -117,13 +199,28 @@ export type PaletaDerivada = {
   textoSobreOscuro: "#ffffff" | "#000000";
 };
 
-export function derivarPaleta(marca: string, claro: string): PaletaDerivada {
+export function derivarPaleta(
+  marca: string,
+  claro: string,
+  extras: Array<string | undefined> = [],
+): PaletaDerivada {
   const marcaOk = normalizarHex(marca) ?? COLOR_MARCA_VACIO;
   const claroOk = normalizarHex(claro) ?? COLOR_CLARO_DEFAULT;
   const oscuro = fondoOscuro(marcaOk);
+  const extra2 = normalizarHex(extras[0] ?? "");
+  const extra3 = normalizarHex(extras[1] ?? "");
+  const extra4 = normalizarHex(extras[2] ?? "");
+  const colores: [string, string, string, string] = [
+    marcaOk,
+    extra2 ?? colorAlternativoDesdeMarca(marcaOk, 2),
+    extra3 ?? colorAlternativoDesdeMarca(marcaOk, 3),
+    extra4 ?? colorAlternativoDesdeMarca(marcaOk, 4),
+  ];
   return {
     marca: marcaOk,
     claro: claroOk,
+    colores,
+    explicitos: [true, Boolean(extra2), Boolean(extra3), Boolean(extra4)],
     hover: colorHover(marcaOk),
     pressed: colorPressed(marcaOk),
     oscuro,

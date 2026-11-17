@@ -22,7 +22,7 @@ const RECORRIDOS = [
   },
   {
     titulo: "Crear un club",
-    detalle: "Formulario corto (6 campos) con vista previa en vivo de la app.",
+    detalle: "Formulario corto: hasta 4 colores, color claro y vista previa en vivo.",
     href: RUTAS_MOCK.nuevoClub,
   },
   {
@@ -57,7 +57,7 @@ const PANTALLAS = [
   { nombre: "Crear club (con errores)", href: RUTAS_MOCK.nuevoClubErrores },
   {
     nombre: "Club creado",
-    href: `${RUTAS_MOCK.nuevoClubCreado}?nombre=${encodeURIComponent(CLUB_CREADO_EJEMPLO.nombre)}&slug=${CLUB_CREADO_EJEMPLO.slug}&marca=${encodeURIComponent(CLUB_CREADO_EJEMPLO.marca)}&claro=${encodeURIComponent(CLUB_CREADO_EJEMPLO.claro)}&dominio=${CLUB_CREADO_EJEMPLO.dominioBase}`,
+    href: `${RUTAS_MOCK.nuevoClubCreado}?nombre=${encodeURIComponent(CLUB_CREADO_EJEMPLO.nombre)}&slug=${CLUB_CREADO_EJEMPLO.slug}&marca=${encodeURIComponent(CLUB_CREADO_EJEMPLO.marca)}&color2=${encodeURIComponent(CLUB_CREADO_EJEMPLO.color2)}&color3=${encodeURIComponent(CLUB_CREADO_EJEMPLO.color3)}&color4=${encodeURIComponent(CLUB_CREADO_EJEMPLO.color4)}&claro=${encodeURIComponent(CLUB_CREADO_EJEMPLO.claro)}&dominio=${CLUB_CREADO_EJEMPLO.dominioBase}`,
   },
   {
     nombre: "Admins del club de ejemplo",

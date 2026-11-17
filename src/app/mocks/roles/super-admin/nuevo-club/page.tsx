@@ -16,10 +16,11 @@ export default function PaginaNuevoClub() {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <div className="flex flex-col gap-2">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Seis datos alcanzan para crear el club: nombre, identificador,
-            escudo, color de marca, color claro y, si ya lo tiene, el dominio
-            del sitio web. El resto de la paleta se calcula en vivo. Nada de
-            un club real viene precargado.
+            Nombre, identificador, escudo, hasta 4 colores (el principal es
+            obligatorio; 2, 3 y 4 son opcionales), el color claro de fondo y,
+            si ya lo tiene, el dominio del sitio web. Si no cargás los
+            opcionales, se derivan del principal. Nada de un club real viene
+            precargado.
           </p>
         </div>
         <Suspense>

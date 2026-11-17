@@ -96,6 +96,9 @@ export const CLUB_CREADO_EJEMPLO = {
   nombre: "Club de ejemplo",
   slug: "club-de-ejemplo",
   marca: "#1f4b3a",
+  color2: "#c47a2c",
+  color3: "#2c4d6e",
+  color4: "#6a4a78",
   claro: "#ffffff",
   dominioBase: "clubejemplo.com.ar",
 } as const;

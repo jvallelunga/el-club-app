@@ -13,6 +13,7 @@ import {
   COLOR_CLARO_DEFAULT,
   COLOR_MARCA_VACIO,
   ESTADOS_SISTEMA,
+  acentoVisible,
   derivarPaleta,
   esHexValido,
   normalizarHex,
@@ -27,6 +28,7 @@ export type ErroresNuevoClub = {
   slug?: string;
   marca?: string;
   claro?: string;
+  extras?: string;
   dominioBase?: string;
 };
 
@@ -36,6 +38,7 @@ function validar(valores: {
   slugManual: boolean;
   marca: string;
   claro: string;
+  extras: string[];
   dominioBase: string;
 }): ErroresNuevoClub {
   const errores: ErroresNuevoClub = {};
@@ -57,6 +60,12 @@ function validar(valores: {
   }
   if (!esHexValido(valores.claro)) {
     errores.claro = "Usá un color hexadecimal, por ejemplo #ffffff.";
+  }
+  const extraInvalido = valores.extras.some(
+    (extra) => extra.trim() !== "" && !esHexValido(extra),
+  );
+  if (extraInvalido) {
+    errores.extras = "Los colores opcionales van en hexadecimal, por ejemplo #c47a2c. Si no los cargás, se derivan del principal.";
   }
   const errorDominio = validarDominioBase(valores.dominioBase);
   if (errorDominio) errores.dominioBase = errorDominio;
@@ -82,6 +91,15 @@ export function FormularioNuevoClub() {
   const [claro, setClaro] = useState<string>(
     conDatos ? CLUB_CREADO_EJEMPLO.claro : COLOR_CLARO_DEFAULT,
   );
+  const [extras, setExtras] = useState<string[]>(
+    conDatos
+      ? [
+          CLUB_CREADO_EJEMPLO.color2,
+          CLUB_CREADO_EJEMPLO.color3,
+          CLUB_CREADO_EJEMPLO.color4,
+        ]
+      : [],
+  );
   const [dominioBase, setDominioBase] = useState(
     conDatos
       ? CLUB_CREADO_EJEMPLO.dominioBase
@@ -94,7 +112,7 @@ export function FormularioNuevoClub() {
 
   const slugSugerido = useMemo(() => slugDesdeNombre(nombre), [nombre]);
   const slug = editaSlug ? slugManual : slugSugerido;
-  const paleta = useMemo(() => derivarPaleta(marca, claro), [marca, claro]);
+  const paleta = useMemo(() => derivarPaleta(marca, claro, extras), [marca, claro, extras]);
 
   const errores = validar({
     nombre,
@@ -102,6 +120,7 @@ export function FormularioNuevoClub() {
     slugManual: editaSlug,
     marca,
     claro,
+    extras,
     dominioBase,
   });
   const hayErrores = Object.keys(errores).length > 0;
@@ -135,6 +154,11 @@ export function FormularioNuevoClub() {
       slug,
       marca: paleta.marca,
       claro: paleta.claro,
+    });
+    const nombresExtra = ["color2", "color3", "color4"] as const;
+    extras.forEach((extra, indice) => {
+      const normalizado = normalizarHex(extra);
+      if (normalizado) params.set(nombresExtra[indice], normalizado);
     });
     if (dominioBase.trim()) params.set("dominio", dominioBase.trim().toLowerCase());
     router.push(`${RUTAS_MOCK.nuevoClubCreado}?${params.toString()}`);
@@ -230,35 +254,73 @@ export function FormularioNuevoClub() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           <p className="text-sm font-medium">Paleta</p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <CampoColor
-              id="color-marca"
-              etiqueta="Color de marca"
-              valor={marca}
-              invalido={mostrarErrores && Boolean(errores.marca)}
-              onChange={setMarca}
-              ayuda="Botones, header y acentos."
-            />
-            <CampoColor
-              id="color-claro"
-              etiqueta="Color claro"
-              valor={claro}
-              invalido={mostrarErrores && Boolean(errores.claro)}
-              onChange={setClaro}
-              ayuda="Fondos claros. Si no lo cambiás, queda #ffffff."
-            />
-          </div>
-          {mostrarErrores && (errores.marca || errores.claro) ? (
+          <CampoColor
+            id="color-1"
+            etiqueta="Color 1 · principal"
+            valor={marca}
+            invalido={mostrarErrores && Boolean(errores.marca)}
+            onChange={setMarca}
+            ayuda="Obligatorio. Botones, header y acentos principales."
+          />
+          {extras.map((extra, indice) => {
+            const numero = indice + 2;
+            const usos =
+              numero === 2
+                ? "Insignias y líneas."
+                : numero === 3
+                  ? "Indicador en vivo."
+                  : "Destacados.";
+            return (
+              <CampoColor
+                key={`color-${numero}`}
+                id={`color-${numero}`}
+                etiqueta={`Color ${numero}`}
+                opcional
+                valor={extra}
+                sugerido={paleta.colores[indice + 1]}
+                invalido={mostrarErrores && Boolean(errores.extras) && extra.trim() !== "" && !esHexValido(extra)}
+                onChange={(valor) =>
+                  setExtras((actuales) =>
+                    actuales.map((item, i) => (i === indice ? valor : item)),
+                  )
+                }
+                onQuitar={() =>
+                  setExtras((actuales) => actuales.filter((_, i) => i !== indice))
+                }
+                ayuda={`${usos} Si lo dejás vacío, se deriva del color principal.`}
+              />
+            );
+          })}
+          {extras.length < 3 ? (
+            <button
+              type="button"
+              onClick={() => setExtras((actuales) => [...actuales, ""])}
+              className="h-11 rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground hover:bg-muted/60"
+            >
+              Agregar color
+            </button>
+          ) : null}
+          <CampoColor
+            id="color-claro"
+            etiqueta="Color claro"
+            valor={claro}
+            invalido={mostrarErrores && Boolean(errores.claro)}
+            onChange={setClaro}
+            ayuda="Fondo claro, aparte de la paleta. Si no lo cambiás, queda #ffffff."
+          />
+          {mostrarErrores && (errores.marca || errores.claro || errores.extras) ? (
             <p className="text-sm text-destructive" role="alert">
-              {errores.marca ?? errores.claro}
+              {errores.marca ?? errores.claro ?? errores.extras}
             </p>
           ) : (
             <p className="text-xs leading-relaxed text-muted-foreground">
-              El hover, el pressed y el fondo oscuro se calculan solos. El
-              texto se elige para cumplir contraste AA. Los estados (ok,
-              alerta, error, en vivo) son del sistema y no cambian.
+              Hasta 4 colores: el 1 es obligatorio; 2, 3 y 4 son opcionales
+              para detalles. El hover, el pressed, el fondo oscuro y, si
+              faltan, los colores 2 a 4 se derivan del principal. El texto se
+              elige para cumplir contraste AA. Los estados (ok, alerta, error)
+              son del sistema y no cambian.
             </p>
           )}
         </div>
@@ -342,6 +404,9 @@ function CampoColor({
   invalido,
   onChange,
   ayuda,
+  opcional,
+  sugerido,
+  onQuitar,
 }: {
   id: string;
   etiqueta: string;
@@ -349,13 +414,31 @@ function CampoColor({
   invalido?: boolean;
   onChange: (valor: string) => void;
   ayuda: string;
+  opcional?: boolean;
+  sugerido?: string;
+  onQuitar?: () => void;
 }) {
-  const paraPicker = normalizarHex(valor) ?? COLOR_CLARO_DEFAULT;
+  const paraPicker =
+    normalizarHex(valor) ?? normalizarHex(sugerido ?? "") ?? COLOR_CLARO_DEFAULT;
   return (
     <div className="flex flex-col gap-2">
-      <Label htmlFor={id} className="text-sm">
-        {etiqueta}
-      </Label>
+      <div className="flex items-baseline justify-between gap-3">
+        <Label htmlFor={id} className="text-sm">
+          {etiqueta}{" "}
+          {opcional ? (
+            <span className="font-normal text-muted-foreground">(opcional)</span>
+          ) : null}
+        </Label>
+        {onQuitar ? (
+          <button
+            type="button"
+            onClick={onQuitar}
+            className="text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            Quitar
+          </button>
+        ) : null}
+      </div>
       <div className="flex items-center gap-3">
         <input
           id={id}
@@ -367,6 +450,7 @@ function CampoColor({
         <Input
           value={valor}
           onChange={(evento) => onChange(evento.target.value)}
+          placeholder={sugerido ?? "#ffffff"}
           spellCheck={false}
           aria-invalid={invalido}
           className="h-11 rounded-xl font-mono text-sm"
@@ -407,6 +491,7 @@ export function VistaPreviaClub({
           paleta={paleta}
         />
         <div className="flex flex-col gap-3 p-3" style={{ background: paleta.claro }}>
+          <FilaColores paleta={paleta} />
           <div className="flex gap-2">
             <BotonMarca paleta={paleta} tono="marca">
               Ver club
@@ -460,6 +545,33 @@ export function VistaPreviaClub({
   );
 }
 
+function FilaColores({ paleta }: { paleta: PaletaDerivada }) {
+  return (
+    <div className="flex gap-1.5" aria-label="Paleta de hasta 4 colores">
+      {paleta.colores.map((color, indice) => (
+        <span
+          key={`${color}-${indice}`}
+          className="flex h-7 flex-1 flex-col overflow-hidden rounded-md ring-1 ring-black/10"
+          title={`Color ${indice + 1}${paleta.explicitos[indice] ? "" : " (derivado)"}`}
+        >
+          <span className="min-h-0 flex-1" style={{ background: color }} />
+          <span
+            className="px-1 py-0.5 text-center text-[9px] leading-none"
+            style={{
+              background: paleta.claro,
+              color: paleta.textoSobreClaro,
+              opacity: 0.7,
+            }}
+          >
+            {indice + 1}
+            {paleta.explicitos[indice] ? "" : "*"}
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function EncabezadoPreview({
   visible,
   iniciales,
@@ -473,8 +585,12 @@ function EncabezadoPreview({
 }) {
   return (
     <div
-      className="flex items-center gap-3 px-3 py-3"
-      style={{ background: paleta.marca, color: paleta.textoSobreMarca }}
+      className="flex items-center gap-3 border-b-2 px-3 py-3"
+      style={{
+        background: paleta.marca,
+        color: paleta.textoSobreMarca,
+        borderColor: paleta.colores[1],
+      }}
     >
       <div
         className="flex size-10 shrink-0 items-center justify-center overflow-hidden bg-white ring-1 ring-black/10"
@@ -537,9 +653,10 @@ function TarjetaEjemplo({
   const fondo = variante === "clara" ? paleta.claro : paleta.oscuro;
   const texto =
     variante === "clara" ? paleta.textoSobreClaro : paleta.textoSobreOscuro;
-  const enVivo = ESTADOS_SISTEMA.enVivo;
-  const chipFondo = variante === "clara" ? enVivo.claro : enVivo.oscuro;
+  const linea = acentoVisible(paleta.colores[1], fondo);
+  const chipFondo = acentoVisible(paleta.colores[2], fondo);
   const chipTexto = textoConContrasteAA(chipFondo);
+  const destacado = acentoVisible(paleta.colores[3], fondo);
 
   return (
     <div
@@ -548,8 +665,14 @@ function TarjetaEjemplo({
         background: fondo,
         color: texto,
         borderColor: variante === "clara" ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.12)",
+        boxShadow: `inset 3px 0 0 ${destacado}`,
       }}
     >
+      <div
+        className="h-0.5 w-full rounded-full"
+        style={{ background: linea }}
+        aria-hidden
+      />
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-medium tracking-wide uppercase opacity-70">
           Próximo partido
