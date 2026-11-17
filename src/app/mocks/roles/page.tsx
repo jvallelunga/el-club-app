@@ -5,6 +5,7 @@ import {
   PERSONA_ANA,
   PERSONA_LUCIA,
   PERSONA_MARTIN,
+  CLUB_CREADO_EJEMPLO,
   RUTAS_MOCK,
 } from "@/ui/features/mocks-roles/datos-ejemplo";
 import {
@@ -21,7 +22,7 @@ const RECORRIDOS = [
   },
   {
     titulo: "Crear un club",
-    detalle: "Formulario completo: nombre, identificador, escudo, paleta y dominio.",
+    detalle: "Formulario corto (6 campos) con vista previa en vivo de la app.",
     href: RUTAS_MOCK.nuevoClub,
   },
   {
@@ -52,10 +53,11 @@ const PANTALLAS = [
   { nombre: "Elegir club", href: RUTAS_MOCK.elegirClub },
   { nombre: "Clubes (Super Admin)", href: RUTAS_MOCK.superAdmin },
   { nombre: "Crear club", href: RUTAS_MOCK.nuevoClub },
+  { nombre: "Crear club (con datos)", href: RUTAS_MOCK.nuevoClubDatos },
   { nombre: "Crear club (con errores)", href: RUTAS_MOCK.nuevoClubErrores },
   {
     nombre: "Club creado",
-    href: `${RUTAS_MOCK.nuevoClubCreado}?nombre=${encodeURIComponent("Club de ejemplo")}&slug=club-de-ejemplo&primario=${encodeURIComponent("#1f4b3a")}&secundario=${encodeURIComponent("#d8a017")}&dominio=clubejemplo.com.ar`,
+    href: `${RUTAS_MOCK.nuevoClubCreado}?nombre=${encodeURIComponent(CLUB_CREADO_EJEMPLO.nombre)}&slug=${CLUB_CREADO_EJEMPLO.slug}&marca=${encodeURIComponent(CLUB_CREADO_EJEMPLO.marca)}&claro=${encodeURIComponent(CLUB_CREADO_EJEMPLO.claro)}&dominio=${CLUB_CREADO_EJEMPLO.dominioBase}`,
   },
   {
     nombre: "Admins del club de ejemplo",

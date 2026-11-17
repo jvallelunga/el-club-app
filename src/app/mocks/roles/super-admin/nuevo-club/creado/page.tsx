@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useSyncExternalStore } from "react";
+import { Suspense, useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CircleCheck } from "lucide-react";
@@ -12,10 +12,13 @@ import {
   BotonPrincipal,
   EtiquetaEjemplo,
 } from "@/ui/features/mocks-roles/marco-mock";
-import { CLAVE_ESCUDO, VistaPreviaClub } from "@/ui/features/mocks-roles/formulario-nuevo-club";
+import {
+  CLAVE_ESCUDO,
+  VistaPreviaClub,
+} from "@/ui/features/mocks-roles/formulario-nuevo-club";
+import { derivarPaleta } from "@/ui/features/mocks-roles/paleta";
 import { ShellAdmin } from "@/ui/features/mocks-roles/shell-admin";
 import { Button } from "@/ui/nativos/button";
-
 
 function leerEscudoMock(): string | null {
   try {
@@ -32,12 +35,14 @@ function suscribirEscudoMock(alCambiar: () => void) {
 
 function PaginaClubCreadoContenido() {
   const params = useSearchParams();
-  const nombre = params.get("nombre")?.trim() || CLUB_CREADO_EJEMPLO.nombre;
-  const slug = params.get("slug")?.trim() || CLUB_CREADO_EJEMPLO.slug;
-  const primario = params.get("primario")?.trim() || CLUB_CREADO_EJEMPLO.primario;
-  const secundario =
-    params.get("secundario")?.trim() || CLUB_CREADO_EJEMPLO.secundario;
-  const dominioBase = params.get("dominio")?.trim() ?? "";
+  const hayQuery = params.toString().length > 0;
+  const ejemplo = hayQuery ? null : CLUB_CREADO_EJEMPLO;
+  const nombre = params.get("nombre")?.trim() || ejemplo?.nombre || "";
+  const slug = params.get("slug")?.trim() || ejemplo?.slug || "";
+  const marca = params.get("marca")?.trim() || ejemplo?.marca || "";
+  const claro = params.get("claro")?.trim() || ejemplo?.claro || "";
+  const dominioBase = params.get("dominio")?.trim() ?? ejemplo?.dominioBase ?? "";
+  const paleta = useMemo(() => derivarPaleta(marca, claro), [marca, claro]);
   const escudo = useSyncExternalStore(
     suscribirEscudoMock,
     leerEscudoMock,
@@ -52,7 +57,7 @@ function PaginaClubCreadoContenido() {
       activo="clubes"
       salirEnMobile={false}
     >
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 lg:flex-row lg:items-start">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 md:flex-row md:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-6">
           <div className="flex size-14 items-center justify-center rounded-full bg-muted">
             <CircleCheck className="size-6" />
@@ -106,13 +111,12 @@ function PaginaClubCreadoContenido() {
             </Button>
           </div>
         </div>
-        <div className="w-full lg:w-72">
+        <div className="w-full md:w-80 lg:w-[22rem]">
           <VistaPreviaClub
             nombre={nombre}
             slug={slug}
             escudo={escudo}
-            primario={primario}
-            secundario={secundario}
+            paleta={paleta}
             dominioBase={dominioBase}
           />
         </div>

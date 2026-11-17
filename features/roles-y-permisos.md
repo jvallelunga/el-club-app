@@ -45,6 +45,7 @@ Pensadas primero para celular y optimizadas para tablet y desktop (mismo markup,
 | Elegir club (solo si es Admin de más de un club) | `/mocks/roles/elegir-club` |
 | Lista de clubes (Super Admin) | `/mocks/roles/super-admin` |
 | Crear club (formulario completo) | `/mocks/roles/super-admin/nuevo-club` (también `/mocks/crear-club`) |
+| Crear club con datos de ejemplo | `/mocks/roles/super-admin/nuevo-club?datos=1` |
 | Crear club con errores de validación | `/mocks/roles/super-admin/nuevo-club?errores=1` |
 | Club creado | `/mocks/roles/super-admin/nuevo-club/creado` |
 | Admins de un club (agregar por email / quitar, con confirmación) | `/mocks/roles/super-admin/clubes/[slug]/admins` |
@@ -81,4 +82,4 @@ Flujos:
 - El formulario real de crear club no se implementa hasta aprobar los mocks del formulario completo: vacío (nombre, identificador sugerido y editable, escudo con vista previa, paleta primario/secundario con vista previa, dominio base opcional con la explicación de `admin.` / `vivo.` y el fallback `/c/<slug>`), estado con errores de validación, y club creado con lo cargado y un botón para nombrar Admins (17/11/2026 08:26).
 - Ningún club (tampoco Los Cardos) puede quedar hardcodeado en el código, los mocks, el copy ni los datos de ejemplo (17/11/2026 08:26).
 - El ingreso con Google arranca solo por POST; el `redirect_to` de OAuth es `/auth/callback` sin query; el destino interno va en cookie; las cookies de PKCE y de sesión se aplican en la redirección (17/11/2026 08:34).
-
+- El 17/11/2026 09:04 Jerónimo aprobó el formulario corto de crear club: 6 campos (nombre, identificador sugerido y editable, escudo, color de marca HEX + selector, color claro con default `#ffffff`, dominio opcional con la explicación de `admin.` / `vivo.` y el fallback `/c/<slug>`). Hover, pressed, fondo oscuro, texto con contraste AA e iniciales sin escudo se derivan en vivo. Los estados del sistema quedan fijos. La vista previa es en vivo (a la derecha en tablet y desktop; en mobile, debajo con toggle) y muestra header con escudo y nombre, botones con el color de marca y una tarjeta de ejemplo en claro y en oscuro. Los mocks cubren vacío, con datos de ejemplo genéricos, con errores y club creado. Lo demás de la identidad queda para la personalización. Todavía no se implementa el formulario real.

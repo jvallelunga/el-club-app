@@ -13,12 +13,13 @@ export default function PaginaNuevoClub() {
       activo="clubes"
       salirEnMobile={false}
     >
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <div className="flex flex-col gap-2">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Completá el nombre, el identificador, el escudo, la paleta y, si
-            ya lo tiene, el dominio del sitio web. Nada viene precargado: cada
-            club se arma con sus datos.
+            Seis datos alcanzan para crear el club: nombre, identificador,
+            escudo, color de marca, color claro y, si ya lo tiene, el dominio
+            del sitio web. El resto de la paleta se calcula en vivo. Nada de
+            un club real viene precargado.
           </p>
         </div>
         <Suspense>

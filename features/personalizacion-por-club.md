@@ -25,3 +25,4 @@ Cada club personaliza la app con su nombre, escudo o logo, paleta de colores, y 
 
 - Es multi-club a futuro: cada club personaliza nombre, escudo o logo, paleta, dominio y PWA; las funcionalidades son las mismas (15/11/2026).
 - Los Cardos Rugby Club (Tandil) es el primer club real (15/11/2026), pero no puede estar fijo en el código, los mocks, el copy ni los datos de ejemplo (17/11/2026 08:26).
+- Al crear un club se piden solo el escudo a color, un color de marca y un color claro (default `#ffffff`). El resto de la paleta, las tipografías, las variantes de logo (vector, transparente, monocromo) y la PWA se cargan después, en este ítem de personalización (17/11/2026 09:04).

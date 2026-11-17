@@ -85,6 +85,7 @@ export const RUTAS_MOCK = {
   elegirClub: "/mocks/roles/elegir-club",
   superAdmin: "/mocks/roles/super-admin",
   nuevoClub: "/mocks/roles/super-admin/nuevo-club",
+  nuevoClubDatos: "/mocks/roles/super-admin/nuevo-club?datos=1",
   nuevoClubErrores: "/mocks/roles/super-admin/nuevo-club?errores=1",
   nuevoClubCreado: "/mocks/roles/super-admin/nuevo-club/creado",
   admins: (slug: string) => `/mocks/roles/super-admin/clubes/${slug}/admins`,
@@ -94,7 +95,7 @@ export const RUTAS_MOCK = {
 export const CLUB_CREADO_EJEMPLO = {
   nombre: "Club de ejemplo",
   slug: "club-de-ejemplo",
-  primario: "#1f4b3a",
-  secundario: "#d8a017",
+  marca: "#1f4b3a",
+  claro: "#ffffff",
   dominioBase: "clubejemplo.com.ar",
 } as const;
