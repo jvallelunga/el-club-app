@@ -31,6 +31,10 @@ export const RUTAS_SHELL_APP: RutasShell = {
   admins: (slug) => `/super-admin/clubes/${slug}/admins`,
 };
 
+/** Cabeceras de escritorio (sidebar y barra superior): misma altura fija para que el borde inferior quede alineado. */
+const CABECERA_ESCRITORIO =
+  "flex h-[72px] shrink-0 items-center border-b border-border";
+
 type ItemNav = {
   etiqueta: string;
   href: string;
@@ -188,7 +192,7 @@ export function ShellAdmin({
 
       <div className="flex flex-1 flex-col lg:flex-row">
         <aside className="sticky top-0 hidden h-svh w-64 shrink-0 flex-col border-r border-border bg-background lg:flex">
-          <div className="flex items-center gap-3 border-b border-border px-4 py-4">
+          <div className={cn(CABECERA_ESCRITORIO, "gap-3 px-4")}>
             {club ? (
               <>
                 <EscudoClub club={club} tamano="sm" />
@@ -237,7 +241,7 @@ export function ShellAdmin({
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-10 hidden border-b border-border bg-background/90 px-8 py-3 backdrop-blur lg:flex">
+          <header className={cn(CABECERA_ESCRITORIO, "sticky top-0 z-10 hidden bg-background/90 px-8 backdrop-blur lg:flex")}>
             <div className="flex w-full items-center gap-3">
               <div className="min-w-0 flex-1">
                 <h1 className="truncate text-base font-medium tracking-tight">

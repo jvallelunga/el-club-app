@@ -36,6 +36,7 @@ type ClubVisible = {
   id: string;
   slug: string;
   nombre: string;
+  escudo: string | null;
 };
 
 export function PantallaAdminsReal({
@@ -138,7 +139,7 @@ export function PantallaAdminsReal({
     slug: club.slug,
     nombre: club.nombre,
     iniciales: inicialesDesdeNombre(club.nombre),
-    escudo: null as string | null,
+    escudo: club.escudo,
   };
 
   return (

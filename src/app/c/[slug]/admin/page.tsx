@@ -6,11 +6,13 @@ import {
   ShellAdmin,
 } from "@/ui/features/mocks-roles/shell-admin";
 import { inicialesDesdeNombre } from "@/dominio/slug";
+import { urlEscudoPublico } from "@/dominio/nuevo-club";
 import {
   adminDelClubRequerido,
   sesionRequerida,
 } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
+import { urlYClaveAnon } from "@/datos/env-supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +31,7 @@ export default async function PaginaAdminClub({
     slug: club.slug,
     nombre: club.nombre,
     iniciales: inicialesDesdeNombre(club.nombre),
-    escudo: null as string | null,
+    escudo: urlEscudoPublico(urlYClaveAnon().url, club.escudo_ruta),
   };
 
   const hostAdmin = club.dominio_base

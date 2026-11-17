@@ -7,6 +7,8 @@ import {
 } from "@/datos/comandos/clubes";
 import { superAdminRequerido } from "@/datos/consultas/acceso";
 import { adminsYInvitaciones, clubPorSlug } from "@/datos/consultas/clubes";
+import { urlYClaveAnon } from "@/datos/env-supabase";
+import { urlEscudoPublico } from "@/dominio/nuevo-club";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +22,12 @@ export default async function PaginaAdminsClub({
   const club = await clubPorSlug(slug);
   if (!club) notFound();
   const clubId = club.id;
-  const clubVisible = { id: club.id, slug: club.slug, nombre: club.nombre };
+  const clubVisible = {
+    id: club.id,
+    slug: club.slug,
+    nombre: club.nombre,
+    escudo: urlEscudoPublico(urlYClaveAnon().url, club.escudo_ruta),
+  };
 
   const { admins, invitaciones } = await adminsYInvitaciones(clubId);
 

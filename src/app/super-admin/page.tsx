@@ -8,7 +8,9 @@ import {
 } from "@/ui/features/mocks-roles/shell-admin";
 import { Button } from "@/ui/nativos/button";
 import { inicialesDesdeNombre } from "@/dominio/slug";
+import { urlEscudoPublico } from "@/dominio/nuevo-club";
 import { superAdminRequerido } from "@/datos/consultas/acceso";
+import { urlYClaveAnon } from "@/datos/env-supabase";
 import {
   cantidadAdminsPorClub,
   listarClubes,
@@ -35,6 +37,7 @@ export default async function PaginaSuperAdmin() {
   await superAdminRequerido("/super-admin");
   const clubes = await listarClubes();
   const conteo = await cantidadAdminsPorClub(clubes.map((club) => club.id));
+  const supabaseUrl = urlYClaveAnon().url;
 
   return (
     <ShellAdmin
@@ -91,7 +94,7 @@ export default async function PaginaSuperAdmin() {
                       club={{
                         nombre: club.nombre,
                         iniciales: inicialesDesdeNombre(club.nombre),
-                        escudo: null,
+                        escudo: urlEscudoPublico(supabaseUrl, club.escudo_ruta),
                       }}
                     />
                     <div className="min-w-0 flex-1">
