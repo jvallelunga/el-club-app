@@ -6,6 +6,10 @@ import { Input } from "@/ui/nativos/input";
 import { Label } from "@/ui/nativos/label";
 import { BotonPrincipal } from "@/ui/compartidos/marco";
 import { cn } from "@/lib/utils";
+import {
+  TIPOS_INSTALACION,
+  type ClaveTipoInstalacion,
+} from "@/dominio/tipos-instalacion";
 
 const CAMPO = "h-12 rounded-xl px-3 text-base";
 const SELECT = cn(CAMPO, "w-full border border-input bg-background");
@@ -14,50 +18,33 @@ export type ResultadoGuardarInstalacion =
   | { ok: true; id?: string }
   | { ok: false; error: string };
 
-export type OpcionTipoInstalacion = {
-  id: string;
-  nombre: string;
-  base: boolean;
-};
-
 export type InicialInstalacion = {
-  tipoId: string;
+  tipo: ClaveTipoInstalacion;
   nombre: string;
   notas: string;
 };
 
 export function FormularioInstalacion({
-  tipos,
   destino,
   guardar,
   inicial,
   etiquetaBoton,
 }: {
-  tipos: OpcionTipoInstalacion[];
   destino: string;
   guardar: (formData: FormData) => Promise<ResultadoGuardarInstalacion>;
   inicial?: InicialInstalacion;
   etiquetaBoton?: string;
 }) {
   const router = useRouter();
-  const [tipoId, setTipoId] = useState(
-    inicial?.tipoId ?? tipos[0]?.id ?? "cancha-rugby",
+  const [tipo, setTipo] = useState<ClaveTipoInstalacion>(
+    inicial?.tipo ?? TIPOS_INSTALACION[0].clave,
   );
-  const [tipoPropio, setTipoPropio] = useState("");
   const [nombre, setNombre] = useState(inicial?.nombre ?? "");
   const [notas, setNotas] = useState(inicial?.notas ?? "");
   const [intento, setIntento] = useState(false);
   const [errorServidor, setErrorServidor] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const tipoOtra = tipos.find(
-    (tipo) => tipo.base && tipo.nombre.toLowerCase() === "otra",
-  );
-  const eligeOtra = tipoId === "otra" || tipoId === tipoOtra?.id;
-  const errorTipo =
-    eligeOtra && !tipoPropio.trim()
-      ? "Poné el nombre del tipo de instalación."
-      : null;
   const errorNombre = nombre.trim()
     ? null
     : "Poné un nombre, por ejemplo «Cancha 1».";
@@ -72,10 +59,9 @@ export function FormularioInstalacion({
         evento.preventDefault();
         setIntento(true);
         setErrorServidor(null);
-        if (errorTipo || errorNombre) return;
+        if (errorNombre) return;
         const formData = new FormData();
-        formData.set("tipo_instalacion_id", tipoId);
-        formData.set("tipo_propio", tipoPropio);
+        formData.set("tipo", tipo);
         formData.set("nombre", nombre);
         formData.set("notas", notas);
         startTransition(async () => {
@@ -95,58 +81,21 @@ export function FormularioInstalacion({
         </Label>
         <select
           id="ins-tipo"
-          value={tipoId}
-          onChange={(e) => setTipoId(e.target.value)}
+          value={tipo}
+          onChange={(e) => setTipo(e.target.value as ClaveTipoInstalacion)}
           className={SELECT}
         >
-          <optgroup label="Tipos de base">
-            {tipos
-              .filter((tipo) => tipo.base)
-              .map((tipo) => (
-                <option key={tipo.id} value={tipo.id}>
-                  {tipo.nombre}
-                </option>
-              ))}
-          </optgroup>
-          {tipos.some((tipo) => !tipo.base) ? (
-            <optgroup label="Tipos de este club">
-              {tipos
-                .filter((tipo) => !tipo.base)
-                .map((tipo) => (
-                  <option key={tipo.id} value={tipo.id}>
-                    {tipo.nombre}
-                  </option>
-                ))}
-            </optgroup>
-          ) : null}
+          {TIPOS_INSTALACION.map((opcion) => (
+            <option key={opcion.clave} value={opcion.clave}>
+              {opcion.nombre}
+            </option>
+          ))}
         </select>
         <p className="text-xs leading-relaxed text-muted-foreground">
-          La lista de base es la misma para todos los clubes. Si no alcanza,
-          elegí «Otra» y agregá un tipo propio (queda disponible para este
-          club).
+          La lista es la misma para todos los clubes. Si no está, elegí «Otra»:
+          el nombre de la instalación dice qué es.
         </p>
       </div>
-
-      {eligeOtra ? (
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="ins-tipo-propio" className="text-sm">
-            Nombre del tipo
-          </Label>
-          <Input
-            id="ins-tipo-propio"
-            value={tipoPropio}
-            onChange={(e) => setTipoPropio(e.target.value)}
-            placeholder="Por ejemplo, cantina"
-            className={CAMPO}
-            aria-invalid={intento && Boolean(errorTipo)}
-          />
-          {intento && errorTipo ? (
-            <p className="text-sm text-destructive" role="alert">
-              {errorTipo}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="ins-nombre" className="text-sm">

@@ -85,9 +85,8 @@ export default async function PaginaSede({
                 Instalaciones
               </h2>
               <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">
-                Canchas, house, pileta, vestuarios y lo que el club agregue
-                como tipo propio. Cada una tiene un nombre (por ejemplo
-                «Cancha 1») y notas opcionales.
+                Canchas, house, pileta, vestuarios y más. Cada una tiene un
+                tipo, un nombre (por ejemplo «Cancha 1») y notas opcionales.
               </p>
             </div>
             <Button asChild className="h-11 shrink-0 rounded-xl px-4">
@@ -116,7 +115,6 @@ export default async function PaginaSede({
                       <p className="font-medium">{item.nombre}</p>
                       <p className="text-sm text-muted-foreground">
                         {item.tipoNombre}
-                        {!item.tipoBase ? " · tipo del club" : ""}
                       </p>
                       {item.notas ? (
                         <p className="mt-1 text-sm text-muted-foreground">

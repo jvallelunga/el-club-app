@@ -9,7 +9,6 @@ import {
 import { errorSiNoPuedeAdministrarSedes, errorSiNoPuedeEditarClub } from "@/dominio/permisos";
 import {
   instalacionParaGuardar,
-  NOMBRE_TIPO_OTRA,
   sedeParaGuardar,
   validarInstalacion,
   validarSede,
@@ -219,73 +218,6 @@ export async function actualizarSede(
   return { ok: true };
 }
 
-async function resolverTipoInstalacion(params: {
-  clubId: string;
-  tipoId: string;
-  tipoPropio: string | null;
-  creaTipoPropio: boolean;
-}): Promise<{ ok: true; tipoId: string } | { ok: false; error: string }> {
-  const supabase = await supabaseServidor();
-
-  if (params.creaTipoPropio && params.tipoPropio) {
-    const nombre = params.tipoPropio;
-    const { data: tiposDelClub, error: errorTipos } = await supabase
-      .from("tipo_instalacion")
-      .select("id, club_id, nombre")
-      .eq("club_id", params.clubId);
-    if (errorTipos) {
-      return {
-        ok: false,
-        error: "No se pudo agregar el tipo de instalación. Probá de nuevo.",
-      };
-    }
-    const existente = (tiposDelClub ?? []).find(
-      (tipo) => tipo.nombre.toLowerCase() === nombre.toLowerCase(),
-    );
-    if (existente) return { ok: true, tipoId: existente.id };
-
-    const { data: creado, error } = await supabase
-      .from("tipo_instalacion")
-      .insert({ club_id: params.clubId, nombre })
-      .select("id")
-      .maybeSingle();
-    if (error || !creado) {
-      return {
-        ok: false,
-        error: "No se pudo agregar el tipo de instalación. Probá de nuevo.",
-      };
-    }
-    return { ok: true, tipoId: creado.id };
-  }
-
-  const { data: tipo } = await supabase
-    .from("tipo_instalacion")
-    .select("id, club_id, nombre")
-    .eq("id", params.tipoId)
-    .maybeSingle();
-  if (!tipo) {
-    return { ok: false, error: "Elegí un tipo de instalación." };
-  }
-  if (tipo.club_id && tipo.club_id !== params.clubId) {
-    return { ok: false, error: "Ese tipo no pertenece a este club." };
-  }
-  if (tipo.club_id === null && tipo.nombre === NOMBRE_TIPO_OTRA) {
-    return { ok: false, error: "Poné el nombre del tipo de instalación." };
-  }
-  return { ok: true, tipoId: tipo.id };
-}
-
-async function tipoOtraId(): Promise<string | null> {
-  const supabase = await supabaseServidor();
-  const { data } = await supabase
-    .from("tipo_instalacion")
-    .select("id")
-    .is("club_id", null)
-    .eq("nombre", NOMBRE_TIPO_OTRA)
-    .maybeSingle();
-  return data?.id ?? null;
-}
-
 export async function crearInstalacion(
   clubId: string,
   sedeId: string,
@@ -297,13 +229,10 @@ export async function crearInstalacion(
     return { ok: false, error: permiso ?? "Tenés que ingresar de nuevo." };
   }
 
-  const tipoOtra = await tipoOtraId();
   const input = {
-    tipoId: textoForm(formData, "tipo_instalacion_id"),
-    tipoPropio: textoForm(formData, "tipo_propio"),
+    tipo: textoForm(formData, "tipo"),
     nombre: textoForm(formData, "nombre"),
     notas: textoForm(formData, "notas"),
-    tipoOtraId: tipoOtra,
   };
   const mensaje = primerMensaje(validarInstalacion(input));
   if (mensaje) return { ok: false, error: mensaje };
@@ -318,19 +247,11 @@ export async function crearInstalacion(
     .maybeSingle();
   if (!sede) return { ok: false, error: "No encontramos esa sede." };
 
-  const tipo = await resolverTipoInstalacion({
-    clubId,
-    tipoId: input.tipoId,
-    tipoPropio: guardado.tipoPropio,
-    creaTipoPropio: guardado.creaTipoPropio,
-  });
-  if (!tipo.ok) return tipo;
-
   const { data, error } = await supabase
     .from("instalacion")
     .insert({
       sede_id: sedeId,
-      tipo_instalacion_id: tipo.tipoId,
+      tipo: guardado.tipo,
       nombre: guardado.nombre,
       notas: guardado.notas,
     })
@@ -360,13 +281,10 @@ export async function actualizarInstalacion(
     return { ok: false, error: permiso ?? "Tenés que ingresar de nuevo." };
   }
 
-  const tipoOtra = await tipoOtraId();
   const input = {
-    tipoId: textoForm(formData, "tipo_instalacion_id"),
-    tipoPropio: textoForm(formData, "tipo_propio"),
+    tipo: textoForm(formData, "tipo"),
     nombre: textoForm(formData, "nombre"),
     notas: textoForm(formData, "notas"),
-    tipoOtraId: tipoOtra,
   };
   const mensaje = primerMensaje(validarInstalacion(input));
   if (mensaje) return { ok: false, error: mensaje };
@@ -381,18 +299,10 @@ export async function actualizarInstalacion(
     .maybeSingle();
   if (!sede) return { ok: false, error: "No encontramos esa sede." };
 
-  const tipo = await resolverTipoInstalacion({
-    clubId,
-    tipoId: input.tipoId,
-    tipoPropio: guardado.tipoPropio,
-    creaTipoPropio: guardado.creaTipoPropio,
-  });
-  if (!tipo.ok) return tipo;
-
   const { data, error } = await supabase
     .from("instalacion")
     .update({
-      tipo_instalacion_id: tipo.tipoId,
+      tipo: guardado.tipo,
       nombre: guardado.nombre,
       notas: guardado.notas,
     })

@@ -1,8 +1,13 @@
 import "server-only";
 
 import { esIdRedSocial, type IdRedSocial } from "@/dominio/contacto";
-import { ordenTiposBase } from "@/dominio/sedes";
-import type { ClubRedSocial, Instalacion, Sede, TipoInstalacion } from "../tipos";
+import {
+  CLAVE_TIPO_OTRA,
+  esClaveTipoInstalacion,
+  tipoInstalacion,
+  type ClaveTipoInstalacion,
+} from "@/dominio/tipos-instalacion";
+import type { ClubRedSocial, Instalacion, Sede } from "../tipos";
 import { supabaseServidor } from "../supabase-servidor";
 
 export type RedSocialClub = {
@@ -21,17 +26,10 @@ export type ContactoClub = {
   redes: RedSocialClub[];
 };
 
-export type TipoInstalacionVista = {
-  id: string;
-  nombre: string;
-  base: boolean;
-};
-
 export type InstalacionVista = {
   id: string;
-  tipoId: string;
+  tipo: ClaveTipoInstalacion;
   tipoNombre: string;
-  tipoBase: boolean;
   nombre: string;
   notas: string;
 };
@@ -124,23 +122,20 @@ export async function sedePorId(
 
   const { data: instalaciones, error: errorInst } = await supabase
     .from("instalacion")
-    .select("id, sede_id, tipo_instalacion_id, nombre, notas, creado_en")
+    .select("id, sede_id, tipo, nombre, notas, creado_en")
     .eq("sede_id", sedeId)
     .order("creado_en", { ascending: true });
   if (errorInst) throw errorInst;
 
-  const tipos = await tiposDeInstalacion(clubId);
-  const tipoPorId = new Map(tipos.map((tipo) => [tipo.id, tipo]));
-
   return {
     ...sede,
     instalaciones: (instalaciones ?? []).map((item: Instalacion) => {
-      const tipo = tipoPorId.get(item.tipo_instalacion_id);
+      // La base solo acepta claves en código; «Otra» por si quedan desfasadas.
+      const tipo = esClaveTipoInstalacion(item.tipo) ? item.tipo : CLAVE_TIPO_OTRA;
       return {
         id: item.id,
-        tipoId: item.tipo_instalacion_id,
-        tipoNombre: tipo?.nombre ?? "Tipo",
-        tipoBase: tipo?.base ?? true,
+        tipo,
+        tipoNombre: tipoInstalacion(tipo).nombre,
         nombre: item.nombre,
         notas: item.notas ?? "",
       };
@@ -156,29 +151,4 @@ export async function instalacionPorId(
   const sede = await sedePorId(clubId, sedeId);
   if (!sede) return null;
   return sede.instalaciones.find((item) => item.id === instalacionId) ?? null;
-}
-
-export async function tiposDeInstalacion(
-  clubId: string,
-): Promise<TipoInstalacionVista[]> {
-  const supabase = await supabaseServidor();
-  const { data, error } = await supabase
-    .from("tipo_instalacion")
-    .select("id, club_id, nombre, creado_en");
-  if (error) throw error;
-
-  const tipos: TipoInstalacionVista[] = (data ?? [])
-    .filter((fila: TipoInstalacion) => fila.club_id === null || fila.club_id === clubId)
-    .map((fila: TipoInstalacion) => ({
-      id: fila.id,
-      nombre: fila.nombre,
-      base: fila.club_id === null,
-    }));
-
-  tipos.sort((a, b) => {
-    if (a.base !== b.base) return a.base ? -1 : 1;
-    if (a.base) return ordenTiposBase(a.nombre) - ordenTiposBase(b.nombre);
-    return a.nombre.localeCompare(b.nombre, "es");
-  });
-  return tipos;
 }

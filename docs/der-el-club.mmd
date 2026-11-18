@@ -1,7 +1,7 @@
 %% El Club — modelo aplicado.
 %% Tablas migradas: club (con dominio_base, escudo_ruta y paleta), usuario, super_admin,
 %% super_admin_invitacion, club_miembro, club_invitacion, club_red_social,
-%% sede, tipo_instalacion e instalacion.
+%% sede e instalacion.
 %% usuario.id coincide con el usuario de Supabase Auth.
 %% rol_club es un enum que por ahora solo tiene el valor admin.
 %%
@@ -23,9 +23,10 @@
 %% (nombre, escudo_ruta, paleta) y el contacto (telefono, email,
 %% direccion, web y club_red_social). slug y dominio_base solo los
 %% cambia el Super Admin (trigger impedir_cambio_de_rutas_del_club).
-%% Un club tiene sedes; cada sede tiene instalaciones. tipo_instalacion
-%% con club_id null son los tipos de base (solo el Super Admin los
-%% edita); un club_id es un tipo propio de ese club.
+%% Un club tiene sedes; cada sede tiene instalaciones. instalacion.tipo
+%% es la clave de un tipo de instalación definido en código
+%% (src/dominio/tipos-instalacion.ts, ADR 0001); «otra» es un bloque
+%% genérico. La base solo acepta esas claves (instalacion_tipo_check).
 %% El email del Super Admin no se guarda en el repo: el alta se hace
 %% directo en la base (ver scripts/sembrar-super-admin.sql).
 erDiagram
@@ -62,16 +63,10 @@ erDiagram
         string maps_url
         timestamptz creado_en
     }
-    TIPO_INSTALACION {
-        uuid id PK
-        uuid club_id FK
-        string nombre
-        timestamptz creado_en
-    }
     INSTALACION {
         uuid id PK
         uuid sede_id FK
-        uuid tipo_instalacion_id FK
+        string tipo
         string nombre
         string notas
         timestamptz creado_en
@@ -112,6 +107,4 @@ erDiagram
     CLUB ||--o{ CLUB_INVITACION : invita
     CLUB ||--o{ CLUB_RED_SOCIAL : tiene
     CLUB ||--o{ SEDE : tiene
-    CLUB ||--o{ TIPO_INSTALACION : puede_definir
     SEDE ||--o{ INSTALACION : tiene
-    TIPO_INSTALACION ||--o{ INSTALACION : clasifica

@@ -9,11 +9,7 @@ import {
   sesionRequerida,
 } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
-import {
-  instalacionPorId,
-  sedePorId,
-  tiposDeInstalacion,
-} from "@/datos/consultas/sedes";
+import { instalacionPorId, sedePorId } from "@/datos/consultas/sedes";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
 import { inicialesDesdeNombre } from "@/dominio/slug";
@@ -38,8 +34,6 @@ export default async function PaginaEditarInstalacion({
   const sede = await sedePorId(club.id, sedeId);
   const instalacion = await instalacionPorId(club.id, sedeId, instalacionId);
   if (!sede || !instalacion) notFound();
-  const tipos = await tiposDeInstalacion(club.id);
-
   const clubId = club.id;
 
   async function guardar(formData: FormData) {
@@ -70,14 +64,12 @@ export default async function PaginaEditarInstalacion({
     >
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Podés cambiar el tipo, el nombre y las notas. Si elegís «Otra», se
-          crea un tipo propio de este club.
+          Podés cambiar el tipo, el nombre y las notas.
         </p>
         <FormularioInstalacion
-          tipos={tipos}
           destino={`/c/${club.slug}/admin/sedes/${sede.id}`}
           inicial={{
-            tipoId: instalacion.tipoId,
+            tipo: instalacion.tipo,
             nombre: instalacion.nombre,
             notas: instalacion.notas,
           }}
