@@ -55,6 +55,16 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Recién acá la persona entró de verdad: se crean su perfil y se aceptan sus
+  // invitaciones. Mandarle el link no alcanza (ver la migración
+  // invitacion_pendiente_hasta_ingresar).
+  const { error: errorInvitaciones } = await supabase.rpc(
+    "aplicar_invitaciones_al_entrar",
+  );
+  if (errorInvitaciones) {
+    return redirigir("/ingreso?error=ingreso", aplicarCookies);
+  }
+
   const sesion = await cargarSesion(supabase);
   const siguiente =
     leerSiguiente(request) ?? url.searchParams.get("siguiente");
