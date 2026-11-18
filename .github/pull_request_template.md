@@ -10,6 +10,7 @@ Closes #
 - [ ] Las decisiones nuevas están anotadas en el issue, con fecha y hora ART.
 - [ ] Lint de los archivos tocados, `npm run typecheck` y los tests que corresponden (incluido RLS si hay políticas nuevas) pasan.
 - [ ] Si hay UI nueva: los mocks se aprobaron antes de implementar.
+- [ ] Si cambia algo que ve un usuario (no Super Admin): `docs/usuario/` está actualizado.
 - [ ] No hay secretos ni datos de un club real hardcodeados.
 
 ## Cómo probarlo
