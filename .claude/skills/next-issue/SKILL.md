@@ -36,7 +36,7 @@ Check the issue against **every** row, top to bottom. Rows marked _detour_ come 
 
 | Signal in the issue | Skill |
 | --- | --- |
-| Open questions unchecked, or model / scope / permissions still «a definir» | _detour_: `/grill-with-docs` (user-invoked; you run `grilling` then `domain-modeling`) to settle them, recording decisions in the issue |
+| Open questions unchecked, or model / scope / permissions still «a definir» | _detour_: `/grill-with-docs` (user-invoked) to settle them, recording decisions in the issue |
 | Facts missing from outside the repo (third-party API, library, pricing, limits) | _detour_: `/research` in the background |
 | New UI without approved mocks or frame, or a state model nobody has felt yet | _detour_: `/prototype` (repo rule: mocks are approved before code) |
 | Steps only a person can do (dashboards, DNS, keys, secrets) | main: `/wizard` |
@@ -68,5 +68,4 @@ On OK:
 3. Rename the session to `#<n> <issue title>` (e.g. `#26 Editor de predios 3D por sede`), so the session list shows which issue it holds. In a cloud session, call `get_session` from the `claude-code-remote` tools with no id to get this session's id, then `set_session_title` with it. Without those tools, tell the user the name to set by hand.
 4. Start the first skill of the route, passing the issue number and link. The issue and its comments are the spec.
    - Model-invocable skill: call it with the Skill tool.
-   - `grill-with-docs`: it only wraps two skills, so call `grilling`, then `domain-modeling`, in the same session.
-   - Any other user-invoked skill: ask the user to type it (e.g. `/mattpocock-skills:to-tickets #26`) and wait.
+   - User-invoked skill: ask the user to type it (e.g. `/mattpocock-skills:grill-with-docs #26`) and wait. Don't run the skills it wraps in its place.
