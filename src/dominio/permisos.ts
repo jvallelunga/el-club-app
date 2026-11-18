@@ -123,3 +123,10 @@ export function errorSiNoPuedeAdministrarSedes(
   }
   return null;
 }
+
+/** Mensaje si no puede editar el predio de una sede: solo el Super Admin. */
+export function errorSiNoPuedeEditarPredio(sesion: SesionApp | null): string | null {
+  if (!sesion) return "Tenés que ingresar de nuevo.";
+  if (!sesion.esSuperAdmin) return "Solo el Super Admin puede editar el predio.";
+  return null;
+}

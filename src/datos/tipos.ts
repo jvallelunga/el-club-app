@@ -274,6 +274,44 @@ export type Database = {
           },
         ];
       };
+      predio: {
+        Row: {
+          id: string;
+          sede_id: string;
+          origen_lat: number;
+          origen_lng: number;
+          area: Json;
+          creado_en: string;
+          actualizado_en: string;
+        };
+        Insert: {
+          id?: string;
+          sede_id: string;
+          origen_lat: number;
+          origen_lng: number;
+          area?: Json;
+          creado_en?: string;
+          actualizado_en?: string;
+        };
+        Update: {
+          id?: string;
+          sede_id?: string;
+          origen_lat?: number;
+          origen_lng?: number;
+          area?: Json;
+          creado_en?: string;
+          actualizado_en?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "predio_sede_id_fkey";
+            columns: ["sede_id"];
+            isOneToOne: true;
+            referencedRelation: "sede";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       instalacion: {
         Row: {
           id: string;
@@ -364,3 +402,4 @@ export type ClubInvitacion =
 export type ClubRedSocial = Database["public"]["Tables"]["club_red_social"]["Row"];
 export type Sede = Database["public"]["Tables"]["sede"]["Row"];
 export type Instalacion = Database["public"]["Tables"]["instalacion"]["Row"];
+export type Predio = Database["public"]["Tables"]["predio"]["Row"];

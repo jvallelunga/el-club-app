@@ -1,7 +1,7 @@
 %% El Club — modelo aplicado.
 %% Tablas migradas: club (con dominio_base, escudo_ruta y paleta), usuario, super_admin,
 %% super_admin_invitacion, club_miembro, club_invitacion, club_red_social,
-%% sede e instalacion.
+%% sede, instalacion y predio.
 %% usuario.id coincide con el usuario de Supabase Auth.
 %% rol_club es un enum que por ahora solo tiene el valor admin.
 %%
@@ -27,6 +27,10 @@
 %% es la clave de un tipo de instalación definido en código
 %% (src/dominio/tipos-instalacion.ts, ADR 0001); «otra» es un bloque
 %% genérico. La base solo acepta esas claves (instalacion_tipo_check).
+%% Una sede tiene a lo sumo un predio (#42): origen_lat/origen_lng es el
+%% origen del predio y area, el área del predio como lista jsonb de puntos
+%% [este, norte] en metros desde el origen. Escribe solo el Super Admin;
+%% leen los Admins del club.
 %% El email del Super Admin no se guarda en el repo: el alta se hace
 %% directo en la base (ver scripts/sembrar-super-admin.sql).
 erDiagram
@@ -71,6 +75,15 @@ erDiagram
         string notas
         timestamptz creado_en
     }
+    PREDIO {
+        uuid id PK
+        uuid sede_id FK,UK
+        float origen_lat
+        float origen_lng
+        jsonb area
+        timestamptz creado_en
+        timestamptz actualizado_en
+    }
     USUARIO {
         uuid id PK
         string nombre
@@ -108,3 +121,4 @@ erDiagram
     CLUB ||--o{ CLUB_RED_SOCIAL : tiene
     CLUB ||--o{ SEDE : tiene
     SEDE ||--o{ INSTALACION : tiene
+    SEDE ||--o| PREDIO : tiene
