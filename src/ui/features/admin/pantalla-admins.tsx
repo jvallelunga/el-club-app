@@ -20,6 +20,7 @@ import {
   type RolShell,
 } from "@/ui/compartidos/shell-admin";
 import { avisoTrasInvitar } from "@/dominio/ingreso-email";
+import { errorAlQuitarAdmin } from "@/dominio/permisos";
 import { inicialesDesdeNombre } from "@/dominio/slug";
 
 export type AdminVisible = {
@@ -108,7 +109,10 @@ export function PantallaAdminsReal({
     startTransition(async () => {
       const resultado = await quitar(persona.usuarioId);
       if (!resultado.ok) {
+        // Cerrar el diálogo: el error se muestra en la página y el overlay lo tapaba.
+        setAviso(null);
         setError(resultado.error);
+        limpiarConfirmar();
         return;
       }
       setError(null);
@@ -271,9 +275,15 @@ export function PantallaAdminsReal({
                     {admin.email}
                   </p>
                 </div>
-                {admins.length === 1 && admin.usuarioId === usuarioId ? (
+                {errorAlQuitarAdmin({
+                  actorUsuarioId: usuarioId,
+                  objetivoUsuarioId: admin.usuarioId,
+                  cantidadAdmins: admins.length,
+                }) ? (
                   <p className="max-w-40 text-right text-xs text-muted-foreground">
-                    Sos el último Admin
+                    {admin.usuarioId === usuarioId
+                      ? "Sos el último Admin"
+                      : "Último Admin"}
                   </p>
                 ) : (
                   <Button
