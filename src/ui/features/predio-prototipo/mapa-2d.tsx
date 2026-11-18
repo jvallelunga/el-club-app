@@ -2,12 +2,13 @@
 
 /**
  * PROTOTIPO (#26): mapa satelital 2D con MapLibre.
- * Usa las imágenes públicas de Esri solo para el mock (la decisión es la Map
- * Tiles API de Google, que necesita clave). El dibujo real va con Terra Draw;
+ * Imágenes de la Map Tiles API de Google si hay NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+ * si no hay clave o falla, cae a las imágenes públicas de Esri y lo avisa en
+ * pantalla. El dibujo real va con Terra Draw;
  * acá se arrastran las huellas y los vértices a mano para ver cómo se siente.
  */
 
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MapaML, MapMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -26,21 +27,53 @@ import type { EstadoPredio } from "./estado";
 // Turbopack no resuelve el worker de MapLibre; para el mock va copiado en public/mocks/ (ruta pública del proxy).
 maplibregl.setWorkerUrl("/mocks/maplibre-gl-worker.mjs");
 
-const ESTILO: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    satelital: {
-      type: "raster",
-      tiles: [
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      ],
-      tileSize: 256,
-      maxzoom: 19,
-      attribution: "Esri, Maxar, Earthstar Geographics",
-    },
-  },
-  layers: [{ id: "satelital", type: "raster", source: "satelital" }],
+const ESTILO: maplibregl.StyleSpecification = { version: 8, sources: {}, layers: [] };
+
+const ESRI: maplibregl.RasterSourceSpecification = {
+  type: "raster",
+  tiles: [
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  ],
+  tileSize: 256,
+  maxzoom: 19,
+  attribution: "Esri, Maxar, Earthstar Geographics",
 };
+
+const CLAVE_GOOGLE = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+/** Abre una sesión de la Map Tiles API (satelital) y arma la fuente raster. */
+async function fuenteGoogle(): Promise<maplibregl.RasterSourceSpecification> {
+  if (!CLAVE_GOOGLE) throw new Error("Falta NEXT_PUBLIC_GOOGLE_MAPS_API_KEY");
+  const r = await fetch(
+    `https://tile.googleapis.com/v1/createSession?key=${CLAVE_GOOGLE}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mapType: "satellite", language: "es-AR", region: "AR" }),
+    },
+  );
+  if (!r.ok) throw new Error(`createSession ${r.status}: ${await r.text()}`);
+  const { session } = (await r.json()) as { session: string };
+  let atribucion = "Google";
+  try {
+    const v = await fetch(
+      `https://tile.googleapis.com/tile/v1/viewport?session=${session}&key=${CLAVE_GOOGLE}&zoom=18&north=${ORIGEN.lat + 0.003}&south=${ORIGEN.lat - 0.003}&east=${ORIGEN.lng + 0.003}&west=${ORIGEN.lng - 0.003}`,
+    );
+    const info = (await v.json()) as { copyright?: string };
+    if (info.copyright) atribucion = `Google · ${info.copyright}`;
+  } catch {
+    // La atribución mínima («Google») alcanza para el mock.
+  }
+  return {
+    type: "raster",
+    tiles: [
+      `https://tile.googleapis.com/v1/2dtiles/{z}/{x}/{y}?session=${session}&key=${CLAVE_GOOGLE}`,
+    ],
+    tileSize: 256,
+    maxzoom: 20,
+    attribution: atribucion,
+  };
+}
 
 function geojson(estado: EstadoPredio) {
   const features: GeoJSON.Feature[] = [];
@@ -91,6 +124,7 @@ export function Mapa2D({
   const contenedor = useRef<HTMLDivElement>(null);
   const mapa = useRef<MapaML | null>(null);
   const marcadores = useRef<maplibregl.Marker[]>([]);
+  const [aviso, setAviso] = useState<string | null>(null);
   const ref = useRef(estado);
   useLayoutEffect(() => {
     ref.current = estado;
@@ -111,6 +145,24 @@ export function Mapa2D({
     m.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), controles);
 
     m.on("load", () => {
+      fuenteGoogle()
+        .then((fuente) => {
+          m.addSource("satelital", fuente);
+        })
+        .catch((error: Error) => {
+          console.warn("Map Tiles API de Google no disponible:", error.message);
+          setAviso(
+            CLAVE_GOOGLE
+              ? "No se pudo usar Google: se muestran imágenes de Esri."
+              : "Sin clave de Google todavía: se muestran imágenes de Esri.",
+          );
+          m.addSource("satelital", ESRI);
+        })
+        .finally(() => {
+          if (m.getSource("satelital")) {
+            m.addLayer({ id: "satelital", type: "raster", source: "satelital" }, "area-borde");
+          }
+        });
       m.addSource("area", { type: "geojson", data: geojsonArea(ref.current) });
       m.addSource("elementos", { type: "geojson", data: geojson(ref.current) });
       m.addLayer({
@@ -256,5 +308,14 @@ export function Mapa2D({
 
   useEffect(sincronizar, [estado.elementos, estado.area, estado.seleccion, estado.dibujandoArea]);
 
-  return <div ref={contenedor} className={`relative overflow-hidden ${className}`} />;
+  return (
+    <div className={`relative ${className}`}>
+      <div ref={contenedor} className="size-full overflow-hidden" />
+      {aviso ? (
+        <p className="pointer-events-none absolute left-3 top-14 rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-900 shadow">
+          {aviso}
+        </p>
+      ) : null}
+    </div>
+  );
 }
