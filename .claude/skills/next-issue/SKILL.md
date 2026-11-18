@@ -22,7 +22,7 @@ Without one, list open issues labelled `ready`, oldest first, pull requests filt
 
 ## 3. Read it whole
 
-Read the issue body and **every** comment (frames, decisions with date ART, answered questions live there), plus any feature doc, ADR or `GLOSSARY.md` entry it touches (see `docs/agents/domain.md`). Done when you can state the goal, the acceptance criteria, and what is still open.
+Read the issue body and **every** comment (frames, decisions with date ART, answered questions live there), plus any feature doc, ADR or `CONTEXT.md` entry it touches (see `docs/agents/domain.md`). Done when you can state the goal, the acceptance criteria, and what is still open.
 
 ## 4. Route it
 

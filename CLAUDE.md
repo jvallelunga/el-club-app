@@ -14,4 +14,4 @@ The canonical triage roles map to this repo's labels (`backlog`, `refinement`, `
 
 ### Domain docs
 
-Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root, created lazily. Product decisions go in the issue; ADRs only for durable technical decisions. See `docs/agents/domain.md`.
+Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root, created lazily. Product decisions go in the issue; ADRs only for durable technical decisions. See `docs/agents/domain.md`.
