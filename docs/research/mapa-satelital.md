@@ -132,3 +132,7 @@ Estos pasos los tiene que hacer una persona (Jerónimo o quien administre las cu
     - 21a. Terra Draw, guía de modos: https://github.com/JamesLMilner/terra-draw/blob/main/guides/4.MODES.md
     - 21b. `terra-draw-maplibre-gl-adapter`, package.json: https://github.com/JamesLMilner/terra-draw/blob/main/packages/terra-draw-maplibre-gl-adapter/package.json
 22. Mapbox GL JS, LICENSE.txt: https://github.com/mapbox/mapbox-gl-js/blob/main/LICENSE.txt
+
+## Decisión
+
+18/11/2026, con Jerónimo: **Google Map Tiles API (2D, satelital) con MapLibre GL y Terra Draw**, con tope diario en la clave. Se eligió por nitidez frente a Esri, después de comparar las dos sobre Los Cardos. Esri queda como alternativa sin tarjeta. Al crear la cuenta hay que confirmar que los términos de la Map Tiles API permiten un visor que no es de Google, mostrando su atribución.
