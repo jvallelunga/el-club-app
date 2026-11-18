@@ -31,6 +31,7 @@ Los issues de GitHub son la fuente de verdad. El estado de cada issue es una eti
 - Si hay UI nueva, primero se aprueban los mocks y después se implementa.
 - Las preguntas y las decisiones se anotan en el issue, con fecha y hora ART.
 - Ramas `feature/`, `fix/`, `enhancement/` o `task/` (kebab-case), PR contra `desarrollo`, merge normal (nunca squash), sin force-push.
+- El desarrollo mergea su propio PR cuando está listo: typecheck, lint de lo tocado y tests en verde y, si hay UI nueva, los mocks aprobados.
 - `desarrollo` es la rama de integración. Producción solo con el OK de Jerónimo; nunca se toca el proyecto de producción de Supabase.
 
 ## Stack
