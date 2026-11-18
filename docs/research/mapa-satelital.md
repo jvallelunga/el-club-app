@@ -100,7 +100,7 @@ Estos pasos los tiene que hacer una persona (Jerónimo o quien administre las cu
 4. Cargar en la key los **referrers permitidos**: el dominio de producción de Vercel, el patrón de previews (`https://*-<equipo>.vercel.app`, si se permite el comodín) y `http://localhost:3000`.
 5. Guardar la key en Vercel (Production, Preview y Development) y en `.env.local` como **`NEXT_PUBLIC_ARCGIS_API_KEY`**. Es pública por diseño: la protegen la restricción por referrer y el pago por uso apagado.
 6. *(Opcional, para la comparación de calidad)* Abrir un club de Tandil en Google Maps en modo satélite y en el visor de World Imagery, y comparar.
-7. *(Solo si se elige Google)* Crear un proyecto en Google Cloud con cuenta de facturación y tarjeta. Habilitar Maps JavaScript API. Crear una key restringida por referrer y solo para esa API, y guardarla como `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`. Conviene además poner una cuota diaria baja como tope.
+7. *(Elegido Google, ver «Decisión»)* Crear un proyecto en Google Cloud con cuenta de facturación. Habilitar solo la **Map Tiles API**. Crear una key restringida por referrer y solo a esa API, y guardarla como `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`. Bajar la cuota diaria a 3.000 pedidos (3.000 × 31 < 100.000 gratis por mes) para que nunca facture. El script `scripts/configurar-google-map-tiles.sh` lleva paso a paso.
 
 ## Fuentes
 
