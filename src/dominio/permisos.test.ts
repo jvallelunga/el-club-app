@@ -4,6 +4,7 @@ import {
   errorAlQuitarAdmin,
   errorSiNoPuedeAdministrarAdmins,
   errorSiNoPuedeEditarClub,
+  errorSiNoPuedeEditarPredio,
   puedeAdministrarClub,
   puedeEditarRutasDelClub,
   siguienteSeguro,
@@ -179,5 +180,19 @@ describe("puedeEditarRutasDelClub", () => {
   it("solo el Super Admin puede cambiar identificador o dominio", () => {
     expect(puedeEditarRutasDelClub(sesion({ esSuperAdmin: true }))).toBe(true);
     expect(puedeEditarRutasDelClub(sesion({ membresias: [norte] }))).toBe(false);
+  });
+});
+
+describe("errorSiNoPuedeEditarPredio", () => {
+  it("solo el Super Admin edita el predio", () => {
+    expect(errorSiNoPuedeEditarPredio(sesion({ esSuperAdmin: true }))).toBeNull();
+  });
+
+  it("un Admin del club no lo edita", () => {
+    expect(errorSiNoPuedeEditarPredio(sesion({ membresias: [norte] }))).toMatch(/Super Admin/);
+  });
+
+  it("sin sesión pide ingresar", () => {
+    expect(errorSiNoPuedeEditarPredio(null)).toMatch(/ingresar/);
   });
 });
