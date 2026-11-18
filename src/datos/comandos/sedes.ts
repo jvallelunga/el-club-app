@@ -37,27 +37,32 @@ function textoForm(formData: FormData, clave: string): string {
   return typeof valor === "string" ? valor : "";
 }
 
-function redesDesdeForm(formData: FormData): RedSocialInput[] {
+/**
+ * Lee las redes del formulario. Devuelve null si el campo no es una lista
+ * válida, para no confundir datos rotos con «sin redes» y borrarlas todas.
+ */
+function redesDesdeForm(formData: FormData): RedSocialInput[] | null {
   const crudo = textoForm(formData, "redes");
   if (!crudo) return [];
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(crudo) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    const redes: RedSocialInput[] = [];
-    for (const item of parsed) {
-      if (!item || typeof item !== "object") continue;
-      const fila = item as Record<string, unknown>;
-      const red = typeof fila.red === "string" ? fila.red : "";
-      const valor = typeof fila.valor === "string" ? fila.valor : "";
-      const etiqueta =
-        typeof fila.etiqueta === "string" ? fila.etiqueta : undefined;
-      if (!red && !valor) continue;
-      redes.push({ red, valor, etiqueta });
-    }
-    return redes;
+    parsed = JSON.parse(crudo);
   } catch {
-    return [];
+    return null;
   }
+  if (!Array.isArray(parsed)) return null;
+  const redes: RedSocialInput[] = [];
+  for (const item of parsed) {
+    if (!item || typeof item !== "object") return null;
+    const fila = item as Record<string, unknown>;
+    const red = typeof fila.red === "string" ? fila.red : "";
+    const valor = typeof fila.valor === "string" ? fila.valor : "";
+    const etiqueta =
+      typeof fila.etiqueta === "string" ? fila.etiqueta : undefined;
+    if (!red && !valor) continue;
+    redes.push({ red, valor, etiqueta });
+  }
+  return redes;
 }
 
 async function slugDelClub(clubId: string): Promise<string | null> {
@@ -86,52 +91,38 @@ export async function actualizarContactoClub(
     return { ok: false, error: permiso ?? "Tenés que ingresar de nuevo." };
   }
 
+  const redes = redesDesdeForm(formData);
+  if (redes === null) {
+    return { ok: false, error: "No se pudieron leer las redes. Recargá la página y probá de nuevo." };
+  }
   const input = {
     telefono: textoForm(formData, "telefono"),
     email: textoForm(formData, "email"),
     direccion: textoForm(formData, "direccion"),
     web: textoForm(formData, "web"),
-    redes: redesDesdeForm(formData),
+    redes,
   };
   const mensaje = primerMensaje(validarContacto(input));
   if (mensaje) return { ok: false, error: mensaje };
 
   const guardado = contactoParaGuardar(input);
   const supabase = await supabaseServidor();
-  const { error } = await supabase
-    .from("club")
-    .update({
-      telefono: guardado.telefono,
-      email: guardado.email,
-      direccion: guardado.direccion,
-      web: guardado.web,
-    })
-    .eq("id", clubId);
+  // Una sola transacción: si algo falla, no se pierden las redes anteriores.
+  const { error } = await supabase.rpc("guardar_contacto_club", {
+    p_club_id: clubId,
+    p_telefono: guardado.telefono,
+    p_email: guardado.email,
+    p_direccion: guardado.direccion,
+    p_web: guardado.web,
+    p_redes: guardado.redes.map((red) => ({
+      red: red.red,
+      etiqueta: red.etiqueta,
+      valor: red.valor,
+      orden: red.orden,
+    })),
+  });
   if (error) {
     return { ok: false, error: "No se pudo guardar el contacto. Probá de nuevo." };
-  }
-
-  const { error: errorBorrar } = await supabase
-    .from("club_red_social")
-    .delete()
-    .eq("club_id", clubId);
-  if (errorBorrar) {
-    return { ok: false, error: "No se pudieron actualizar las redes. Probá de nuevo." };
-  }
-
-  if (guardado.redes.length > 0) {
-    const { error: errorRedes } = await supabase.from("club_red_social").insert(
-      guardado.redes.map((red) => ({
-        club_id: clubId,
-        red: red.red,
-        etiqueta: red.etiqueta,
-        valor: red.valor,
-        orden: red.orden,
-      })),
-    );
-    if (errorRedes) {
-      return { ok: false, error: "No se pudieron guardar las redes. Probá de nuevo." };
-    }
   }
 
   const slug = await slugDelClub(clubId);

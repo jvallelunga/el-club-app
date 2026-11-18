@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const exchangeCodeForSession = vi.fn();
 const verifyOtp = vi.fn();
+const rpc = vi.fn();
 const aplicarCookies = vi.fn((respuesta: NextResponse) => respuesta);
 const cargarSesion = vi.fn();
 
@@ -19,7 +20,7 @@ vi.mock("@/datos/supabase-auth-http", async (importOriginal) => {
   return {
     ...real,
     clienteAuthConCookies: () => ({
-      supabase: { auth: { exchangeCodeForSession, verifyOtp } },
+      supabase: { auth: { exchangeCodeForSession, verifyOtp }, rpc },
       aplicarCookies,
     }),
   };
@@ -38,6 +39,8 @@ describe("GET /auth/callback", () => {
     verifyOtp.mockReset();
     aplicarCookies.mockClear();
     cargarSesion.mockReset();
+    rpc.mockReset();
+    rpc.mockResolvedValue({ error: null });
     vi.mocked(hayConfiguracionSupabase).mockReturnValue(true);
     cargarSesion.mockResolvedValue({
       esSuperAdmin: false,
@@ -78,6 +81,40 @@ describe("GET /auth/callback", () => {
     expect(respuesta.headers.get("location")).toBe(
       "https://preview.example/c/club-norte/admin",
     );
+  });
+
+  it("aplica las invitaciones al entrar, antes de cargar la sesión", async () => {
+    exchangeCodeForSession.mockResolvedValue({ error: null });
+
+    await GET(pedido("https://preview.example/auth/callback?code=abc"));
+
+    expect(rpc).toHaveBeenCalledWith("aplicar_invitaciones_al_entrar");
+    expect(rpc.mock.invocationCallOrder[0]).toBeLessThan(
+      cargarSesion.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("si no se pueden aplicar las invitaciones, vuelve a ingreso con error=ingreso", async () => {
+    verifyOtp.mockResolvedValue({ error: null });
+    rpc.mockResolvedValue({ error: { message: "falló" } });
+
+    const respuesta = await GET(
+      pedido("https://preview.example/auth/callback?token_hash=otp-hash&type=email"),
+    );
+
+    expect(cargarSesion).not.toHaveBeenCalled();
+    expect(respuesta.status).toBe(303);
+    expect(respuesta.headers.get("location")).toBe(
+      "https://preview.example/ingreso?error=ingreso",
+    );
+  });
+
+  it("si falla el code, no aplica invitaciones", async () => {
+    exchangeCodeForSession.mockResolvedValue({ error: { message: "bad" } });
+
+    await GET(pedido("https://preview.example/auth/callback?code=abc"));
+
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("sin sesión de app (sin invitación) va a /sin-acceso", async () => {

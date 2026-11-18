@@ -350,6 +350,21 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      aplicar_invitaciones_al_entrar: {
+        Args: Record<string, never>;
+        Returns: undefined;
+      };
+      guardar_contacto_club: {
+        Args: {
+          p_club_id: string;
+          p_telefono: string | null;
+          p_email: string | null;
+          p_direccion: string | null;
+          p_web: string | null;
+          p_redes: Json;
+        };
+        Returns: undefined;
+      };
       puede_solicitar_ingreso_email: {
         Args: { p_email: string };
         Returns: boolean;
