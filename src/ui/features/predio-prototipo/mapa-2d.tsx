@@ -24,8 +24,8 @@ import {
 } from "./datos";
 import type { EstadoPredio } from "./estado";
 
-// Turbopack no resuelve el worker de MapLibre; para el mock va copiado en public/mocks/ (ruta pública del proxy).
-maplibregl.setWorkerUrl("/mocks/maplibre-gl-worker.mjs");
+// Turbopack no resuelve el worker de MapLibre: va copiado en public/maplibre/.
+maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
 const ESTILO: maplibregl.StyleSpecification = { version: 8, sources: {}, layers: [] };
 

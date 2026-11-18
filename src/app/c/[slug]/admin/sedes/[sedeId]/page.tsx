@@ -7,15 +7,19 @@ import {
 } from "@/ui/compartidos/shell-admin";
 import { FormularioSede } from "@/ui/features/sedes/formulario-sede";
 import { BotonEliminarInstalacion } from "@/ui/features/sedes/boton-eliminar-instalacion";
+import { SeccionPredio } from "@/ui/features/predio/seccion-predio";
 import { actualizarSede, eliminarInstalacion } from "@/datos/comandos/sedes";
+import { guardarPredio } from "@/datos/comandos/predio";
 import {
   adminDelClubRequerido,
   sesionRequerida,
 } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
+import { predioParaEditor } from "@/datos/consultas/predio";
 import { sedePorId } from "@/datos/consultas/sedes";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
+import type { DatosPredio } from "@/dominio/predio";
 import { inicialesDesdeNombre } from "@/dominio/slug";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +49,20 @@ export default async function PaginaSede({
     "use server";
     return eliminarInstalacion(clubId, sedeId, instalacionId);
   }
+
+  async function guardarElPredio(datos: DatosPredio) {
+    "use server";
+    return guardarPredio(clubId, sedeId, datos);
+  }
+
+  // El editor de predio es solo del Super Admin; el visor de los Admins viene en #44.
+  const predio = sesion.esSuperAdmin
+    ? await predioParaEditor({
+        sedeId,
+        mapsUrlSede: sede.maps_url,
+        direccionClub: club.direccion,
+      })
+    : null;
 
   const clubShell = {
     slug: club.slug,
@@ -141,6 +159,15 @@ export default async function PaginaSede({
             </ul>
           )}
         </section>
+
+        {predio ? (
+          <SeccionPredio
+            sedeNombre={sede.nombre}
+            guardado={predio.guardado}
+            origenInicial={predio.origen}
+            guardar={guardarElPredio}
+          />
+        ) : null}
       </div>
     </ShellAdmin>
   );

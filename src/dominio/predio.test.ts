@@ -4,8 +4,8 @@ import {
   aMetros,
   coordenadasDesdeNominatim,
   errorDelArea,
+  errorDelPredio,
   hayCambiosEnPredio,
-  moverOrigen,
   ORIGEN_POR_DEFECTO,
   origenInicial,
   predioParaGuardar,
@@ -91,19 +91,6 @@ describe("origenInicial", () => {
   });
 });
 
-describe("moverOrigen", () => {
-  it("el área queda en el mismo lugar del mapa", () => {
-    const viejo = { lat: -37.336, lng: -59.08 };
-    // El nuevo origen está 100 m al este y 50 m al norte del viejo.
-    const nuevo = aCoordenadas(viejo, [100, 50]);
-    const area = moverOrigen([[0, 0], [200, 0], [200, 150]], viejo, nuevo);
-    expect(area[0][0]).toBeCloseTo(-100, 1);
-    expect(area[0][1]).toBeCloseTo(-50, 1);
-    expect(area[1][0]).toBeCloseTo(100, 1);
-    expect(area[2][1]).toBeCloseTo(100, 1);
-  });
-});
-
 describe("hayCambiosEnPredio", () => {
   const guardado = { origen: { lat: -37.336, lng: -59.08 }, area: [[0, 0], [10, 0], [10, 10]] as [number, number][] };
 
@@ -163,5 +150,25 @@ describe("predioParaGuardar", () => {
       origen: { lat: -37.3360012, lng: -59.08 },
       area: [[1.23, -7.89], [10, 0], [10, 10.01]],
     });
+  });
+});
+
+describe("errorDelPredio", () => {
+  it("acepta un origen válido con o sin área", () => {
+    expect(errorDelPredio({ origen: { lat: -37.3, lng: -59.1 }, area: [] })).toBeNull();
+    expect(
+      errorDelPredio({ origen: { lat: -37.3, lng: -59.1 }, area: [[0, 0], [10, 0], [0, 10]] }),
+    ).toBeNull();
+  });
+
+  it("rechaza un origen fuera del mapa o que no es número", () => {
+    expect(errorDelPredio({ origen: { lat: 91, lng: 0 }, area: [] })).toMatch(/origen/);
+    expect(errorDelPredio({ origen: { lat: "x", lng: 0 }, area: [] })).toMatch(/origen/);
+    expect(errorDelPredio({ area: [] })).toMatch(/origen/);
+    expect(errorDelPredio(null)).toBeTruthy();
+  });
+
+  it("trae el error del área", () => {
+    expect(errorDelPredio({ origen: { lat: 0, lng: 0 }, area: [[0, 0]] })).toMatch(/tres puntos/);
   });
 });

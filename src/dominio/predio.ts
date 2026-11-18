@@ -108,15 +108,6 @@ export function origenInicial(params: {
   return { coordenadas: ORIGEN_POR_DEFECTO, desde: "por-defecto" };
 }
 
-/** Reexpresa el área desde otro origen, sin moverla del lugar del mapa. */
-export function moverOrigen(
-  area: Punto[],
-  origenViejo: Coordenadas,
-  origenNuevo: Coordenadas,
-): Punto[] {
-  return area.map((punto) => aMetros(origenNuevo, aCoordenadas(origenViejo, punto)));
-}
-
 export type DatosPredio = { origen: Coordenadas; area: Punto[] };
 
 /** Un centímetro: por debajo de eso, una diferencia es ruido del mapa. */
@@ -159,4 +150,27 @@ export function coordenadasDesdeNominatim(respuesta: unknown): Coordenadas | nul
   if (!Number.isFinite(latN) || !Number.isFinite(lngN)) return null;
   if (latN < -90 || latN > 90 || lngN < -180 || lngN > 180) return null;
   return { lat: latN, lng: lngN };
+}
+
+function esCoordenadas(valor: unknown): valor is Coordenadas {
+  if (!valor || typeof valor !== "object") return false;
+  const { lat, lng } = valor as Record<string, unknown>;
+  return (
+    typeof lat === "number" &&
+    typeof lng === "number" &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
+
+/** Mensaje si lo que llega para guardar no es un predio válido, o null. */
+export function errorDelPredio(datos: unknown): string | null {
+  if (!datos || typeof datos !== "object") return "El predio no es válido.";
+  const { origen, area } = datos as Record<string, unknown>;
+  if (!esCoordenadas(origen)) return "El origen del predio no es válido.";
+  return errorDelArea(area);
 }
