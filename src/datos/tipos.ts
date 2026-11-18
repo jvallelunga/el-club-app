@@ -274,40 +274,11 @@ export type Database = {
           },
         ];
       };
-      tipo_instalacion: {
-        Row: {
-          id: string;
-          club_id: string | null;
-          nombre: string;
-          creado_en: string;
-        };
-        Insert: {
-          id?: string;
-          club_id?: string | null;
-          nombre: string;
-          creado_en?: string;
-        };
-        Update: {
-          id?: string;
-          club_id?: string | null;
-          nombre?: string;
-          creado_en?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "tipo_instalacion_club_id_fkey";
-            columns: ["club_id"];
-            isOneToOne: false;
-            referencedRelation: "club";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       instalacion: {
         Row: {
           id: string;
           sede_id: string;
-          tipo_instalacion_id: string;
+          tipo: string;
           nombre: string;
           notas: string | null;
           creado_en: string;
@@ -315,7 +286,7 @@ export type Database = {
         Insert: {
           id?: string;
           sede_id: string;
-          tipo_instalacion_id: string;
+          tipo: string;
           nombre: string;
           notas?: string | null;
           creado_en?: string;
@@ -323,7 +294,7 @@ export type Database = {
         Update: {
           id?: string;
           sede_id?: string;
-          tipo_instalacion_id?: string;
+          tipo?: string;
           nombre?: string;
           notas?: string | null;
           creado_en?: string;
@@ -334,13 +305,6 @@ export type Database = {
             columns: ["sede_id"];
             isOneToOne: false;
             referencedRelation: "sede";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "instalacion_tipo_instalacion_id_fkey";
-            columns: ["tipo_instalacion_id"];
-            isOneToOne: false;
-            referencedRelation: "tipo_instalacion";
             referencedColumns: ["id"];
           },
         ];
@@ -399,5 +363,4 @@ export type ClubInvitacion =
 
 export type ClubRedSocial = Database["public"]["Tables"]["club_red_social"]["Row"];
 export type Sede = Database["public"]["Tables"]["sede"]["Row"];
-export type TipoInstalacion = Database["public"]["Tables"]["tipo_instalacion"]["Row"];
 export type Instalacion = Database["public"]["Tables"]["instalacion"]["Row"];

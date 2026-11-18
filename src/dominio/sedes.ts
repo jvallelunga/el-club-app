@@ -1,22 +1,10 @@
-/** Validación de sedes, instalaciones y tipos. */
+/** Validación de sedes e instalaciones. */
 
 import { textoOpcional } from "./contacto";
-
-export const NOMBRES_TIPOS_INSTALACION_BASE = [
-  "Cancha de rugby",
-  "Cancha de hockey",
-  "Cancha de tenis",
-  "Cancha de fútbol",
-  "House",
-  "Pileta",
-  "Gym",
-  "Vestuario",
-  "Quincho",
-  "Salón",
-  "Otra",
-] as const;
-
-export const NOMBRE_TIPO_OTRA = "Otra";
+import {
+  esClaveTipoInstalacion,
+  type ClaveTipoInstalacion,
+} from "./tipos-instalacion";
 
 export type SedeInput = {
   nombre: string;
@@ -31,12 +19,10 @@ export type ErroresSede = {
 };
 
 export type InstalacionInput = {
-  tipoId: string;
-  tipoPropio: string;
+  /** Clave del tipo de instalación en código. */
+  tipo: string;
   nombre: string;
   notas: string;
-  /** Id del tipo de base «Otra», si se conoce. */
-  tipoOtraId?: string | null;
 };
 
 export type ErroresInstalacion = {
@@ -65,44 +51,29 @@ export function sedeParaGuardar(input: SedeInput): {
   };
 }
 
-export function eligeTipoPropio(
-  tipoId: string,
-  tipoOtraId?: string | null,
-): boolean {
-  return tipoId === "otra" || (Boolean(tipoOtraId) && tipoId === tipoOtraId);
-}
-
 export function validarInstalacion(input: InstalacionInput): ErroresInstalacion {
   const errores: ErroresInstalacion = {};
   if (!input.nombre.trim()) {
     errores.nombre = "Poné un nombre, por ejemplo «Cancha 1».";
   }
-  if (eligeTipoPropio(input.tipoId, input.tipoOtraId) && !input.tipoPropio.trim()) {
-    errores.tipo = "Poné el nombre del tipo de instalación.";
-  } else if (!input.tipoId && !input.tipoPropio.trim()) {
+  if (!esClaveTipoInstalacion(input.tipo)) {
     errores.tipo = "Elegí un tipo de instalación.";
   }
   return errores;
 }
 
+/** Solo para un input que pasó `validarInstalacion`. */
 export function instalacionParaGuardar(input: InstalacionInput): {
+  tipo: ClaveTipoInstalacion;
   nombre: string;
   notas: string | null;
-  tipoPropio: string | null;
-  creaTipoPropio: boolean;
 } {
-  const creaTipoPropio = eligeTipoPropio(input.tipoId, input.tipoOtraId);
+  if (!esClaveTipoInstalacion(input.tipo)) {
+    throw new Error(`Tipo de instalación desconocido: ${input.tipo}`);
+  }
   return {
+    tipo: input.tipo,
     nombre: input.nombre.trim(),
     notas: textoOpcional(input.notas),
-    tipoPropio: creaTipoPropio ? input.tipoPropio.trim() : null,
-    creaTipoPropio,
   };
-}
-
-export function ordenTiposBase(nombre: string): number {
-  const i = NOMBRES_TIPOS_INSTALACION_BASE.findIndex(
-    (item) => item.toLowerCase() === nombre.toLowerCase(),
-  );
-  return i === -1 ? NOMBRES_TIPOS_INSTALACION_BASE.length : i;
 }

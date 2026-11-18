@@ -9,7 +9,7 @@ import {
   sesionRequerida,
 } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
-import { sedePorId, tiposDeInstalacion } from "@/datos/consultas/sedes";
+import { sedePorId } from "@/datos/consultas/sedes";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
 import { inicialesDesdeNombre } from "@/dominio/slug";
@@ -33,7 +33,6 @@ export default async function PaginaNuevaInstalacion({
   );
   const sede = await sedePorId(club.id, sedeId);
   if (!sede) notFound();
-  const tipos = await tiposDeInstalacion(club.id);
 
   const clubId = club.id;
 
@@ -65,11 +64,10 @@ export default async function PaginaNuevaInstalacion({
     >
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Elegí un tipo de la lista de base o «Otra» para crear un tipo propio
-          de este club. El nombre distingue, por ejemplo, «Cancha 1».
+          Elegí un tipo de la lista. Si no está, elegí «Otra». El nombre
+          distingue, por ejemplo, «Cancha 1».
         </p>
         <FormularioInstalacion
-          tipos={tipos}
           destino={`/c/${club.slug}/admin/sedes/${sede.id}`}
           guardar={guardar}
         />

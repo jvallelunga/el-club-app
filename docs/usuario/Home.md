@@ -4,7 +4,7 @@ Cómo usar la app de tu club.
 
 ## Admin del club
 
-Todavía no hay páginas.
+- [Cargar las instalaciones de una sede](Cargar-las-instalaciones-de-una-sede)
 
 ## Público
 

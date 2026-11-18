@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  eligeTipoPropio,
   instalacionParaGuardar,
   sedeParaGuardar,
   validarInstalacion,
@@ -31,55 +30,29 @@ describe("validarSede", () => {
 });
 
 describe("validarInstalacion", () => {
-  it("exige nombre y, si elige Otra, el nombre del tipo", () => {
+  it("exige un nombre", () => {
     expect(
-      validarInstalacion({
-        tipoId: "abc",
-        tipoPropio: "",
-        nombre: "",
-        notas: "",
-      }).nombre,
+      validarInstalacion({ tipo: "cancha_rugby", nombre: "  ", notas: "" }).nombre,
     ).toBeTruthy();
-    expect(
-      validarInstalacion({
-        tipoId: "otra",
-        tipoPropio: "",
-        nombre: "Cancha 1",
-        notas: "",
-      }).tipo,
-    ).toBeTruthy();
-    expect(
-      validarInstalacion({
-        tipoId: "tipo-otra-id",
-        tipoPropio: "",
-        nombre: "Cancha 1",
-        notas: "",
-        tipoOtraId: "tipo-otra-id",
-      }).tipo,
-    ).toBeTruthy();
-    expect(
-      validarInstalacion({
-        tipoId: "otra",
-        tipoPropio: "Cantina",
-        nombre: "Cantina",
-        notas: "",
-      }),
-    ).toEqual({});
   });
 
-  it("marca creaTipoPropio cuando se elige Otra", () => {
-    expect(eligeTipoPropio("otra")).toBe(true);
-    const guardado = instalacionParaGuardar({
-      tipoId: "otra",
-      tipoPropio: "  Cantina  ",
-      nombre: "  Cantina principal  ",
-      notas: "  ",
-    });
-    expect(guardado).toEqual({
-      nombre: "Cantina principal",
-      notas: null,
-      tipoPropio: "Cantina",
-      creaTipoPropio: true,
-    });
+  it("exige un tipo de la lista en código", () => {
+    expect(validarInstalacion({ tipo: "", nombre: "Cancha 1", notas: "" }).tipo).toBeTruthy();
+    expect(
+      validarInstalacion({ tipo: "cantina", nombre: "Cantina", notas: "" }).tipo,
+    ).toBeTruthy();
+    expect(validarInstalacion({ tipo: "otra", nombre: "Cantina", notas: "" })).toEqual({});
+  });
+});
+
+describe("instalacionParaGuardar", () => {
+  it("recorta y convierte las notas vacías en null", () => {
+    expect(
+      instalacionParaGuardar({
+        tipo: "otra",
+        nombre: "  Cantina principal  ",
+        notas: "  ",
+      }),
+    ).toEqual({ tipo: "otra", nombre: "Cantina principal", notas: null });
   });
 });

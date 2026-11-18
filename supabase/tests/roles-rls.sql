@@ -428,19 +428,7 @@ $$;
 select pg_temp.salir();
 
 
--- Contacto, redes, sedes e instalaciones (cross-club + tipos de base).
-insert into _t (clave, id)
-select 'tipo_otra', t.id
-from public.tipo_instalacion t
-where t.club_id is null and t.nombre = 'Otra'
-limit 1;
-
-insert into _t (clave, id)
-select 'tipo_gym', t.id
-from public.tipo_instalacion t
-where t.club_id is null and t.nombre = 'Gym'
-limit 1;
-
+-- Contacto, redes, sedes e instalaciones (cross-club).
 -- Admin A actualiza el contacto de su club, no el del club B.
 select pg_temp.entrar('admin_a');
 do $$
@@ -528,10 +516,10 @@ begin
   insert into _t (clave, id) values ('sede_a', v_sede)
   on conflict (clave) do update set id = excluded.id;
 
-  insert into public.instalacion (sede_id, tipo_instalacion_id, nombre, notas)
+  insert into public.instalacion (sede_id, tipo, nombre, notas)
   values (
     v_sede,
-    (select id from _t where clave = 'tipo_gym'),
+    'gym',
     'Gym principal',
     'Notas de ejemplo'
   );
@@ -557,120 +545,30 @@ end;
 $$;
 select pg_temp.salir();
 
--- Tipos: Admin A crea un tipo propio, no puede tocar los de base ni los de B.
+-- Tipos: solo se aceptan los tipos definidos en código.
 select pg_temp.entrar('admin_a');
 do $$
-declare
-  v_tipo uuid;
-  v_n int;
-  v_nombre text;
 begin
-  insert into public.tipo_instalacion (club_id, nombre)
-  values (
-    (select id from _t where clave = 'club_a'),
-    'Cantina'
-  )
-  returning id into v_tipo;
-  insert into _t (clave, id) values ('tipo_cantina_a', v_tipo)
-  on conflict (clave) do update set id = excluded.id;
-
   begin
-    insert into public.tipo_instalacion (club_id, nombre)
-    values (null, 'Tipo base hack');
-    raise exception 'Admin A no debería poder crear un tipo de base';
+    insert into public.instalacion (sede_id, tipo, nombre)
+    values ((select id from _t where clave = 'sede_a'), 'cantina', 'Cantina');
+    raise exception 'No debería poder crearse una instalación con un tipo que no está en código';
   exception
-    when others then
-      if sqlerrm like 'Admin A no debería%' then
-        raise;
-      end if;
+    when check_violation then null;
   end;
 
-  begin
-    insert into public.tipo_instalacion (club_id, nombre)
-    values (
-      (select id from _t where clave = 'club_b'),
-      'Cantina B hack'
-    );
-    raise exception 'Admin A no debería poder crear un tipo del club B';
-  exception
-    when others then
-      if sqlerrm like 'Admin A no debería%' then
-        raise;
-      end if;
-  end;
-
-  update public.tipo_instalacion
-  set nombre = 'Gym hack'
-  where id = (select id from _t where clave = 'tipo_gym');
-  get diagnostics v_n = row_count;
-  if v_n <> 0 then
-    raise exception 'Admin A no debería poder editar un tipo de base';
-  end if;
-
-  delete from public.tipo_instalacion
-  where id = (select id from _t where clave = 'tipo_otra');
-  get diagnostics v_n = row_count;
-  if v_n <> 0 then
-    raise exception 'Admin A no debería poder borrar un tipo de base';
-  end if;
-
-  update public.tipo_instalacion
-  set nombre = 'Cantina del club A'
-  where id = v_tipo;
-  get diagnostics v_n = row_count;
-  if v_n <> 1 then
-    raise exception 'Admin A debería poder editar su tipo propio';
-  end if;
-
-  begin
-    update public.tipo_instalacion
-    set club_id = null
-    where id = v_tipo;
-    -- Si el UPDATE pasa el USING (es su tipo) pero falla el WITH CHECK
-    -- (club_id null exige Super Admin), se lanza error. Si no, row_count 0.
-    get diagnostics v_n = row_count;
-    if v_n <> 0 then
-      raise exception 'Admin A no debería poder convertir su tipo en uno de base';
-    end if;
-  exception
-    when others then
-      if sqlerrm like 'Admin A no debería%' then
-        raise;
-      end if;
-  end;
-
-  select nombre into v_nombre from public.tipo_instalacion where id = v_tipo;
-  if v_nombre is distinct from 'Cantina del club A' then
-    raise exception 'El tipo propio de A debería seguir siendo del club, quedó %', v_nombre;
-  end if;
-
-  -- Ve tipos de base y el propio, no los de B (todavía no hay de B).
-  select count(*) into v_n
-  from public.tipo_instalacion
-  where club_id is null or club_id = (select id from _t where clave = 'club_a');
-  if v_n < 12 then
-    raise exception 'Admin A debería ver los 11 tipos de base y el propio, vio %', v_n;
-  end if;
+  insert into public.instalacion (sede_id, tipo, nombre)
+  values ((select id from _t where clave = 'sede_a'), 'otra', 'Cantina');
 end;
 $$;
 select pg_temp.salir();
 
--- Admin B crea un tipo propio; Admin A no lo ve ni lo usa.
+-- Admin B crea una sede; Admin A no la ve ni la usa.
 select pg_temp.entrar('admin_b');
 do $$
 declare
-  v_tipo uuid;
   v_sede uuid;
 begin
-  insert into public.tipo_instalacion (club_id, nombre)
-  values (
-    (select id from _t where clave = 'club_b'),
-    'Quincho techado'
-  )
-  returning id into v_tipo;
-  insert into _t (clave, id) values ('tipo_b', v_tipo)
-  on conflict (clave) do update set id = excluded.id;
-
   insert into public.sede (club_id, nombre)
   values (
     (select id from _t where clave = 'club_b'),
@@ -689,13 +587,6 @@ declare
   v_n int;
 begin
   select count(*) into v_n
-  from public.tipo_instalacion
-  where id = (select id from _t where clave = 'tipo_b');
-  if v_n <> 0 then
-    raise exception 'Admin A no debería ver el tipo propio del club B';
-  end if;
-
-  select count(*) into v_n
   from public.sede
   where id = (select id from _t where clave = 'sede_b');
   if v_n <> 0 then
@@ -703,13 +594,13 @@ begin
   end if;
 
   begin
-    insert into public.instalacion (sede_id, tipo_instalacion_id, nombre)
+    insert into public.instalacion (sede_id, tipo, nombre)
     values (
-      (select id from _t where clave = 'sede_a'),
-      (select id from _t where clave = 'tipo_b'),
+      (select id from _t where clave = 'sede_b'),
+      'otra',
       'No debe'
     );
-    raise exception 'Admin A no debería poder usar un tipo del club B';
+    raise exception 'Admin A no debería poder crear instalaciones en una sede del club B';
   exception
     when others then
       if sqlerrm like 'Admin A no debería%' then
@@ -728,7 +619,7 @@ end;
 $$;
 select pg_temp.salir();
 
--- Un usuario sin rol no escribe sedes ni contacto, y no ve tipos propios.
+-- Un usuario sin rol no escribe sedes ni contacto.
 select pg_temp.entrar('nadie');
 do $$
 declare
@@ -756,29 +647,15 @@ begin
       end if;
   end;
 
-  select count(*) into v_n
-  from public.tipo_instalacion
-  where club_id is not null;
-  if v_n <> 0 then
-    raise exception 'Un usuario sin rol no debería ver tipos propios, vio %', v_n;
-  end if;
-
-  select count(*) into v_n
-  from public.tipo_instalacion
-  where club_id is null;
-  if v_n <> 11 then
-    raise exception 'Un usuario autenticado debería poder leer los 11 tipos de base, vio %', v_n;
-  end if;
 end;
 $$;
 select pg_temp.salir();
 
--- Super Admin opera sobre cualquier club y sobre los tipos de base.
+-- Super Admin opera sobre cualquier club.
 select pg_temp.entrar('super');
 do $$
 declare
   v_n int;
-  v_id uuid;
 begin
   update public.club
   set web = 'https://club-b.ejemplo.test'
@@ -794,20 +671,6 @@ begin
     'Sede del Super Admin en B'
   );
 
-  select count(*) into v_n from public.tipo_instalacion where club_id is not null;
-  if v_n < 2 then
-    raise exception 'El Super Admin debería ver los tipos propios de todos los clubes, vio %', v_n;
-  end if;
-
-  insert into public.tipo_instalacion (club_id, nombre)
-  values (null, 'Tipo base de prueba')
-  returning id into v_id;
-  update public.tipo_instalacion set nombre = 'Tipo base de prueba editado' where id = v_id;
-  delete from public.tipo_instalacion where id = v_id;
-  get diagnostics v_n = row_count;
-  if v_n <> 1 then
-    raise exception 'El Super Admin debería poder borrar un tipo de base que creó';
-  end if;
 end;
 $$;
 select pg_temp.salir();
