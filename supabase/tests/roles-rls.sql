@@ -675,6 +675,120 @@ end;
 $$;
 select pg_temp.salir();
 
+-- Predio (#42): escribe solo el Super Admin; leen los Admins del club.
+-- Un Admin no puede crear el predio de una sede de su club.
+select pg_temp.entrar('admin_a');
+do $$
+begin
+  begin
+    insert into public.predio (sede_id, origen_lat, origen_lng)
+    values ((select id from _t where clave = 'sede_a'), -37.336, -59.08);
+    raise exception 'Admin A no debería poder crear el predio de su sede';
+  exception
+    when insufficient_privilege then null;
+  end;
+end;
+$$;
+select pg_temp.salir();
+
+-- El Super Admin crea el predio y el área tiene que ser una lista de puntos.
+select pg_temp.entrar('super');
+do $$
+declare
+  v_predio uuid;
+begin
+  insert into public.predio (sede_id, origen_lat, origen_lng, area)
+  values (
+    (select id from _t where clave = 'sede_a'),
+    -37.336,
+    -59.08,
+    '[[0, 0], [120.5, 0], [120.5, 80], [0, 80]]'::jsonb
+  )
+  returning id into v_predio;
+  insert into _t (clave, id) values ('predio_a', v_predio);
+
+  begin
+    update public.predio set area = '[[0, 0], [10, 0]]'::jsonb where id = v_predio;
+    raise exception 'Un área de dos puntos no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+
+  begin
+    update public.predio set area = '[[0, 0], [10, "x"], [5, 5]]'::jsonb where id = v_predio;
+    raise exception 'Un área con un punto que no es número no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+
+  begin
+    insert into public.predio (sede_id, origen_lat, origen_lng)
+    values ((select id from _t where clave = 'sede_a'), -37.3, -59.1);
+    raise exception 'Una sede no debería tener dos predios';
+  exception
+    when unique_violation then null;
+  end;
+end;
+$$;
+select pg_temp.salir();
+
+-- Admin A ve el predio de su sede pero no lo edita ni lo borra.
+select pg_temp.entrar('admin_a');
+do $$
+declare
+  v_n int;
+begin
+  select count(*) into v_n from public.predio where id = (select id from _t where clave = 'predio_a');
+  if v_n <> 1 then
+    raise exception 'Admin A debería ver el predio de su sede, ve %', v_n;
+  end if;
+
+  update public.predio set origen_lat = -37.4 where id = (select id from _t where clave = 'predio_a');
+  get diagnostics v_n = row_count;
+  if v_n <> 0 then
+    raise exception 'Admin A no debería poder editar el predio';
+  end if;
+
+  delete from public.predio where id = (select id from _t where clave = 'predio_a');
+  get diagnostics v_n = row_count;
+  if v_n <> 0 then
+    raise exception 'Admin A no debería poder borrar el predio';
+  end if;
+end;
+$$;
+select pg_temp.salir();
+
+-- Admin B no ve el predio del club A.
+select pg_temp.entrar('admin_b');
+do $$
+declare
+  v_n int;
+begin
+  select count(*) into v_n from public.predio where id = (select id from _t where clave = 'predio_a');
+  if v_n <> 0 then
+    raise exception 'Admin B no debería ver el predio del club A';
+  end if;
+end;
+$$;
+select pg_temp.salir();
+
+-- El Super Admin edita el predio guardado.
+select pg_temp.entrar('super');
+do $$
+declare
+  v_n int;
+begin
+  update public.predio
+  set area = '[[0, 0], [130, 0], [130, 90], [0, 90]]'::jsonb, actualizado_en = now()
+  where id = (select id from _t where clave = 'predio_a');
+  get diagnostics v_n = row_count;
+  if v_n <> 1 then
+    raise exception 'El Super Admin debería poder editar el predio, actualizó %', v_n;
+  end if;
+end;
+$$;
+select pg_temp.salir();
+
 select 'Pruebas de RLS: ok' as resultado;
 
 rollback;
