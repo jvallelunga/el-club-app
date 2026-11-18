@@ -5,18 +5,16 @@ import {
   errorDelArea,
   origenInicial,
   type DatosPredio,
-  type DesdeOrigen,
+  type OrigenInicial,
   type Punto,
 } from "@/dominio/predio";
-import type { Coordenadas } from "@/dominio/maps";
 import { coordenadasDeDireccion } from "../geocodificar";
 import { supabaseServidor } from "../supabase-servidor";
 
 export type PredioParaEditor = {
   /** Lo guardado, o null si la sede todavía no tiene predio. */
   guardado: DatosPredio | null;
-  /** Con qué origen abre el editor y de dónde salió. */
-  origen: { coordenadas: Coordenadas; desde: DesdeOrigen };
+  origen: OrigenInicial;
 };
 
 /** El predio guardado de una sede, o null. RLS deja leer a los Admins del club. */
@@ -44,12 +42,18 @@ export async function predioParaEditor(params: {
   direccionClub: string | null;
 }): Promise<PredioParaEditor> {
   const guardado = await predioDeSede(params.sedeId);
-  const sede = params.mapsUrlSede ? coordenadasDesdeLinkMaps(params.mapsUrlSede) : null;
+  const coordenadasSede = params.mapsUrlSede
+    ? coordenadasDesdeLinkMaps(params.mapsUrlSede)
+    : null;
   // Solo se busca la dirección del club si no hay nada mejor.
-  const ciudad =
-    guardado || sede ? null : await coordenadasDeDireccion(params.direccionClub);
+  const coordenadasClub =
+    guardado || coordenadasSede ? null : await coordenadasDeDireccion(params.direccionClub);
   return {
     guardado,
-    origen: origenInicial({ predio: guardado?.origen ?? null, sede, ciudad }),
+    origen: origenInicial({
+      predio: guardado?.origen ?? null,
+      sede: coordenadasSede,
+      ciudad: coordenadasClub,
+    }),
   };
 }

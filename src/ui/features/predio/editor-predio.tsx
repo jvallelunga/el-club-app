@@ -29,9 +29,12 @@ import {
   hayCambiosEnPredio,
   type DatosPredio,
   type DesdeOrigen,
+  type OrigenInicial,
 } from "@/dominio/predio";
 import {
   ATRIBUCION_ESRI,
+  esRechazoDeGoogle,
+  fuenteEsri,
   fuenteSatelital,
   ZOOM_MAXIMO,
   type FuenteSatelital,
@@ -82,7 +85,7 @@ export function EditorPredio({
 }: {
   sedeNombre: string;
   guardado: DatosPredio | null;
-  origenInicial: { coordenadas: Coordenadas; desde: DesdeOrigen };
+  origenInicial: OrigenInicial;
   guardar: (datos: DatosPredio) => Promise<ResultadoGuardarPredio>;
   /** Avisa si hay cambios sin guardar. */
   onCambios: (hay: boolean) => void;
@@ -164,6 +167,24 @@ export function EditorPredio({
       // La foto va primero: el dibujo se agrega después, encima.
       mapa.addSource("satelital", elegida.raster);
       mapa.addLayer({ id: "satelital", type: "raster", source: "satelital" });
+
+      // Si la sesión abrió pero Google rechaza los tiles, se cambia a Esri.
+      if (elegida.proveedor === "google") {
+        const alFallarTile = (evento: maplibregl.ErrorEvent & { sourceId?: string }) => {
+          const estado = (evento.error as { status?: number } | undefined)?.status;
+          if (evento.sourceId !== "satelital" || !esRechazoDeGoogle(estado)) return;
+          mapa.off("error", alFallarTile);
+          const esri = fuenteEsri("Google rechazó las imágenes: se muestran las de Esri.");
+          // La capa nueva va abajo de todo, debajo del dibujo.
+          const primeraCapa = mapa.getStyle().layers.find((c) => c.id !== "satelital")?.id;
+          mapa.removeLayer("satelital");
+          mapa.removeSource("satelital");
+          mapa.addSource("satelital", esri.raster);
+          mapa.addLayer({ id: "satelital", type: "raster", source: "satelital" }, primeraCapa);
+          setFuente(esri);
+        };
+        mapa.on("error", alFallarTile);
+      }
 
       const estiloArea = {
         fillColor: AMARILLO,

@@ -21,8 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/nativos/dialog";
-import type { Coordenadas } from "@/dominio/maps";
-import type { DatosPredio, DesdeOrigen } from "@/dominio/predio";
+import type { DatosPredio, OrigenInicial } from "@/dominio/predio";
 import type { ResultadoGuardarPredio } from "./editor-predio";
 
 const EditorPredio = dynamic(() => import("./editor-predio").then((m) => m.EditorPredio), {
@@ -47,7 +46,7 @@ export function SeccionPredio({
 }: {
   sedeNombre: string;
   guardado: DatosPredio | null;
-  origenInicial: { coordenadas: Coordenadas; desde: DesdeOrigen };
+  origenInicial: OrigenInicial;
   guardar: (datos: DatosPredio) => Promise<ResultadoGuardarPredio>;
 }) {
   const router = useRouter();
@@ -94,7 +93,8 @@ export function SeccionPredio({
 
   // Si se entra con ?predio=editar (por ejemplo, al recargar), abre el editor.
   useEffect(() => {
-    if (new URL(window.location.href).searchParams.get(PARAMETRO) === "editar") {
+    const enEscritorio = window.matchMedia("(min-width: 1024px)").matches;
+    if (enEscritorio && new URL(window.location.href).searchParams.get(PARAMETRO) === "editar") {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- lee la URL una sola vez al montar
       setAbierto(true);
     }

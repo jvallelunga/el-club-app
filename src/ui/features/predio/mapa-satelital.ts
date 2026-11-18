@@ -46,6 +46,19 @@ const RASTER_ESRI: RasterSourceSpecification = {
   maxzoom: ZOOM_MAXIMO,
 };
 
+/** Esri, con el motivo por el que no se usa Google. */
+export function fuenteEsri(aviso: string): FuenteSatelital {
+  return { proveedor: "esri", raster: RASTER_ESRI, aviso };
+}
+
+/**
+ * Si Google rechazó un tile por la clave o la cuota (401, 403, 429). Un 404
+ * suelto no cuenta: es una zona sin imagen a ese zoom.
+ */
+export function esRechazoDeGoogle(estado: number | undefined): boolean {
+  return estado === 401 || estado === 403 || estado === 429;
+}
+
 async function sesionGoogle(clave: string): Promise<string> {
   const respuesta = await fetch(`${TILES_GOOGLE}/v1/createSession?key=${clave}`, {
     method: "POST",
@@ -61,11 +74,7 @@ async function sesionGoogle(clave: string): Promise<string> {
 /** Abre una sesión de Google; si no se puede, devuelve Esri con el motivo. */
 export async function fuenteSatelital(): Promise<FuenteSatelital> {
   if (!CLAVE_GOOGLE) {
-    return {
-      proveedor: "esri",
-      raster: RASTER_ESRI,
-      aviso: "Falta la clave de Google: se muestran imágenes de Esri.",
-    };
+    return fuenteEsri("Falta la clave de Google: se muestran imágenes de Esri.");
   }
   const clave = CLAVE_GOOGLE;
   try {
@@ -95,10 +104,6 @@ export async function fuenteSatelital(): Promise<FuenteSatelital> {
     };
   } catch (error) {
     console.warn("Map Tiles API de Google no disponible:", error);
-    return {
-      proveedor: "esri",
-      raster: RASTER_ESRI,
-      aviso: "No se pudo usar Google: se muestran imágenes de Esri.",
-    };
+    return fuenteEsri("No se pudo usar Google: se muestran imágenes de Esri.");
   }
 }

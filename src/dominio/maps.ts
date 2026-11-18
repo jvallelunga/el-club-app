@@ -9,9 +9,20 @@ function alNumero(valor: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Si lat y lng son números dentro del rango del mapa. */
+export function sonCoordenadasValidas(lat: number, lng: number): boolean {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
+
 function validar(lat: number, lng: number): Coordenadas | null {
-  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
-  return { lat, lng };
+  return sonCoordenadasValidas(lat, lng) ? { lat, lng } : null;
 }
 
 /**

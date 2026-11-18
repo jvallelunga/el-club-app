@@ -1,4 +1,4 @@
-import type { Coordenadas } from "./maps";
+import { sonCoordenadasValidas, type Coordenadas } from "./maps";
 
 /** Metros desde el origen del predio: [este, norte]. */
 export type Punto = [number, number];
@@ -93,6 +93,9 @@ export const ORIGEN_POR_DEFECTO: Coordenadas = { lat: -34.60373, lng: -58.38157 
 
 export type DesdeOrigen = "predio" | "sede" | "ciudad" | "por-defecto";
 
+/** Con qué origen abre el editor y de dónde salió. */
+export type OrigenInicial = { coordenadas: Coordenadas; desde: DesdeOrigen };
+
 /**
  * Origen con el que abre el editor: el guardado del predio; si no hay, las
  * coordenadas de la sede; si no, la ciudad del club; si no, Buenos Aires.
@@ -101,7 +104,7 @@ export function origenInicial(params: {
   predio: Coordenadas | null;
   sede: Coordenadas | null;
   ciudad: Coordenadas | null;
-}): { coordenadas: Coordenadas; desde: DesdeOrigen } {
+}): OrigenInicial {
   if (params.predio) return { coordenadas: params.predio, desde: "predio" };
   if (params.sede) return { coordenadas: params.sede, desde: "sede" };
   if (params.ciudad) return { coordenadas: params.ciudad, desde: "ciudad" };
@@ -144,27 +147,15 @@ export function coordenadasDesdeNominatim(respuesta: unknown): Coordenadas | nul
   const primero: unknown = respuesta[0];
   if (!primero || typeof primero !== "object") return null;
   const { lat, lon } = primero as Record<string, unknown>;
-  const latN = Number(lat);
-  const lngN = Number(lon);
   if (typeof lat !== "string" || typeof lon !== "string") return null;
-  if (!Number.isFinite(latN) || !Number.isFinite(lngN)) return null;
-  if (latN < -90 || latN > 90 || lngN < -180 || lngN > 180) return null;
-  return { lat: latN, lng: lngN };
+  const coordenadas = { lat: Number(lat), lng: Number(lon) };
+  return sonCoordenadasValidas(coordenadas.lat, coordenadas.lng) ? coordenadas : null;
 }
 
 function esCoordenadas(valor: unknown): valor is Coordenadas {
   if (!valor || typeof valor !== "object") return false;
   const { lat, lng } = valor as Record<string, unknown>;
-  return (
-    typeof lat === "number" &&
-    typeof lng === "number" &&
-    Number.isFinite(lat) &&
-    Number.isFinite(lng) &&
-    lat >= -90 &&
-    lat <= 90 &&
-    lng >= -180 &&
-    lng <= 180
-  );
+  return typeof lat === "number" && typeof lng === "number" && sonCoordenadasValidas(lat, lng);
 }
 
 /** Mensaje si lo que llega para guardar no es un predio válido, o null. */

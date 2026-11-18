@@ -5,15 +5,14 @@ import { errorSiNoPuedeEditarPredio } from "@/dominio/permisos";
 import { errorDelPredio, predioParaGuardar, type DatosPredio } from "@/dominio/predio";
 import { cargarSesion } from "../consultas/sesion";
 import { supabaseServidor } from "../supabase-servidor";
-
-export type ResultadoGuardarPredio = { ok: true } | { ok: false; error: string };
+import type { ResultadoSimple } from "./sedes";
 
 /** Guarda el origen y el área del predio de una sede. Solo el Super Admin. */
 export async function guardarPredio(
   clubId: string,
   sedeId: string,
   datos: DatosPredio,
-): Promise<ResultadoGuardarPredio> {
+): Promise<ResultadoSimple> {
   const sesion = await cargarSesion();
   const permiso = errorSiNoPuedeEditarPredio(sesion);
   if (permiso) return { ok: false, error: permiso };
