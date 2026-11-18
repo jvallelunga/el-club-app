@@ -24,5 +24,5 @@ The Super Admin is **not** a reader: leave Super Admin-only screens out. When a 
 - One page per screen or task, named by what the reader wants to do: `Cargar-una-sede.md`, `Seguir-un-partido-en-vivo.md`. File names are unique and flat (no subfolders): the wiki uses them as page names.
 - Link pages wiki-style, without `.md`: `[Cargar una sede](Cargar-una-sede)`.
 - Shape: one line on what it is and who sees it; then numbered steps naming the buttons and fields exactly as the UI labels them; then notes for limits and permissions («solo un Admin del club puede…»).
-- Spanish, addressing the reader as «vos», in the club's vocabulary (`CONTEXT.md`, the README's «Redacción» rules). Describe the app as it is now: release notes and «nuevo» live in the PR, not here.
+- Spanish, addressing the reader as «vos», in the club's vocabulary (`GLOSSARY.md`, the README's «Redacción» rules). Describe the app as it is now: release notes and «nuevo» live in the PR, not here.
 - Write for the club, not for one club: say «tu club», never «Los Cardos».
