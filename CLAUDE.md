@@ -1,5 +1,7 @@
 ## Agent skills
 
+Matt Pocock's skills are local copies in `.claude/skills/` (from `mattpocock/skills` @ `5863806`, updated by hand). `.claude/settings.json` turns off both plugin sources (`@synced` and `@mattpocock`) so each skill loads once. His `code-review` is renamed `matt-code-review` so it doesn't clash with the built-in `/code-review`; keep that rename when updating.
+
 ### Starting work
 
 Start every piece of issue work with the `next-issue` skill: it takes the next `ready` issue (or the `#n` the user names), routes it to the right skill, and waits for the user's OK before touching anything.
