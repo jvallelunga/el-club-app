@@ -6,9 +6,15 @@ argument-hint: "Optional issue number to take instead of the next one"
 
 Pick the next issue to work on, **route** it to the right skill, and start it after the user says OK.
 
-`docs/agents/issue-tracker.md` is the source of truth for labels, the `gh api` calls (plain `gh issue` fails in cloud sessions) and how to take an issue. `docs/agents/triage-labels.md` maps `ready-for-agent` to this repo's label. Read both before step 1.
+`docs/agents/issue-tracker.md` is the source of truth for labels and how to take an issue. `docs/agents/triage-labels.md` maps `ready-for-agent` to this repo's label. Read both before step 1.
 
 Talk to the user in Spanish.
+
+## Tools
+
+- **GitHub**: use the GitHub MCP tools when the session has them (`list_issues` with `labels` and `state: OPEN`, `issue_read` with `get` / `get_comments`, `add_issue_comment`, `issue_write` for labels). Otherwise use the `gh api` calls in `docs/agents/issue-tracker.md`; plain `gh issue` fails in cloud sessions. To count open blockers, read `issue_dependencies_summary.blocked_by` with `gh api repos/jvallelunga/el-club-app/issues/<n>`.
+- **Skills**: the Skill tool can call only model-invocable skills. These are user-invoked only (`disable-model-invocation: true`): `grill-with-docs`, `to-spec`, `to-tickets`, `implement`, `triage`, `wayfinder`. Step 6 says what to do with them.
+- **Branch**: a cloud session is assigned one `claude/…` branch and may push only there. Locally, use the repo prefixes in step 5.
 
 ## 1. Check the work in progress
 
@@ -22,23 +28,23 @@ Without one, list open issues labelled `ready`, oldest first, pull requests filt
 
 ## 3. Read it whole
 
-Read the issue body and **every** comment (frames, decisions with date ART, answered questions live there), plus any feature doc, ADR or `CONTEXT.md` entry it touches (see `docs/agents/domain.md`). Done when you can state the goal, the acceptance criteria, and what is still open.
+Read the issue body and **every** comment (frames, decisions with date ART, answered questions live there), plus any feature doc, ADR or `CONTEXT.md` entry it touches (see `docs/agents/domain.md`), and the code and migrations it changes. Done when you can state the goal, the acceptance criteria, and what is still open.
 
 ## 4. Route it
 
-Check the issue against **every** row, top to bottom. Rows marked _detour_ come before the main skill; collect all that apply. Then pick exactly one main skill.
+Check the issue against **every** row, top to bottom. Rows marked _detour_ come before the main skill; collect all that apply. Then pick exactly one main skill. «User-invoked» marks the skills you cannot call yourself.
 
 | Signal in the issue | Skill |
 | --- | --- |
-| Open questions unchecked, or model / scope / permissions still «a definir» | _detour_: `/grill-with-docs` to settle them, recording decisions in the issue |
+| Open questions unchecked, or model / scope / permissions still «a definir» | _detour_: `/grill-with-docs` (user-invoked; you run `grilling` then `domain-modeling`) to settle them, recording decisions in the issue |
 | Facts missing from outside the repo (third-party API, library, pricing, limits) | _detour_: `/research` in the background |
 | New UI without approved mocks or frame, or a state model nobody has felt yet | _detour_: `/prototype` (repo rule: mocks are approved before code) |
 | Steps only a person can do (dashboards, DNS, keys, secrets) | main: `/wizard` |
 | Something broken, cause unknown | main: `/diagnosing-bugs` |
-| Too big for one session: several slices that ship independently, or work across many layers | main: `/to-tickets` (the issue is already the spec) |
+| Too big for one session: several slices that ship independently, or work across many layers | main: `/to-tickets` (user-invoked; the issue is already the spec) |
 | Module shape or seams are the actual problem | main: `/codebase-design` |
 | A concrete behaviour change, a handful of tests | main: `/tdd` |
-| Specified work that fits one session | main: `/implement` (drives `/tdd`, closes with `/code-review`) |
+| Specified work that fits one session | main: `/implement` (user-invoked; drives `/tdd`, closes with `/code-review`) |
 
 When two main rows fit, take the higher one. Done when each chosen skill is backed by a line quoted from the issue, and each discarded row that came close has a one-line reason.
 
@@ -47,9 +53,9 @@ When two main rows fit, take the higher one. Done when each chosen skill is back
 Show the user:
 
 - the issue (`#n`, title, link) and its goal in one or two lines,
-- the route: detours in order, then the main skill, each with the quoted evidence,
+- the route: detours in order, then the main skill, each with the quoted evidence; say which steps they will have to type themselves,
 - the near-miss skills and why not,
-- the branch you will create: `feature/`, `fix/`, `enhancement/` or `task/` plus a short kebab-case name, off `desarrollo`.
+- the branch: in a cloud session, the session's `claude/…` branch; locally, `feature/`, `fix/`, `enhancement/` or `task/` plus a short kebab-case name. Either way, off the latest `desarrollo`.
 
 Then wait. The user may confirm, change the skill, or pick another issue.
 
@@ -57,7 +63,10 @@ Then wait. The user may confirm, change the skill, or pick another issue.
 
 On OK:
 
-1. Create the branch from the latest `desarrollo`.
+1. Put the branch on the latest `desarrollo`. In a cloud session, `git fetch origin desarrollo` and move the session branch onto it with `git checkout -B <branch> origin/desarrollo`, only if the branch holds no commits that `desarrollo` lacks; if it does, ask the user. Locally, create the new branch from `origin/desarrollo`.
 2. Take the issue as `docs/agents/issue-tracker.md` says: `ready` → `in progress`, with the comment «Tomado. Rama: <rama>».
-3. Rename the session to `#<n> <issue title>` (e.g. `#26 Editor de predios 3D por sede`), so the session list shows which issue it holds. In a cloud session use `set_session_title` from the `claude-code-remote` tools, with the id from `get_session`. Where there is no such tool, tell the user the name to set by hand.
-4. Start the first skill of the route, passing the issue number and link. The issue and its comments are the spec. Some skills are user-invoked only (`disable-model-invocation: true`), so the Skill tool cannot call them: `grill-with-docs`, `to-spec`, `to-tickets`, `implement`, `triage`, `wayfinder`. For `grill-with-docs`, invoke what it wraps instead: `grilling`, then `domain-modeling`. For the others, ask the user to type the command (e.g. `/mattpocock-skills:to-tickets #26`) and wait.
+3. Rename the session to `#<n> <issue title>` (e.g. `#26 Editor de predios 3D por sede`), so the session list shows which issue it holds. In a cloud session, call `get_session` from the `claude-code-remote` tools with no id to get this session's id, then `set_session_title` with it. Without those tools, tell the user the name to set by hand.
+4. Start the first skill of the route, passing the issue number and link. The issue and its comments are the spec.
+   - Model-invocable skill: call it with the Skill tool.
+   - `grill-with-docs`: it only wraps two skills, so call `grilling`, then `domain-modeling`, in the same session.
+   - Any other user-invoked skill: ask the user to type it (e.g. `/mattpocock-skills:to-tickets #26`) and wait.
