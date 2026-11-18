@@ -279,13 +279,7 @@ export function PantallaAdminsReal({
                   actorUsuarioId: usuarioId,
                   objetivoUsuarioId: admin.usuarioId,
                   cantidadAdmins: admins.length,
-                }) ? (
-                  <p className="max-w-40 text-right text-xs text-muted-foreground">
-                    {admin.usuarioId === usuarioId
-                      ? "Sos el último Admin"
-                      : "Último Admin"}
-                  </p>
-                ) : (
+                }) ? null : (
                   <Button
                     type="button"
                     variant="ghost"
