@@ -1,8 +1,7 @@
 ---
 name: next-issue
-description: Take the next `ready` issue from GitHub, pick which Matt Pocock skill to tackle it with, and start once the user confirms.
+description: Start work on an issue: take the next `ready` issue (or a given `#n`), route it to the right Matt Pocock skill, and begin once the user confirms. Use when the user asks to start working, for the next issue or task, or to take a specific issue.
 argument-hint: "Optional issue number to take instead of the next one"
-disable-model-invocation: true
 ---
 
 Pick the next issue to work on, **route** it to the right skill, and start it after the user says OK.
