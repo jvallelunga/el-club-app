@@ -59,4 +59,5 @@ On OK:
 
 1. Create the branch from the latest `desarrollo`.
 2. Take the issue as `docs/agents/issue-tracker.md` says: `ready` → `in progress`, with the comment «Tomado. Rama: <rama>».
-3. Invoke the first skill of the route with the Skill tool, passing the issue number and link. The issue and its comments are the spec.
+3. Rename the session to `#<n> <issue title>` (e.g. `#26 Editor de predios 3D por sede`), so the session list shows which issue it holds. In a cloud session use `set_session_title` from the `claude-code-remote` tools, with the id from `get_session`. Where there is no such tool, tell the user the name to set by hand.
+4. Start the first skill of the route, passing the issue number and link. The issue and its comments are the spec. Some skills are user-invoked only (`disable-model-invocation: true`), so the Skill tool cannot call them: `grill-with-docs`, `to-spec`, `to-tickets`, `implement`, `triage`, `wayfinder`. For `grill-with-docs`, invoke what it wraps instead: `grilling`, then `domain-modeling`. For the others, ask the user to type the command (e.g. `/mattpocock-skills:to-tickets #26`) and wait.
