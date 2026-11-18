@@ -44,7 +44,7 @@ Check the issue against **every** row, top to bottom. Rows marked _detour_ come 
 | Too big for one session: several slices that ship independently, or work across many layers | main: `/to-tickets` (user-invoked; the issue is already the spec) |
 | Module shape or seams are the actual problem | main: `/codebase-design` |
 | A concrete behaviour change, a handful of tests | main: `/tdd` |
-| Specified work that fits one session | main: `/implement` (user-invoked; drives `/tdd`, closes with `/code-review`) |
+| Specified work that fits one session | main: `/implement` (user-invoked; drives `/tdd`, closes with `/matt-code-review`) |
 
 When two main rows fit, take the higher one. Done when each chosen skill is backed by a line quoted from the issue, and each discarded row that came close has a one-line reason.
 
@@ -68,4 +68,4 @@ On OK:
 3. Rename the session to `#<n> <issue title>` (e.g. `#26 Editor de predios 3D por sede`), so the session list shows which issue it holds. In a cloud session, call `get_session` from the `claude-code-remote` tools with no id to get this session's id, then `set_session_title` with it. Without those tools, tell the user the name to set by hand.
 4. Start the first skill of the route, passing the issue number and link. The issue and its comments are the spec.
    - Model-invocable skill: call it with the Skill tool.
-   - User-invoked skill: ask the user to type it (e.g. `/mattpocock-skills:grill-with-docs #26`) and wait. Don't run the skills it wraps in its place.
+   - User-invoked skill: ask the user to type it (e.g. `/grill-with-docs #26`) and wait. Don't run the skills it wraps in its place.
