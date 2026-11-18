@@ -481,14 +481,22 @@ export async function quitarAdminClub(
     return { ok: false, error: mensajeUltimo };
   }
 
-  const { error } = await supabase
+  const { data: borrados, error } = await supabase
     .from("club_miembro")
     .delete()
     .eq("club_id", clubId)
-    .eq("usuario_id", usuarioId);
+    .eq("usuario_id", usuarioId)
+    .select("id");
 
   if (error) {
+    if (error.code === "P0001") {
+      // La base no deja quitar al último Admin (otro quitó al resto mientras tanto).
+      return { ok: false, error: "No se puede quitar al último Admin del club." };
+    }
     return { ok: false, error: "No se pudo quitar. Probá de nuevo." };
+  }
+  if (!borrados || borrados.length === 0) {
+    return { ok: false, error: "Esa persona ya no es Admin de este club." };
   }
 
   revalidatePath(`/super-admin/clubes/${club.slug}/admins`);
@@ -517,15 +525,19 @@ export async function cancelarInvitacionClub(
     return { ok: false, error: "No encontramos ese club." };
   }
 
-  const { error } = await supabase
+  const { data: borradas, error } = await supabase
     .from("club_invitacion")
     .delete()
     .eq("id", invitacionId)
     .eq("club_id", clubId)
-    .is("aceptada_en", null);
+    .is("aceptada_en", null)
+    .select("id");
 
   if (error) {
     return { ok: false, error: "No se pudo cancelar. Probá de nuevo." };
+  }
+  if (!borradas || borradas.length === 0) {
+    return { ok: false, error: "No encontramos esa invitación pendiente." };
   }
 
   revalidatePath(`/super-admin/clubes/${club.slug}/admins`);

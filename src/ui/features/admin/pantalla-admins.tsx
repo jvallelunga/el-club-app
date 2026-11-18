@@ -20,6 +20,7 @@ import {
   type RolShell,
 } from "@/ui/compartidos/shell-admin";
 import { avisoTrasInvitar } from "@/dominio/ingreso-email";
+import { errorAlQuitarAdmin } from "@/dominio/permisos";
 import { inicialesDesdeNombre } from "@/dominio/slug";
 
 export type AdminVisible = {
@@ -39,6 +40,22 @@ type ClubVisible = {
   nombre: string;
   escudo: string | null;
 };
+
+/** Cuenta solo Admins reales; las invitaciones pendientes van aparte. */
+function textoCantidadAdmins(admins: number, invitaciones: number): string {
+  const textoAdmins =
+    admins === 0
+      ? "Todavía no hay Admins"
+      : admins === 1
+        ? "1 Admin"
+        : `${admins} Admins`;
+  if (invitaciones === 0) return textoAdmins;
+  const textoInvitaciones =
+    invitaciones === 1
+      ? "1 invitación pendiente"
+      : `${invitaciones} invitaciones pendientes`;
+  return `${textoAdmins} · ${textoInvitaciones}`;
+}
 
 export function PantallaAdminsReal({
   club,
@@ -80,9 +97,33 @@ export function PantallaAdminsReal({
   const searchParams = useSearchParams();
   const confirmarId = searchParams.get("confirmar");
   const [email, setEmail] = useState("");
-  const [aviso, setAviso] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [mensaje, setMensaje] = useState<
+    { tipo: "aviso" | "error"; texto: string } | null
+  >(null);
+  const [accion, setAccion] = useState<
+    "agregar" | "quitar" | "reenviar" | "cancelar" | null
+  >(null);
   const [pending, startTransition] = useTransition();
+  const aviso = mensaje?.tipo === "aviso" ? mensaje.texto : null;
+  const error = mensaje?.tipo === "error" ? mensaje.texto : null;
+
+  // Un solo mensaje a la vez: un error nuevo reemplaza al aviso anterior y viceversa.
+  const mostrarAviso = (texto: string) => setMensaje({ tipo: "aviso", texto });
+  const mostrarError = (texto: string) => setMensaje({ tipo: "error", texto });
+
+  function ejecutar(
+    tipo: "agregar" | "quitar" | "reenviar" | "cancelar",
+    tarea: () => Promise<void>,
+  ) {
+    setAccion(tipo);
+    startTransition(async () => {
+      try {
+        await tarea();
+      } finally {
+        setAccion(null);
+      }
+    });
+  }
 
   const aQuitar = useMemo(
     () => admins.find((admin) => admin.usuarioId === confirmarId) ?? null,
@@ -105,43 +146,41 @@ export function PantallaAdminsReal({
   function confirmarQuitar() {
     if (!aQuitar || pending) return;
     const persona = aQuitar;
-    startTransition(async () => {
+    ejecutar("quitar", async () => {
       const resultado = await quitar(persona.usuarioId);
-      if (!resultado.ok) {
-        setError(resultado.error);
-        return;
-      }
-      setError(null);
-      setAviso(`Listo, ${persona.nombre} ya no es Admin de este club.`);
+      // Cerrar el diálogo siempre: el mensaje se muestra en la página, y el
+      // overlay lo taparía.
       limpiarConfirmar();
+      if (!resultado.ok) {
+        mostrarError(resultado.error);
+      } else {
+        mostrarAviso(`Listo, ${persona.nombre} ya no es Admin de este club.`);
+      }
       router.refresh();
     });
   }
 
   function reenviarLink(invitacion: InvitacionVisible) {
     if (pending) return;
-    startTransition(async () => {
+    ejecutar("reenviar", async () => {
       const resultado = await reenviar(invitacion.id);
       if (!resultado.ok) {
-        setAviso(null);
-        setError(resultado.error);
+        mostrarError(resultado.error);
         return;
       }
-      setError(null);
-      setAviso(`Le mandamos el link a ${invitacion.email}.`);
+      mostrarAviso(`Le mandamos el link a ${invitacion.email}.`);
     });
   }
 
   function cancelarInvitacion(invitacion: InvitacionVisible) {
     if (pending) return;
-    startTransition(async () => {
+    ejecutar("cancelar", async () => {
       const resultado = await cancelar(invitacion.id);
       if (!resultado.ok) {
-        setError(resultado.error);
-        return;
+        mostrarError(resultado.error);
+      } else {
+        mostrarAviso(`Cancelamos la invitación a ${invitacion.email}.`);
       }
-      setError(null);
-      setAviso(`Cancelamos la invitación a ${invitacion.email}.`);
       router.refresh();
     });
   }
@@ -150,32 +189,29 @@ export function PantallaAdminsReal({
     evento.preventDefault();
     const valor = email.trim().toLowerCase();
     if (!valor || pending) return;
-    setError(null);
-    startTransition(async () => {
+    setMensaje(null);
+    ejecutar("agregar", async () => {
       const resultado = await invitar(valor);
       if (!resultado.ok) {
-        setError(resultado.error);
+        mostrarError(resultado.error);
         return;
       }
       setEmail("");
-      const aviso = avisoTrasInvitar({
+      const texto = avisoTrasInvitar({
         email: valor,
         aceptadaDeInmediato: resultado.aceptadaDeInmediato,
         linkEnviado: resultado.linkEnviado,
         errorLink: resultado.errorLink,
       });
       if (resultado.linkEnviado) {
-        setError(null);
-        setAviso(aviso);
+        mostrarAviso(texto);
       } else {
-        setAviso(null);
-        setError(aviso);
+        mostrarError(texto);
       }
       router.refresh();
     });
   }
 
-  const total = admins.length + invitaciones.length;
   const clubShell = {
     slug: club.slug,
     nombre: club.nombre,
@@ -200,11 +236,7 @@ export function PantallaAdminsReal({
           <div className="min-w-0">
             <p className="truncate font-medium">{club.nombre}</p>
             <p className="text-sm text-muted-foreground">
-              {total === 0
-                ? "Todavía no hay Admins"
-                : total === 1
-                  ? "1 Admin"
-                  : `${total} Admins`}
+              {textoCantidadAdmins(admins.length, invitaciones.length)}
             </p>
           </div>
         </div>
@@ -229,7 +261,7 @@ export function PantallaAdminsReal({
               disabled={!email.trim() || pending}
               className="sm:w-auto sm:px-6"
             >
-              {pending ? "Agregando…" : "Agregar"}
+              {accion === "agregar" ? "Agregando…" : "Agregar"}
             </BotonPrincipal>
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
@@ -271,11 +303,11 @@ export function PantallaAdminsReal({
                     {admin.email}
                   </p>
                 </div>
-                {admins.length === 1 && admin.usuarioId === usuarioId ? (
-                  <p className="max-w-40 text-right text-xs text-muted-foreground">
-                    Sos el último Admin
-                  </p>
-                ) : (
+                {errorAlQuitarAdmin({
+                  actorUsuarioId: usuarioId,
+                  objetivoUsuarioId: admin.usuarioId,
+                  cantidadAdmins: admins.length,
+                }) ? null : (
                   <Button
                     type="button"
                     variant="ghost"
@@ -351,7 +383,7 @@ export function PantallaAdminsReal({
               onClick={confirmarQuitar}
               disabled={pending}
             >
-              Quitar
+              {accion === "quitar" ? "Quitando…" : "Quitar"}
             </Button>
           </DialogFooter>
         </DialogContent>
