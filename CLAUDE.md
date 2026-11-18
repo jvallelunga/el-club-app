@@ -4,6 +4,10 @@
 
 Start every piece of issue work with the `next-issue` skill: it takes the next `ready` issue (or the `#n` the user names), routes it to the right skill, and waits for the user's OK before touching anything.
 
+### Pull requests
+
+Merge your own PR into `desarrollo` as soon as it is ready, without asking: the bar is in the README («Cómo se trabaja»), the merge call in `docs/agents/issue-tracker.md`. Production (`main`) only with Jerónimo's OK.
+
 ### User docs
 
 Before moving an issue to `done`, update the end-user docs in `docs/usuario/` with the `user-docs` skill, in the same PR. The folder is published to the GitHub wiki on every push to `main`.

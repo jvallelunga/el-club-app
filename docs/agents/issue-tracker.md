@@ -42,6 +42,8 @@ Questions about missing requirements and product decisions (with date and time A
 
 PRs go against `desarrollo`, with `Closes #<n>`. Use `gh api repos/jvallelunga/el-club-app/pulls` to create, read and list them. GitHub shares one number space across issues and PRs, so a bare `#42` may be either.
 
+Merge with `gh api -X PUT repos/jvallelunga/el-club-app/pulls/<n>/merge -f merge_method=merge` (a merge commit, never squash), once `mergeable_state` is `clean` (`gh api repos/jvallelunga/el-club-app/pulls/<n> --jq .mergeable_state`).
+
 ## When a skill says "publish to the issue tracker"
 
 Create a GitHub issue with the `backlog` label.
