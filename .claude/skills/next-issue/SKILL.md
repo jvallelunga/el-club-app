@@ -12,7 +12,7 @@ Talk to the user in Spanish.
 
 ## Tools
 
-- **GitHub**: use the GitHub MCP tools when the session has them (`list_issues` with `labels` and `state: OPEN`, `issue_read` with `get` / `get_comments` / `get_sub_issues` / `get_parent`, `add_issue_comment`, `issue_write` for labels). Otherwise use the `gh api` calls in `docs/agents/issue-tracker.md`; plain `gh issue` fails in cloud sessions. To count open blockers, follow **Count open blockers** in `docs/agents/issue-tracker.md`.
+- **GitHub**: use the GitHub MCP tools when the session has them (`list_issues` with `labels` and `state: OPEN`, `issue_read` with `get` / `get_comments` / `get_sub_issues` / `get_parent`, `add_issue_comment`, `issue_write` for labels). Otherwise use the `gh api` calls in `docs/agents/issue-tracker.md`; plain `gh issue` fails in cloud sessions. To count open blockers, follow **Count open blockers** in `docs/agents/issue-tracker.md`: a blocker labelled `done` is already merged into `desarrollo` and doesn't block, even though it stays open until production.
 - **Session**: `get_session` (no id) gives this session's id; its link is `https://claude.ai/code/<id>`. `set_session_title` renames it. Without these tools, ask the user for the link and tell them the title to set by hand.
 - **Skills**: the Skill tool can call only model-invocable skills. These are user-invoked only (`disable-model-invocation: true`): `grill-with-docs`, `to-spec`, `to-tickets`, `implement`, `triage`, `wayfinder`. When the route needs one, ask the user to type it and wait.
 
