@@ -18,13 +18,15 @@ Talk to the user in Spanish.
 
 ## 1. Check the work in progress
 
-The repo works **one thing at a time**. List open issues labelled `in progress`. If there is one, stop: show it to the user and ask whether to continue it instead (then route it from step 3). Done when no issue is `in progress`, or the user explicitly says to take another one anyway.
+The repo works **one thing at a time**. List open issues labelled `in progress`, leaving out parents (issues with sub-issues): a parent stays `in progress` while its tickets are worked. If one is left, stop: show it to the user and ask whether to continue it instead (then route it from step 3). Done when no ticket is `in progress`, or the user explicitly says to take another one anyway.
 
 ## 2. Pick the issue
 
 With an argument, take that issue and confirm it is open and labelled `ready`; otherwise tell the user its real state and stop.
 
 Without one, list open issues labelled `ready`, oldest first, pull requests filtered out. Drop any with an assignee or an open blocker. The first one left is the issue. None left: tell the user and stop.
+
+If the issue has a parent, read **Parent issues and their tickets** in `docs/agents/issue-tracker.md` now. The ticket is worked from the parent's refinement session (the comment «Sesión de refinamiento» on the parent). Compare that link with this session's id (`get_session` with no id). If this is another session, stop and tell the user to run `/next-issue` there.
 
 ## 3. Read it whole
 
@@ -66,6 +68,6 @@ On OK:
 1. Put the branch on the latest `desarrollo`. In a cloud session, `git fetch origin desarrollo` and move the session branch onto it with `git checkout -B <branch> origin/desarrollo`, only if the branch holds no commits that `desarrollo` lacks; if it does, ask the user. Locally, create the new branch from `origin/desarrollo`.
 2. Take the issue as `docs/agents/issue-tracker.md` says: `ready` → `in progress`, with the comment «Tomado. Rama: <rama>».
 3. Rename the session to `#<n> <issue title>` (e.g. `#26 Editor de predios 3D por sede`), so the session list shows which issue it holds. In a cloud session, call `get_session` from the `claude-code-remote` tools with no id to get this session's id, then `set_session_title` with it. Without those tools, tell the user the name to set by hand.
-4. Start the first skill of the route, passing the issue number and link. The issue and its comments are the spec.
+4. Start the first skill of the route, passing the issue number and link. The issue and its comments are the spec. For a ticket of a parent, this session does none of 1–4: it hands the ticket to a fresh subagent as **Parent issues and their tickets** says, and waits for its report. The subagent creates its branch, takes the issue (sub-step 2) and runs the route; the session keeps the parent's title.
    - Model-invocable skill: call it with the Skill tool.
    - User-invoked skill: ask the user to type it (e.g. `/grill-with-docs #26`) and wait. Don't run the skills it wraps in its place.
