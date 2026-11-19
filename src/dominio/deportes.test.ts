@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { CONDICION_VACIA } from "./condicion";
 import {
   deporteParaGuardar,
   esClaveIconoDeporte,
@@ -45,7 +46,12 @@ describe("íconos de deporte", () => {
 });
 
 describe("validarDeporte", () => {
-  const valido = { nombre: "Rugby masculino", icono: "rugby", descripcion: "" };
+  const valido = {
+    nombre: "Rugby masculino",
+    icono: "rugby",
+    descripcion: "",
+    condicion: CONDICION_VACIA,
+  };
 
   it("acepta un deporte con nombre e ícono, sin descripción", () => {
     expect(validarDeporte(valido)).toEqual({});
@@ -67,18 +73,32 @@ describe("validarDeporte", () => {
   it("pide un ícono del set", () => {
     expect(validarDeporte({ ...valido, icono: "pelota" }).icono).toBeTruthy();
   });
+
+  it("no acepta una condición con más de un subnivel", () => {
+    const dosSubniveles = {
+      conector: "Y",
+      items: [{ conector: "O", items: [{ conector: "Y", items: [{ campo: "sexo", valor: "M" }] }] }],
+    };
+    expect(validarDeporte({ ...valido, condicion: dosSubniveles }).condicion).toBeTruthy();
+    expect(validarDeporte({ ...valido, condicion: "no es una condición" }).condicion).toBeTruthy();
+  });
 });
 
 describe("deporteParaGuardar", () => {
-  it("recorta el nombre y deja la descripción vacía en null", () => {
+  const condicion = { conector: "Y", items: [{ campo: "sexo", valor: "F" }] };
+
+  it("recorta el nombre, deja la descripción vacía en null y guarda la condición leída", () => {
     expect(
-      deporteParaGuardar({ nombre: "  Hockey  ", icono: "hockey", descripcion: "  " }),
-    ).toEqual({ nombre: "Hockey", icono: "hockey", descripcion: null });
+      deporteParaGuardar({ nombre: "  Hockey  ", icono: "hockey", descripcion: "  ", condicion }),
+    ).toEqual({ nombre: "Hockey", icono: "hockey", descripcion: null, condicion });
   });
 
-  it("no acepta un ícono fuera del set", () => {
+  it("no acepta un ícono fuera del set ni una condición mal formada", () => {
     expect(() =>
-      deporteParaGuardar({ nombre: "Hockey", icono: "pelota", descripcion: "" }),
+      deporteParaGuardar({ nombre: "Hockey", icono: "pelota", descripcion: "", condicion }),
+    ).toThrow();
+    expect(() =>
+      deporteParaGuardar({ nombre: "Hockey", icono: "hockey", descripcion: "", condicion: {} }),
     ).toThrow();
   });
 });
@@ -97,6 +117,7 @@ describe("separarBorrados", () => {
     nombre,
     icono: "trofeo",
     descripcion: "",
+    condicion: CONDICION_VACIA,
     borradoEn,
   });
 
