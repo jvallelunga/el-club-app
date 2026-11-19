@@ -28,7 +28,16 @@ A **parent** is an issue split into tickets (GitHub sub-issues), like #26 and #4
 
 - **Label:** the parent keeps `in progress` from the split until all its sub-issues are `done`; then it moves to `done` too, and it closes with them on the release to `main`. It never goes back to no label while a sub-issue is open.
 - **Refinement session:** the session that refines an issue, from the moment it takes it out of `refinement`. Record it on the issue right away as a comment «Sesión de refinamiento: <link to the session>». If the issue gets split, that session becomes the parent's session.
-- **One subagent per ticket:** every ticket of a parent is worked from the refinement session, never from a separate session. That session takes the next unblocked ticket and hands it to a fresh subagent (Agent tool, `isolation: "worktree"`, in the foreground). The subagent creates its own `claude/<slug>` branch off the latest `desarrollo`, takes the ticket («Tomado. Rama: <rama>»), follows `.claude/skills/implement/SKILL.md`, opens and merges the PR as the README says, moves the ticket to `done`, and reports the PR link. One ticket at a time, in blocker order.
+- **One subagent per ticket:** every ticket of a parent is worked from the refinement session, never from a separate session. That session takes the next unblocked ticket and hands it to a fresh subagent (Agent tool, `isolation: "worktree"`, in the foreground). The subagent creates its own `claude/<slug>` branch off the latest `desarrollo`, takes the ticket («Tomado. Rama: <rama>»), follows `.claude/skills/implement/SKILL.md`, opens and merges the PR as the README says, applies the PR's new migrations to the development Supabase (see **Apply migrations to development**), moves the ticket to `done`, and reports the PR link. One ticket at a time, in blocker order.
+
+## Apply migrations to development
+
+Every PR merged into `desarrollo` that adds files to `supabase/migrations/` gets them applied **right after the merge** to the development Supabase project (`el-club-app-desarrollo`, ref `paacpcdurdcmbamdhcmt`). Production is never touched this way: it moves only with Jerónimo's OK.
+
+- **How:** the Management API, `POST https://api.supabase.com/v1/projects/paacpcdurdcmbamdhcmt/database/query` with `{"query": "<file contents>"}`. The session's network proxy adds the token (the environment's `api.supabase.com` secret): never send or print it yourself. One file per call, in filename order, and stop at the first error.
+- **Check first:** if an earlier migration is missing in development (a table, column or function it creates doesn't exist), apply the missing ones in order before yours. All migrations are idempotent, so re-running one changes nothing.
+- **Record it:** comment on the issue which migrations were applied and how you checked them (for example, that the new columns exist).
+- **Without the token** (401/403, or the host is blocked): don't skip it silently. Say so in the issue and in your report so Jerónimo can run the files in the Supabase SQL editor.
 
 ## Conventions
 
