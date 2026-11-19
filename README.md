@@ -19,6 +19,8 @@ Los issues de GitHub son la fuente de verdad. El estado de cada issue es una eti
 
 `backlog` → `refinement` → `ready` → `in progress` → `done` → cerrado
 
+El paso a paso con los comandos de cada momento está en [Cómo trabajamos](docs/como-trabajamos.md).
+
 | Etiqueta | Significa |
 | --- | --- |
 | `backlog` | Idea a futuro, todavía sin especificar. |
