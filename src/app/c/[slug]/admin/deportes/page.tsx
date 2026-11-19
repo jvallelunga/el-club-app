@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { ShellAdmin } from "@/ui/compartidos/shell-admin";
+import { etiquetaDeportesDelClub, ShellAdmin } from "@/ui/compartidos/shell-admin";
 import { DeportesDelClub } from "@/ui/features/deportes/deportes-del-club";
 import {
   quitarDeporteDelClub,
@@ -39,14 +39,15 @@ export default async function PaginaDeportesDelClub({
     escudo: urlEscudoPublico(urlYClaveAnon().url, club.escudo_ruta),
   };
   const esSuperAdmin = sesion.esSuperAdmin;
+  const rol = esSuperAdmin ? "super-admin" : "admin";
 
   return (
     <ShellAdmin
-      titulo={esSuperAdmin ? "Deportes del club" : "Deportes"}
+      titulo={etiquetaDeportesDelClub(rol)}
       subtitulo={club.nombre}
       atras={{ href: `/c/${club.slug}/admin`, etiqueta: "Volver al inicio" }}
       club={clubShell}
-      rol={esSuperAdmin ? "super-admin" : "admin"}
+      rol={rol}
       activo="deportes-club"
       esMultiClub={!esSuperAdmin && sesion.membresias.length > 1}
       salirEnMobile={false}

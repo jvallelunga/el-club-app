@@ -10,6 +10,7 @@ import {
   ICONOS_DEPORTE,
   separarBorrados,
   textoClubes,
+  textoUso,
   validarDeporte,
   type Deporte,
 } from "./deportes";
@@ -176,5 +177,13 @@ describe("deportesDelClub", () => {
     expect(deportesDelClub([deporte("Rugby")], ["Fantasma"]).map((d) => d.nombre)).toEqual([
       "Rugby",
     ]);
+  });
+});
+
+describe("textoUso", () => {
+  it("concuerda el verbo con la cantidad", () => {
+    expect(textoUso(0)).toBe("Lo usan 0 clubes.");
+    expect(textoUso(1)).toBe("Lo usa 1 club.");
+    expect(textoUso(3)).toBe("Lo usan 3 clubes.");
   });
 });

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PaginaDeportes() {
   await superAdminRequerido("/super-admin/deportes");
-  const [deportes, usos] = await Promise.all([listarDeportes(), clubesPorDeporte()]);
+  const [deportes, clubes] = await Promise.all([listarDeportes(), clubesPorDeporte()]);
 
   return (
     <ShellAdmin
@@ -22,7 +22,7 @@ export default async function PaginaDeportes() {
     >
       <CatalogoDeportes
         deportes={deportes}
-        clubesPorDeporte={usos}
+        clubesPorDeporte={clubes}
         crear={crearDeporte}
         editar={editarDeporte}
         borrar={borrarDeporte}

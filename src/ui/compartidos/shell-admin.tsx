@@ -39,6 +39,14 @@ export const RUTAS_SHELL_APP: RutasShell = {
   admins: (slug) => `/c/${slug}/admin/admins`,
 };
 
+/**
+ * El nombre de los deportes del club en el menú y en su página. El Super
+ * Admin ya tiene «Deportes» (el catálogo), así que para él lleva «del club».
+ */
+export function etiquetaDeportesDelClub(rol: RolShell): string {
+  return rol === "super-admin" ? "Deportes del club" : "Deportes";
+}
+
 /** Cabeceras de escritorio (sidebar y barra superior): misma altura fija para que el borde inferior quede alineado. */
 const CABECERA_ESCRITORIO =
   "flex h-[72px] shrink-0 items-center border-b border-border";
@@ -106,9 +114,8 @@ export function itemsNav({
       href: `${rutas.sedes(club.slug)}${queryClub}`,
       activo: activo === "sedes",
     });
-    // El Super Admin ya tiene «Deportes» (el catálogo) más arriba.
     items.push({
-      etiqueta: rol === "super-admin" ? "Deportes del club" : "Deportes",
+      etiqueta: etiquetaDeportesDelClub(rol),
       href: `${rutas.deportesClub(club.slug)}${queryClub}`,
       activo: activo === "deportes-club",
     });

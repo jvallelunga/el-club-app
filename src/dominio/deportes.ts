@@ -108,9 +108,17 @@ export function deporteParaGuardar(input: DeporteInput): {
   };
 }
 
+/** Cuántos clubes eligieron cada deporte, por id. Sin entrada, ninguno. */
+export type ClubesPorDeporte = Record<string, number>;
+
 /** «0 clubes», «1 club», «3 clubes». */
 export function textoClubes(cantidad: number): string {
   return cantidad === 1 ? "1 club" : `${cantidad} clubes`;
+}
+
+/** «Lo usa 1 club», «Lo usan 3 clubes». */
+export function textoUso(cantidad: number): string {
+  return `${cantidad === 1 ? "Lo usa" : "Lo usan"} ${textoClubes(cantidad)}.`;
 }
 
 /** Los deportes activos y los borrados, cada grupo ordenado por nombre. */

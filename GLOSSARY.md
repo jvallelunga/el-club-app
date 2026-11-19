@@ -66,6 +66,10 @@ Lo que se juega en un club, con nombre, ícono y descripción; por ejemplo «Rug
 Todos los deportes que creó el Super Admin. Es el mismo para todos los clubes.
 _Avoid_: lista de deportes, tipos de deporte
 
+**Deportes del club**:
+Los deportes del catálogo que eligió un club. Los elige su Admin: sumar un deporte lo agrega al club y quitarlo lo saca (con confirmación). Si el Super Admin borra del catálogo un deporte que el club tenía, el club lo sigue viendo, marcado como borrado, y no lo puede volver a sumar.
+_Avoid_: deportes habilitados, deportes activos
+
 **Condición**:
 Lo que tiene que cumplir un socio para anotarse, por ejemplo en un deporte: chequeos unidos por Y (todos) u O (alguno), con como máximo un subnivel, un grupo de chequeos con su propio Y/O. Sin chequeos, puede anotarse cualquier socio. Se lee en texto: «Masculino y 16 años o más». Es la misma para deportes, clubes y categorías.
 _Avoid_: requisito, regla, filtro

@@ -153,7 +153,7 @@ function Interruptor({
   onClick: () => void;
 }) {
   // Mientras se suma, ya se muestra encendido.
-  const visible = encendido || pendiente;
+  const seVeEncendido = encendido || pendiente;
   return (
     <button
       type="button"
@@ -164,13 +164,13 @@ function Interruptor({
       onClick={onClick}
       className={cn(
         "relative h-6 w-11 shrink-0 rounded-full outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-70",
-        visible ? "bg-primary" : "bg-muted-foreground/30",
+        seVeEncendido ? "bg-primary" : "bg-muted-foreground/30",
       )}
     >
       <span
         className={cn(
           "absolute top-0.5 size-5 rounded-full bg-white shadow transition-all",
-          visible ? "left-[22px]" : "left-0.5",
+          seVeEncendido ? "left-[22px]" : "left-0.5",
         )}
       />
     </button>
