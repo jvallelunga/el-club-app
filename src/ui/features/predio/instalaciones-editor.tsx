@@ -1,19 +1,18 @@
 "use client";
 
 /**
- * Piezas del editor de predio para ubicar instalaciones (#43): la barra de
- * instalaciones de la sede (ubicadas y sin ubicar) y el panel de la
- * instalación elegida (rotación, medidas, leyenda y «Quitar del predio»).
+ * Piezas del editor de predio para ubicar instalaciones (#43) y elementos de
+ * referencia (#46): la barra de instalaciones de la sede (ubicadas y sin
+ * ubicar), la paleta de elementos de referencia y el panel del elemento
+ * elegido (rotación, medidas, leyenda y «Quitar del predio» o «Borrar»).
  */
 
 import { useState, type ReactNode } from "react";
 import { Check, Circle, RotateCcw, RotateCw, Trash2, X } from "lucide-react";
 import { Button } from "@/ui/nativos/button";
 import { MEDIDA_MAXIMA, MEDIDA_MINIMA, type InstalacionDeLaSede } from "@/dominio/predio";
-import {
-  tipoInstalacion,
-  type FormaInstalacion,
-} from "@/dominio/tipos-instalacion";
+import type { FormaInstalacion, MedidaInstalacion } from "@/dominio/tipos-instalacion";
+import { TIPOS_REFERENCIA, type ClaveTipoReferencia } from "@/dominio/tipos-referencia";
 import { NumeroLeyenda } from "./leyenda-predio";
 
 /** Color de la huella en el mapa, según la forma del tipo. */
@@ -23,6 +22,38 @@ export const COLOR_POR_FORMA: Record<FormaInstalacion, string> = {
   edificio: "#c9b28f",
   bloque: "#9a9a9a",
 };
+
+/** Color de la huella de cada elemento de referencia en el mapa. */
+export const COLOR_POR_REFERENCIA: Record<ClaveTipoReferencia, string> = {
+  arbol: "#2e8b3a",
+  piedra: "#8a8a8a",
+  bebedero: "#4fb3e8",
+  gradas: "#e2e2e2",
+  tribuna: "#9aa7b3",
+};
+
+/** Los tipos de elemento de referencia: tocar uno lo agrega en el centro del mapa. */
+export function PaletaReferencias({ onAgregar }: { onAgregar: (tipo: ClaveTipoReferencia) => void }) {
+  return (
+    <div className="grid grid-cols-1 gap-1">
+      {TIPOS_REFERENCIA.map((tipo) => (
+        <button
+          key={tipo.clave}
+          type="button"
+          onClick={() => onAgregar(tipo.clave)}
+          className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-left text-sm hover:bg-muted"
+        >
+          <span
+            className="size-3 shrink-0 rounded-full border border-black/20"
+            style={{ backgroundColor: COLOR_POR_REFERENCIA[tipo.clave] }}
+            aria-hidden
+          />
+          {tipo.nombre}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function BarraInstalaciones({
   instalaciones,
@@ -89,7 +120,7 @@ const campo =
 
 /**
  * Campo de número que deja escribir libre y avisa recién con un número
- * válido. Se reinicia con `key` al cambiar de instalación.
+ * válido. Se reinicia con `key` al cambiar de elemento.
  */
 function CampoNumero({
   etiqueta,
@@ -146,8 +177,23 @@ function CampoNumero({
   );
 }
 
-export function PanelInstalacion({
-  instalacion,
+/** Lo que el panel dice del elemento elegido y cómo se saca del predio. */
+export type DatosPanel = {
+  id: string;
+  /** «Instalación · Cancha de rugby» o «Elemento de referencia · Árbol». */
+  titulo: string;
+  nombre: string;
+  medidasDelTipo: readonly MedidaInstalacion[];
+  /** «Quitar del predio» (instalación) o «Borrar» (elemento de referencia). */
+  quitar: string;
+  /** Qué pasa al quitarlo. */
+  ayudaQuitar: string;
+  /** Algo más que hay que saber para ubicarlo, si hace falta. */
+  ayudaRotacion?: string;
+};
+
+export function PanelElemento({
+  elemento,
   numero,
   rotacion,
   medidas,
@@ -157,7 +203,7 @@ export function PanelInstalacion({
   onCerrar,
   children,
 }: {
-  instalacion: InstalacionDeLaSede;
+  elemento: DatosPanel;
   /** Su número en la leyenda, o null si no entra. */
   numero: number | null;
   rotacion: number;
@@ -166,21 +212,20 @@ export function PanelInstalacion({
   onMedida: (clave: string, valor: number) => void;
   onQuitar: () => void;
   onCerrar: () => void;
-  /** La leyenda: descripción, si entra y el orden. */
+  /** El nombre (si es un elemento de referencia) y la leyenda. */
   children: ReactNode;
 }) {
-  const tipo = tipoInstalacion(instalacion.tipo);
   const girar = (delta: number) => onRotar((((rotacion + delta) % 360) + 360) % 360);
   return (
     <div className="absolute right-16 top-24 flex max-h-[calc(100%-14rem)] w-80 flex-col gap-4 overflow-y-auto rounded-2xl bg-background/95 p-4 text-sm shadow-lg">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            Instalación · {tipo.nombre}
+            {elemento.titulo}
           </p>
           <p className="flex items-center gap-1.5 font-medium">
             {numero !== null ? <NumeroLeyenda numero={numero} elegido className="size-5" /> : null}
-            <span className="truncate">{instalacion.nombre}</span>
+            <span className="truncate">{elemento.nombre}</span>
           </p>
         </div>
         <button
@@ -193,13 +238,13 @@ export function PanelInstalacion({
         </button>
       </div>
 
-      <p className="text-muted-foreground">Arrastrala en el mapa para moverla.</p>
+      <p className="text-muted-foreground">Arrastralo en el mapa para moverlo.</p>
 
       <div className="flex flex-col gap-2">
         <div className="flex items-end gap-2">
           <div className="flex-1">
             <CampoNumero
-              key={`rotacion-${instalacion.id}`}
+              key={`rotacion-${elemento.id}`}
               etiqueta="Rotación (sentido horario)"
               unidad="°"
               valor={Math.round(rotacion * 10) / 10}
@@ -239,12 +284,15 @@ export function PanelInstalacion({
           onChange={(evento) => onRotar(Number(evento.target.value))}
           aria-label="Rotación"
         />
+        {elemento.ayudaRotacion ? (
+          <p className="text-xs text-muted-foreground">{elemento.ayudaRotacion}</p>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        {tipo.medidas.map((medida) => (
+        {elemento.medidasDelTipo.map((medida) => (
           <CampoNumero
-            key={`${instalacion.id}-${medida.clave}`}
+            key={`${elemento.id}-${medida.clave}`}
             etiqueta={medida.etiqueta}
             unidad="m"
             valor={medidas[medida.clave] ?? medida.porDefecto}
@@ -263,11 +311,9 @@ export function PanelInstalacion({
 
       <Button variant="ghost" className="h-9 justify-start text-destructive" onClick={onQuitar}>
         <Trash2 className="size-4" />
-        Quitar del predio
+        {elemento.quitar}
       </Button>
-      <p className="-mt-3 text-xs text-muted-foreground">
-        Sale del mapa, pero sigue en la sede.
-      </p>
+      <p className="-mt-3 text-xs text-muted-foreground">{elemento.ayudaQuitar}</p>
     </div>
   );
 }

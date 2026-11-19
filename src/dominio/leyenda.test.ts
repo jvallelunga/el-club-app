@@ -8,8 +8,8 @@ import {
   numerosDeLeyenda,
 } from "./leyenda";
 
-const elemento = (instalacionId: string, ordenLeyenda: number | null) => ({
-  instalacionId,
+const elemento = (id: string, ordenLeyenda: number | null) => ({
+  id,
   ordenLeyenda,
 });
 
@@ -44,7 +44,7 @@ describe("numerosDeLeyenda", () => {
   });
 });
 
-const numeros = (elementos: { instalacionId: string; ordenLeyenda: number | null }[]) =>
+const numeros = (elementos: { id: string; ordenLeyenda: number | null }[]) =>
   Object.fromEntries(numerosDeLeyenda(elementos));
 
 describe("cambiarEnLeyenda", () => {

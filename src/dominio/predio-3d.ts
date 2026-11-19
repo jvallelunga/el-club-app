@@ -1,11 +1,20 @@
 /**
  * Lo que necesita el visor 3D del predio (#44): cuándo se muestra y cómo se
- * arma cada instalación con primitivas. Sin three.js, para poder probarlo.
+ * arma cada instalación y cada elemento de referencia (#46) con primitivas.
+ * Sin three.js, para poder probarlo.
  */
 
 import { numerosDeLeyenda } from "./leyenda";
-import type { DatosPredio, InstalacionDeLaSede, InstalacionUbicada, Punto } from "./predio";
+import {
+  elementosEnLeyenda,
+  type DatosPredio,
+  type InstalacionDeLaSede,
+  type InstalacionUbicada,
+  type Punto,
+  type ReferenciaUbicada,
+} from "./predio";
 import { tipoInstalacion, type ClaveTipoInstalacion } from "./tipos-instalacion";
+import { tipoReferencia, type ClaveTipoReferencia } from "./tipos-referencia";
 
 /**
  * Un predio está armado si tiene área y al menos una instalación ubicada.
@@ -22,9 +31,25 @@ export type InstalacionEnVisor = InstalacionDeLaSede &
     numero: number | null;
   };
 
+/** Un elemento de referencia ubicado, con lo que el visor necesita para dibujarlo. */
+export type ReferenciaEnVisor = Pick<
+  ReferenciaUbicada,
+  "id" | "tipo" | "posicion" | "rotacion" | "medidas" | "descripcion"
+> & {
+  /** Su nombre propio o, si no tiene, el de su tipo («Gradas»). */
+  nombre: string;
+  /** Su número en la leyenda, o null: sin número no se puede tocar. */
+  numero: number | null;
+};
+
+/** El nombre con el que se muestra un elemento de referencia. */
+export function nombreDeReferencia(referencia: Pick<ReferenciaUbicada, "tipo" | "nombre">): string {
+  return referencia.nombre ?? tipoReferencia(referencia.tipo).nombre;
+}
+
 /** Una línea de la leyenda: el número, el nombre y la descripción. */
 export type EntradaLeyenda = {
-  /** El id de la instalación. */
+  /** El id de la instalación o del elemento de referencia. */
   id: string;
   numero: number;
   nombre: string;
@@ -34,6 +59,7 @@ export type EntradaLeyenda = {
 export type PredioEnVisor = {
   area: Punto[];
   instalaciones: InstalacionEnVisor[];
+  referencias: ReferenciaEnVisor[];
   /** Lo que tiene número, en el orden de la leyenda. */
   leyenda: EntradaLeyenda[];
 };
@@ -55,7 +81,7 @@ export function predioParaVisor(
   };
   if (!predioArmado(vigente)) return null;
   // Se numera después de filtrar: lo que ya no está no deja un hueco.
-  const numeros = numerosDeLeyenda(vigente.instalaciones);
+  const numeros = numerosDeLeyenda(elementosEnLeyenda(vigente));
   const instalaciones = vigente.instalaciones.map(
     ({ instalacionId, posicion, rotacion, medidas, descripcion }) => ({
       ...porId.get(instalacionId)!,
@@ -66,12 +92,24 @@ export function predioParaVisor(
       numero: numeros.get(instalacionId) ?? null,
     }),
   );
-  const leyenda = instalaciones
+  const referencias = vigente.referencias.map(
+    ({ id, tipo, nombre, posicion, rotacion, medidas, descripcion }) => ({
+      id,
+      tipo,
+      nombre: nombreDeReferencia({ tipo, nombre }),
+      posicion,
+      rotacion,
+      medidas,
+      descripcion,
+      numero: numeros.get(id) ?? null,
+    }),
+  );
+  const leyenda = [...instalaciones, ...referencias]
     .flatMap(({ id, numero, nombre, descripcion }) =>
       numero === null ? [] : [{ id, numero, nombre, descripcion }],
     )
     .sort((a, b) => a.numero - b.numero);
-  return { area: vigente.area, instalaciones, leyenda };
+  return { area: vigente.area, instalaciones, referencias, leyenda };
 }
 
 // ---------------------------------------------------------------------------
@@ -83,8 +121,11 @@ export function predioParaVisor(
 export type Tripla = [number, number, number];
 
 export type Pieza = {
-  /** «techo» es una pirámide de cuatro caras apoyada en su base. */
-  forma: "caja" | "techo";
+  /**
+   * «techo» es una pirámide de cuatro caras apoyada en su base; «cilindro»,
+   * «esfera» y «roca» (un poliedro irregular) llenan su caja de tamaño.
+   */
+  forma: "caja" | "techo" | "cilindro" | "esfera" | "roca";
   centro: Tripla;
   /** [largo (x), alto (y), ancho (z)]. */
   tamano: Tripla;
@@ -229,6 +270,103 @@ export function piezasDeInstalacion(
     default: {
       const sinPiezas: never = forma;
       throw new Error(`Forma de instalación sin piezas 3D: ${String(sinPiezas)}`);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Piezas 3D de cada elemento de referencia (#46), en las mismas coordenadas
+// propias que una instalación: x a lo largo, y hacia arriba, z a lo ancho.
+// ---------------------------------------------------------------------------
+
+const COLOR_TRONCO = "#6b4a2f";
+const COLOR_COPA = "#2f6b34";
+const COLOR_PIEDRA = "#8a8a8a";
+const COLOR_HORMIGON = "#d6d6d6";
+const COLOR_TECHO_TRIBUNA = "#4d5a66";
+
+/** Alto de cada escalón de las gradas, más o menos, en metros. */
+const ALTO_ESCALON = 0.45;
+/** Lo que separa los escalones del techo de la tribuna, en metros. */
+const ALTO_BAJO_TECHO = 2.5;
+/** Cada cuánto va un poste del techo de la tribuna, como mucho. */
+const SEPARACION_POSTES = 10;
+
+/** Cuántos escalones tienen unas gradas de ese alto: uno cada ~45 cm. */
+export function escalonesDeGradas(alto: number): number {
+  return Math.max(1, Math.round(alto / ALTO_ESCALON));
+}
+
+/** Tronco y copa: la copa toca la altura del árbol y tiene su diámetro. */
+function arbol({ alto, copa }: Record<string, number>): Pieza[] {
+  const altoCopa = Math.min(copa * 0.8, alto * 0.7);
+  const tronco = Math.min(1, Math.max(0.2, alto * 0.05));
+  const altoTronco = alto - altoCopa / 2;
+  return [
+    { forma: "cilindro", centro: [0, altoTronco / 2, 0], tamano: [tronco, altoTronco, tronco], color: COLOR_TRONCO },
+    { forma: "esfera", centro: [0, alto - altoCopa / 2, 0], tamano: [copa, altoCopa, copa], color: COLOR_COPA },
+  ];
+}
+
+/** Un pie y una pileta arriba, con agua. */
+function bebedero({ largo, ancho, alto }: Record<string, number>): Pieza[] {
+  const altoPileta = Math.min(0.15, alto / 3);
+  return [
+    apoyadaEnElPiso(0, 0, [largo * 0.6, alto - altoPileta, ancho * 0.6], COLOR_HORMIGON),
+    caja([0, alto - altoPileta / 2 - 0.01, 0], [largo, altoPileta, ancho], "#b9b4aa"),
+    caja([0, alto - 0.005, 0], [largo * 0.7, 0.01, ancho * 0.6], COLOR_AGUA),
+  ];
+}
+
+/**
+ * Escalones a lo largo, que suben hacia atrás: el frente (el más bajo) da a
+ * z positivo, que con 0° es el sur.
+ */
+function gradas({ largo, ancho, alto }: Record<string, number>): Pieza[] {
+  const escalones = escalonesDeGradas(alto);
+  const fondo = ancho / escalones;
+  return Array.from({ length: escalones }, (_, i) =>
+    apoyadaEnElPiso(0, ancho / 2 - fondo * (i + 0.5), [largo, (alto * (i + 1)) / escalones, fondo], COLOR_HORMIGON),
+  );
+}
+
+/** Las gradas con un techo arriba, sostenido por postes en el fondo. */
+function tribuna(medidas: Record<string, number>): Pieza[] {
+  const { largo, ancho, alto } = medidas;
+  const altoTecho = alto + ALTO_BAJO_TECHO;
+  const tramos = Math.max(1, Math.ceil(largo / SEPARACION_POSTES));
+  const postes = Array.from({ length: tramos + 1 }, (_, i) =>
+    apoyadaEnElPiso(-largo / 2 + 0.1 + ((largo - 0.2) * i) / tramos, -ancho / 2 + 0.1, [0.2, altoTecho, 0.2], COLOR_TECHO_TRIBUNA),
+  );
+  return [
+    ...gradas(medidas),
+    ...postes,
+    caja([0, altoTecho + 0.1, 0], [largo, 0.2, ancho], COLOR_TECHO_TRIBUNA),
+  ];
+}
+
+/**
+ * Las piezas con las que se dibuja un elemento de referencia, con sus
+ * medidas. Todo queda dentro de la huella que se ve en el editor.
+ */
+export function piezasDeReferencia(
+  tipo: ClaveTipoReferencia,
+  medidas: Record<string, number>,
+): Pieza[] {
+  switch (tipo) {
+    case "arbol":
+      return arbol(medidas);
+    case "piedra":
+      return [{ forma: "roca", centro: [0, medidas.alto / 2, 0], tamano: [medidas.diametro, medidas.alto, medidas.diametro], color: COLOR_PIEDRA }];
+    case "bebedero":
+      return bebedero(medidas);
+    case "gradas":
+      return gradas(medidas);
+    case "tribuna":
+      return tribuna(medidas);
+    default: {
+      const sinPiezas: never = tipo;
+      throw new Error(`Elemento de referencia sin piezas 3D: ${String(sinPiezas)}`);
     }
   }
 }

@@ -840,7 +840,8 @@ begin
       jsonb_build_array(jsonb_build_object(
         'instalacion_id', (select id from _t where clave = 'inst_cancha'),
         'este', 0, 'norte', 0, 'rotacion', 0,
-        'medidas', '{"largo": 100, "ancho": 70, "ingoal": 10}'::jsonb))
+        'medidas', '{"largo": 100, "ancho": 70, "ingoal": 10}'::jsonb)),
+      '[]'::jsonb
     );
     raise exception 'Admin A no debería poder guardar el predio';
   exception
@@ -871,7 +872,8 @@ begin
         'medidas', '{"largo": 25, "ancho": 12}'::jsonb),
       jsonb_build_object('instalacion_id', (select id from _t where clave = 'inst_otra_sede'),
         'este', 0, 'norte', 0, 'rotacion', 0, 'medidas', '{"largo": 20, "ancho": 12, "alto": 5}'::jsonb)
-    )
+    ),
+      '[]'::jsonb
   );
   select count(*) into v_n from public.elemento_predio
   where predio_id = (select id from _t where clave = 'predio_a');
@@ -885,7 +887,8 @@ begin
     jsonb_build_array(
       jsonb_build_object('instalacion_id', v_cancha, 'este', 80.5, 'norte', 50, 'rotacion', 47.5,
         'medidas', '{"largo": 100, "ancho": 68, "ingoal": 10}'::jsonb)
-    )
+    ),
+      '[]'::jsonb
   );
   select este into v_este from public.elemento_predio where instalacion_id = v_cancha;
   if v_este is distinct from 80.5 then
@@ -905,7 +908,8 @@ begin
       jsonb_build_array(
         jsonb_build_object('instalacion_id', v_cancha, 'este', 0, 'norte', 0, 'rotacion', 0,
           'medidas', '{"largo": -1, "ancho": 68, "ingoal": 10}'::jsonb)
-      )
+      ),
+      '[]'::jsonb
     );
     raise exception 'Una medida negativa no debería guardarse';
   exception
@@ -974,7 +978,8 @@ begin
         'medidas', v_cancha_medidas, 'descripcion', 'La cancha principal.', 'orden_leyenda', 1),
       jsonb_build_object('instalacion_id', v_pileta, 'este', 20, 'norte', 120, 'rotacion', 90,
         'medidas', v_pileta_medidas, 'descripcion', null, 'orden_leyenda', 2)
-    )
+    ),
+      '[]'::jsonb
   );
   select descripcion, orden_leyenda, en_leyenda into v_descripcion, v_orden, v_en
   from public.elemento_predio where instalacion_id = v_cancha;
@@ -990,7 +995,8 @@ begin
         'medidas', v_cancha_medidas, 'descripcion', 'La cancha principal.', 'orden_leyenda', 2),
       jsonb_build_object('instalacion_id', v_pileta, 'este', 20, 'norte', 120, 'rotacion', 90,
         'medidas', v_pileta_medidas, 'descripcion', null, 'orden_leyenda', 1)
-    )
+    ),
+      '[]'::jsonb
   );
   select orden_leyenda into v_orden from public.elemento_predio where instalacion_id = v_pileta;
   if v_orden <> 1 then
@@ -1005,7 +1011,8 @@ begin
         'medidas', v_cancha_medidas, 'descripcion', 'La cancha principal.', 'orden_leyenda', 1),
       jsonb_build_object('instalacion_id', v_pileta, 'este', 20, 'norte', 120, 'rotacion', 90,
         'medidas', v_pileta_medidas, 'descripcion', null, 'orden_leyenda', null)
-    )
+    ),
+      '[]'::jsonb
   );
   select en_leyenda into v_en from public.elemento_predio where instalacion_id = v_pileta;
   if v_en then
@@ -1053,6 +1060,155 @@ begin
     when unique_violation then null;
   end;
   set constraints elemento_predio_orden_leyenda_key deferred;
+end;
+$$;
+select pg_temp.salir();
+
+-- Elementos de referencia (#46): se guardan con el predio, con nombre opcional,
+-- y comparten la leyenda con las instalaciones.
+select pg_temp.entrar('super');
+do $$
+declare
+  v_sede uuid := (select id from _t where clave = 'sede_a');
+  v_predio uuid := (select id from _t where clave = 'predio_a');
+  v_cancha uuid := (select id from _t where clave = 'inst_cancha');
+  v_area jsonb := '[[0, 0], [200, 0], [200, 150], [0, 150]]'::jsonb;
+  v_instalaciones jsonb;
+  v_ombu uuid := gen_random_uuid();
+  v_gradas uuid := gen_random_uuid();
+  v_id_cancha uuid;
+  v_n int;
+  v_nombre text;
+  v_orden int;
+  v_este double precision;
+begin
+  v_instalaciones := jsonb_build_array(
+    jsonb_build_object('instalacion_id', v_cancha, 'este', 80.5, 'norte', 50, 'rotacion', 47.5,
+      'medidas', '{"largo": 100, "ancho": 68, "ingoal": 10}'::jsonb,
+      'descripcion', 'La cancha principal.', 'orden_leyenda', 1)
+  );
+  perform public.guardar_predio(
+    v_sede, -37.336, -59.08, v_area, v_instalaciones,
+    jsonb_build_array(
+      jsonb_build_object('id', v_ombu, 'tipo', 'arbol', 'nombre', 'El ombú',
+        'este', 10, 'norte', 20, 'rotacion', 0, 'medidas', '{"alto": 12, "copa": 14}'::jsonb,
+        'descripcion', 'Al lado de la cancha principal.', 'orden_leyenda', 2),
+      jsonb_build_object('id', v_gradas, 'tipo', 'gradas', 'nombre', null,
+        'este', 30, 'norte', 20, 'rotacion', 90, 'medidas', '{"largo": 20, "ancho": 4, "alto": 2}'::jsonb,
+        'descripcion', null, 'orden_leyenda', null)
+    )
+  );
+  select count(*) into v_n from public.elemento_predio
+  where predio_id = v_predio and tipo_referencia is not null;
+  if v_n <> 2 then
+    raise exception 'Deberían quedar 2 elementos de referencia, hay %', v_n;
+  end if;
+  select nombre, orden_leyenda into v_nombre, v_orden from public.elemento_predio where id = v_ombu;
+  if v_nombre is distinct from 'El ombú' or v_orden is distinct from 2 then
+    raise exception 'El ombú debería tener su nombre y ser el 2 de la leyenda';
+  end if;
+
+  -- Mover el ombú y borrar las gradas, en un solo guardado.
+  perform public.guardar_predio(
+    v_sede, -37.336, -59.08, v_area, v_instalaciones,
+    jsonb_build_array(
+      jsonb_build_object('id', v_ombu, 'tipo', 'arbol', 'nombre', 'El ombú',
+        'este', 15, 'norte', 20, 'rotacion', 0, 'medidas', '{"alto": 12, "copa": 14}'::jsonb,
+        'descripcion', null, 'orden_leyenda', 2)
+    )
+  );
+  select este into v_este from public.elemento_predio where id = v_ombu;
+  if v_este is distinct from 15::double precision then
+    raise exception 'El ombú debería estar en 15 m al este, está en %', v_este;
+  end if;
+  if exists (select 1 from public.elemento_predio where id = v_gradas) then
+    raise exception 'Las gradas deberían haberse borrado';
+  end if;
+
+  -- Un id que es de una instalación no se pisa con un elemento de referencia.
+  select id into v_id_cancha from public.elemento_predio where instalacion_id = v_cancha;
+  perform public.guardar_predio(
+    v_sede, -37.336, -59.08, v_area, v_instalaciones,
+    jsonb_build_array(
+      jsonb_build_object('id', v_ombu, 'tipo', 'arbol', 'nombre', 'El ombú',
+        'este', 15, 'norte', 20, 'rotacion', 0, 'medidas', '{"alto": 12, "copa": 14}'::jsonb,
+        'descripcion', null, 'orden_leyenda', 2),
+      jsonb_build_object('id', v_id_cancha, 'tipo', 'piedra', 'nombre', 'Trampa',
+        'este', 0, 'norte', 0, 'rotacion', 0, 'medidas', '{"diametro": 1, "alto": 1}'::jsonb,
+        'descripcion', null, 'orden_leyenda', null)
+    )
+  );
+  if not exists (
+    select 1 from public.elemento_predio
+    where id = v_id_cancha and instalacion_id = v_cancha and tipo_referencia is null
+  ) then
+    raise exception 'La cancha no debería haberse convertido en elemento de referencia';
+  end if;
+
+  -- Solo tipos en código: un camino no es (todavía) un elemento puntual.
+  begin
+    insert into public.elemento_predio (predio_id, tipo_referencia, este, norte, medidas)
+    values (v_predio, 'camino', 0, 0, '{"ancho": 4}');
+    raise exception 'Un tipo de elemento de referencia desconocido no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+
+  -- Cada elemento es una instalación o un elemento de referencia.
+  begin
+    insert into public.elemento_predio (predio_id, este, norte, medidas)
+    values (v_predio, 0, 0, '{}');
+    raise exception 'Un elemento sin instalación ni tipo no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+  begin
+    update public.elemento_predio set tipo_referencia = 'arbol' where instalacion_id = v_cancha;
+    raise exception 'Un elemento no debería ser instalación y elemento de referencia a la vez';
+  exception
+    when check_violation then null;
+  end;
+
+  -- El nombre es solo de los elementos de referencia, de hasta 60 caracteres.
+  begin
+    update public.elemento_predio set nombre = 'Cancha' where instalacion_id = v_cancha;
+    raise exception 'Una instalación no debería llevar nombre en el predio';
+  exception
+    when check_violation then null;
+  end;
+  begin
+    update public.elemento_predio set nombre = repeat('a', 61) where id = v_ombu;
+    raise exception 'Un nombre de 61 caracteres no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+end;
+$$;
+select pg_temp.salir();
+
+-- Admin A ve el ombú, pero no lo cambia ni lo borra.
+select pg_temp.entrar('admin_a');
+do $$
+declare
+  v_n int;
+begin
+  select count(*) into v_n from public.elemento_predio
+  where tipo_referencia = 'arbol' and nombre = 'El ombú';
+  if v_n <> 1 then
+    raise exception 'Admin A debería ver el ombú, ve %', v_n;
+  end if;
+
+  update public.elemento_predio set nombre = 'Otro' where tipo_referencia = 'arbol';
+  get diagnostics v_n = row_count;
+  if v_n <> 0 then
+    raise exception 'Admin A no debería poder cambiar un elemento de referencia';
+  end if;
+
+  delete from public.elemento_predio where tipo_referencia = 'arbol';
+  get diagnostics v_n = row_count;
+  if v_n <> 0 then
+    raise exception 'Admin A no debería poder borrar un elemento de referencia';
+  end if;
 end;
 $$;
 select pg_temp.salir();

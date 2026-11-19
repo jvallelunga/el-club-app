@@ -317,6 +317,8 @@ export type Database = {
           id: string;
           predio_id: string;
           instalacion_id: string | null;
+          tipo_referencia: string | null;
+          nombre: string | null;
           este: number;
           norte: number;
           rotacion: number;
@@ -331,6 +333,8 @@ export type Database = {
           id?: string;
           predio_id: string;
           instalacion_id?: string | null;
+          tipo_referencia?: string | null;
+          nombre?: string | null;
           este: number;
           norte: number;
           rotacion?: number;
@@ -345,6 +349,8 @@ export type Database = {
           id?: string;
           predio_id?: string;
           instalacion_id?: string | null;
+          tipo_referencia?: string | null;
+          nombre?: string | null;
           este?: number;
           norte?: number;
           rotacion?: number;
@@ -434,6 +440,7 @@ export type Database = {
           p_origen_lng: number;
           p_area: Json;
           p_instalaciones: Json;
+          p_referencias: Json;
         };
         Returns: undefined;
       };

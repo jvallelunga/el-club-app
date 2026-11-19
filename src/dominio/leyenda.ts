@@ -8,7 +8,7 @@
 
 /** Lo que la leyenda necesita saber de un elemento ubicado. */
 export type EnLeyenda = {
-  instalacionId: string;
+  id: string;
   /** Lugar en la leyenda (de menor a mayor), o null si no entra. */
   ordenLeyenda: number | null;
 };
@@ -22,25 +22,25 @@ function enOrden<T extends EnLeyenda>(elementos: readonly T[]): T[] {
 
 /** El número de cada elemento que entra en la leyenda: 1, 2, 3… sin huecos. */
 export function numerosDeLeyenda(elementos: readonly EnLeyenda[]): Map<string, number> {
-  return new Map(enOrden(elementos).map((e, i) => [e.instalacionId, i + 1]));
+  return new Map(enOrden(elementos).map((e, i) => [e.id, i + 1]));
 }
 
 /** Pone el orden corrido (1, 2, 3…) respetando el orden actual de la leyenda. */
 export function renumerarLeyenda<T extends EnLeyenda>(elementos: readonly T[]): T[] {
   const numeros = numerosDeLeyenda(elementos);
-  return elementos.map((e) => ({ ...e, ordenLeyenda: numeros.get(e.instalacionId) ?? null }));
+  return elementos.map((e) => ({ ...e, ordenLeyenda: numeros.get(e.id) ?? null }));
 }
 
 /** Pone o saca un elemento de la leyenda. Lo que entra va al final. */
 export function cambiarEnLeyenda<T extends EnLeyenda>(
   elementos: readonly T[],
-  instalacionId: string,
+  id: string,
   entra: boolean,
 ): T[] {
   const ultimo = Math.max(0, ...elementos.map((e) => e.ordenLeyenda ?? 0));
   return renumerarLeyenda(
     elementos.map((e) => {
-      if (e.instalacionId !== instalacionId || entra === (e.ordenLeyenda !== null)) return e;
+      if (e.id !== id || entra === (e.ordenLeyenda !== null)) return e;
       return { ...e, ordenLeyenda: entra ? ultimo + 1 : null };
     }),
   );
@@ -49,18 +49,18 @@ export function cambiarEnLeyenda<T extends EnLeyenda>(
 /** Sube (−1) o baja (+1) un lugar un elemento de la leyenda. */
 export function moverEnLeyenda<T extends EnLeyenda>(
   elementos: readonly T[],
-  instalacionId: string,
+  id: string,
   delta: -1 | 1,
 ): T[] {
   const corrida = renumerarLeyenda(elementos);
   // Con el orden corrido, el lugar de cada uno es su número.
-  const actual = corrida.find((e) => e.instalacionId === instalacionId)?.ordenLeyenda ?? null;
+  const actual = corrida.find((e) => e.id === id)?.ordenLeyenda ?? null;
   const vecino = actual === null ? undefined : corrida.find((e) => e.ordenLeyenda === actual + delta);
   if (actual === null || !vecino) return corrida;
   return corrida.map((e) =>
     e === vecino
       ? { ...e, ordenLeyenda: actual }
-      : e.instalacionId === instalacionId
+      : e.id === id
         ? { ...e, ordenLeyenda: actual + delta }
         : e,
   );
@@ -73,16 +73,19 @@ export function moverEnLeyenda<T extends EnLeyenda>(
 export const DESCRIPCION_MAXIMA = 280;
 
 /**
- * La descripción como se guarda: texto sin formato, en una sola línea y sin
- * espacios de más. Vacía es no tener descripción (null).
+ * Un texto corto como se guarda: sin formato, en una sola línea y sin
+ * espacios de más. Vacío es no tener texto (null).
  */
-export function descripcionLimpia(texto: string | null): string | null {
-  const limpia = (texto ?? "").replace(/\s+/g, " ").trim();
-  return limpia === "" ? null : limpia;
+export function textoEnUnaLinea(texto: string | null): string | null {
+  const limpio = (texto ?? "").replace(/\s+/g, " ").trim();
+  return limpio === "" ? null : limpio;
 }
 
+/** La descripción como se guarda (ver textoEnUnaLinea). */
+export const descripcionLimpia = textoEnUnaLinea;
+
 /** Caracteres de un texto, contados como la base (un emoji es uno). */
-function largoDeTexto(texto: string): number {
+export function largoDeTexto(texto: string): number {
   return Array.from(texto).length;
 }
 
