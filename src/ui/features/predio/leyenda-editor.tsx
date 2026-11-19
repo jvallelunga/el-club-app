@@ -3,12 +3,39 @@
 /**
  * La leyenda en el editor de predio (#45, variante B del mock): la
  * descripción y «Entra en la leyenda» del elemento elegido, y el orden de la
- * leyenda, que se reordena con subir y bajar.
+ * leyenda, que se reordena con subir y bajar. También el nombre propio de un
+ * elemento de referencia (#46).
  */
 
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { DESCRIPCION_MAXIMA } from "@/dominio/leyenda";
+import { NOMBRE_MAXIMO } from "@/dominio/predio";
 import { NumeroLeyenda } from "./leyenda-predio";
+
+/**
+ * El nombre propio de un elemento de referencia (#46), opcional: por ejemplo
+ * «El ombú», que sirve de punto de referencia, o «Gradas Tito», un homenaje.
+ */
+export function CampoNombre({
+  nombre,
+  onNombre,
+}: {
+  nombre: string;
+  onNombre: (texto: string) => void;
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+      Nombre (opcional)
+      <input
+        className="h-9 w-full rounded-lg border border-border bg-background px-2.5 text-sm text-foreground outline-none focus:border-foreground/40"
+        maxLength={NOMBRE_MAXIMO}
+        value={nombre}
+        placeholder="Por ejemplo «El ombú»"
+        onChange={(evento) => onNombre(evento.target.value)}
+      />
+    </label>
+  );
+}
 
 export function CamposLeyenda({
   descripcion,

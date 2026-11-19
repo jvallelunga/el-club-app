@@ -2,10 +2,16 @@ import {
   descripcionLimpia,
   errorDeDescripcion,
   numerosDeLeyenda,
-  renumerarLeyenda,
+  type EnLeyenda,
 } from "./leyenda";
 import { sonCoordenadasValidas, type Coordenadas } from "./maps";
-import { tipoInstalacion, type ClaveTipoInstalacion } from "./tipos-instalacion";
+import { tipoInstalacion, type ClaveTipoInstalacion, type MedidaInstalacion } from "./tipos-instalacion";
+import {
+  esClaveTipoReferencia,
+  plantaDeReferencia,
+  tipoReferencia,
+  type ClaveTipoReferencia,
+} from "./tipos-referencia";
 
 /** Metros desde el origen del predio: [este, norte]. */
 export type Punto = [number, number];
@@ -122,6 +128,8 @@ export type DatosPredio = {
   origen: Coordenadas;
   area: Punto[];
   instalaciones: InstalacionUbicada[];
+  /** Los elementos de referencia (#46). */
+  referencias: ReferenciaUbicada[];
 };
 
 /** Un centímetro: por debajo de eso, una diferencia es ruido del mapa. */
@@ -135,7 +143,10 @@ function diferenciaDeAngulos(a: number, b: number): number {
   return d > 180 ? 360 - d : d;
 }
 
-function hayCambiosEnInstalacion(antes: InstalacionUbicada, ahora: InstalacionUbicada) {
+/** Lo que tienen en común una instalación ubicada y un elemento de referencia. */
+type Ubicado = Pick<InstalacionUbicada, "posicion" | "rotacion" | "medidas" | "descripcion">;
+
+function hayCambiosEnUbicado(antes: Ubicado, ahora: Ubicado) {
   const claves = new Set([...Object.keys(antes.medidas), ...Object.keys(ahora.medidas)]);
   return (
     descripcionLimpia(antes.descripcion) !== descripcionLimpia(ahora.descripcion) ||
@@ -150,10 +161,24 @@ function hayCambiosEnInstalacion(antes: InstalacionUbicada, ahora: InstalacionUb
   );
 }
 
+/**
+ * Todo lo ubicado, como lo ve la leyenda: instalaciones y elementos de
+ * referencia comparten una sola leyenda. Una instalación se identifica con
+ * su id de instalación; un elemento de referencia, con el suyo.
+ */
+export function elementosEnLeyenda(
+  datos: Pick<DatosPredio, "instalaciones" | "referencias">,
+): EnLeyenda[] {
+  return [
+    ...datos.instalaciones.map((i) => ({ id: i.instalacionId, ordenLeyenda: i.ordenLeyenda })),
+    ...datos.referencias.map((r) => ({ id: r.id, ordenLeyenda: r.ordenLeyenda })),
+  ];
+}
+
 /** Si cambió qué entra en la leyenda o en qué orden (los números que se ven). */
-function hayCambiosEnLeyenda(antes: InstalacionUbicada[], ahora: InstalacionUbicada[]) {
-  const numerosAntes = numerosDeLeyenda(antes);
-  const numerosAhora = numerosDeLeyenda(ahora);
+function hayCambiosEnLeyenda(antes: DatosPredio, ahora: DatosPredio) {
+  const numerosAntes = numerosDeLeyenda(elementosEnLeyenda(antes));
+  const numerosAhora = numerosDeLeyenda(elementosEnLeyenda(ahora));
   return (
     numerosAntes.size !== numerosAhora.size ||
     [...numerosAhora].some(([id, numero]) => numerosAntes.get(id) !== numero)
@@ -162,11 +187,24 @@ function hayCambiosEnLeyenda(antes: InstalacionUbicada[], ahora: InstalacionUbic
 
 function hayCambiosEnInstalaciones(antes: InstalacionUbicada[], ahora: InstalacionUbicada[]) {
   if (antes.length !== ahora.length) return true;
-  if (hayCambiosEnLeyenda(antes, ahora)) return true;
   const porId = new Map(antes.map((i) => [i.instalacionId, i]));
   return ahora.some((i) => {
     const previa = porId.get(i.instalacionId);
-    return !previa || hayCambiosEnInstalacion(previa, i);
+    return !previa || hayCambiosEnUbicado(previa, i);
+  });
+}
+
+function hayCambiosEnReferencias(antes: ReferenciaUbicada[], ahora: ReferenciaUbicada[]) {
+  if (antes.length !== ahora.length) return true;
+  const porId = new Map(antes.map((r) => [r.id, r]));
+  return ahora.some((r) => {
+    const previa = porId.get(r.id);
+    return (
+      !previa ||
+      previa.tipo !== r.tipo ||
+      nombreLimpio(previa.nombre) !== nombreLimpio(r.nombre) ||
+      hayCambiosEnUbicado(previa, r)
+    );
   });
 }
 
@@ -178,7 +216,9 @@ export function hayCambiosEnPredio(
   if (!guardado) return true;
   const [deltaEste, deltaNorte] = aMetros(guardado.origen, actual.origen);
   if (Math.hypot(deltaEste, deltaNorte) > TOLERANCIA_METROS) return true;
+  if (hayCambiosEnLeyenda(guardado, actual)) return true;
   if (hayCambiosEnInstalaciones(guardado.instalaciones, actual.instalaciones)) return true;
+  if (hayCambiosEnReferencias(guardado.referencias, actual.referencias)) return true;
   if (guardado.area.length !== actual.area.length) return true;
   return guardado.area.some(
     ([e, n], i) =>
@@ -201,18 +241,30 @@ export function predioParaGuardar(datos: DatosPredio): DatosPredio {
   // «+ 0» evita guardar -0.
   const cm = (n: number) => Math.round(n * 100) / 100 + 0;
   const grados = (n: number) => Math.round(n * 1e7) / 1e7;
+  // La leyenda es una sola: se numera todo junto.
+  const numeros = numerosDeLeyenda(elementosEnLeyenda(datos));
+  const ubicado = (u: Ubicado) => ({
+    posicion: [cm(u.posicion[0]), cm(u.posicion[1])] as Punto,
+    rotacion: rotacionParaGuardar(u.rotacion),
+    medidas: Object.fromEntries(
+      Object.entries(u.medidas).map(([clave, valor]) => [clave, cm(valor)]),
+    ),
+    descripcion: descripcionLimpia(u.descripcion),
+  });
   return {
     origen: { lat: grados(datos.origen.lat), lng: grados(datos.origen.lng) },
     area: datos.area.map(([e, n]) => [cm(e), cm(n)]),
-    instalaciones: renumerarLeyenda(datos.instalaciones).map((i) => ({
+    instalaciones: datos.instalaciones.map((i) => ({
       instalacionId: i.instalacionId,
-      posicion: [cm(i.posicion[0]), cm(i.posicion[1])],
-      rotacion: rotacionParaGuardar(i.rotacion),
-      medidas: Object.fromEntries(
-        Object.entries(i.medidas).map(([clave, valor]) => [clave, cm(valor)]),
-      ),
-      descripcion: descripcionLimpia(i.descripcion),
-      ordenLeyenda: i.ordenLeyenda,
+      ...ubicado(i),
+      ordenLeyenda: numeros.get(i.instalacionId) ?? null,
+    })),
+    referencias: datos.referencias.map((r) => ({
+      id: r.id,
+      tipo: r.tipo,
+      nombre: nombreLimpio(r.nombre),
+      ...ubicado(r),
+      ordenLeyenda: numeros.get(r.id) ?? null,
     })),
   };
 }
@@ -243,9 +295,31 @@ export function errorDelPredio(
   tiposDeLaSede: ReadonlyMap<string, ClaveTipoInstalacion>,
 ): string | null {
   if (!datos || typeof datos !== "object") return "El predio no es válido.";
-  const { origen, area, instalaciones } = datos as Record<string, unknown>;
+  const { origen, area, instalaciones, referencias } = datos as Record<string, unknown>;
   if (!esCoordenadas(origen)) return "El origen del predio no es válido.";
-  return errorDelArea(area) ?? errorDeInstalaciones(instalaciones, tiposDeLaSede);
+  return (
+    errorDelArea(area) ??
+    errorDeInstalaciones(instalaciones, tiposDeLaSede) ??
+    errorDeReferencias(referencias)
+  );
+}
+
+/** Mensaje si la posición, la rotación o el lugar en la leyenda no sirven. */
+function errorDeUbicacion(
+  { posicion, rotacion, ordenLeyenda }: Record<string, unknown>,
+  cual: string,
+): string | null {
+  if (!esPunto(posicion)) return `La posición de ${cual} no es válida.`;
+  if (Math.hypot(...posicion) > DISTANCIA_MAXIMA_AL_ORIGEN) {
+    return `${cual[0].toUpperCase()}${cual.slice(1)} está demasiado lejos del origen.`;
+  }
+  if (typeof rotacion !== "number" || !Number.isFinite(rotacion)) {
+    return `La rotación de ${cual} no es válida.`;
+  }
+  if (ordenLeyenda !== null && !(Number.isInteger(ordenLeyenda) && (ordenLeyenda as number) >= 1)) {
+    return `El lugar de ${cual} en la leyenda no es válido.`;
+  }
+  return null;
 }
 
 function errorDeInstalaciones(
@@ -258,40 +332,67 @@ function errorDeInstalaciones(
     if (!instalacion || typeof instalacion !== "object") {
       return "Una instalación del predio no es válida.";
     }
-    const { instalacionId, posicion, rotacion, medidas, descripcion, ordenLeyenda } =
-      instalacion as Record<string, unknown>;
+    const { instalacionId, medidas, descripcion } = instalacion as Record<string, unknown>;
     const tipo = typeof instalacionId === "string" ? tiposDeLaSede.get(instalacionId) : undefined;
     if (!tipo) return "Una de las instalaciones no es de esta sede.";
     if (vistas.has(instalacionId as string)) return "Una instalación está ubicada dos veces.";
     vistas.add(instalacionId as string);
 
-    if (!esPunto(posicion)) return "La posición de una instalación no es válida.";
-    if (Math.hypot(...posicion) > DISTANCIA_MAXIMA_AL_ORIGEN) {
-      return "Una instalación está demasiado lejos del origen.";
-    }
-    if (typeof rotacion !== "number" || !Number.isFinite(rotacion)) {
-      return "La rotación de una instalación no es válida.";
-    }
-    if (ordenLeyenda !== null && !(Number.isInteger(ordenLeyenda) && (ordenLeyenda as number) >= 1)) {
-      return "El lugar de una instalación en la leyenda no es válido.";
-    }
-    const error = errorDeMedidas(tipo, medidas) ?? errorDeDescripcion(descripcion);
+    const error =
+      errorDeUbicacion(instalacion as Record<string, unknown>, "una instalación") ??
+      errorDeMedidas(tipoInstalacion(tipo).medidas, medidas, "una instalación") ??
+      errorDeDescripcion(descripcion);
     if (error) return error;
   }
   return null;
 }
 
-function errorDeMedidas(tipo: ClaveTipoInstalacion, medidas: unknown): string | null {
-  const esperadas = tipoInstalacion(tipo).medidas.map((m) => m.clave);
+/** Tope de elementos de referencia por predio: un predio real no llega ni cerca. */
+export const REFERENCIAS_MAXIMAS = 500;
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function errorDeReferencias(referencias: unknown): string | null {
+  if (!Array.isArray(referencias)) return "Los elementos de referencia del predio no son válidos.";
+  if (referencias.length > REFERENCIAS_MAXIMAS) {
+    return `El predio tiene demasiados elementos de referencia (máximo ${REFERENCIAS_MAXIMAS}).`;
+  }
+  const vistos = new Set<string>();
+  for (const referencia of referencias) {
+    if (!referencia || typeof referencia !== "object") {
+      return "Un elemento de referencia no es válido.";
+    }
+    const campos = referencia as Record<string, unknown>;
+    const { id, tipo, medidas, descripcion } = campos;
+    if (typeof id !== "string" || !UUID.test(id)) return "Un elemento de referencia no es válido.";
+    if (vistos.has(id)) return "Un elemento de referencia está dos veces.";
+    vistos.add(id);
+    if (!esClaveTipoReferencia(tipo)) return "Un elemento de referencia tiene un tipo que no existe.";
+    const error =
+      errorDeNombre(campos.nombre) ??
+      errorDeUbicacion(campos, "un elemento de referencia") ??
+      errorDeMedidas(tipoReferencia(tipo).medidas, medidas, "un elemento de referencia") ??
+      errorDeDescripcion(descripcion);
+    if (error) return error;
+  }
+  return null;
+}
+
+function errorDeMedidas(
+  definidas: readonly MedidaInstalacion[],
+  medidas: unknown,
+  cual: string,
+): string | null {
+  const esperadas = definidas.map((m) => m.clave);
   if (!medidas || typeof medidas !== "object") {
-    return "Las medidas de una instalación no son válidas.";
+    return `Las medidas de ${cual} no son válidas.`;
   }
   const claves = Object.keys(medidas);
   if (claves.length !== esperadas.length || !esperadas.every((c) => claves.includes(c))) {
-    return "Las medidas de una instalación no son las de su tipo.";
+    return `Las medidas de ${cual} no son las de su tipo.`;
   }
   if (!Object.values(medidas).every(esMedidaValida)) {
-    return "Cada medida de una instalación tiene que estar entre 0,5 y 300 m.";
+    return `Cada medida de ${cual} tiene que estar entre 0,5 y 300 m.`;
   }
   return null;
 }
@@ -328,28 +429,39 @@ export type InstalacionUbicada = {
   ordenLeyenda: number | null;
 };
 
+/**
+ * Pasa puntos propios del elemento (x a lo largo, y a lo ancho, en metros
+ * desde su centro) a metros desde el origen, girados en sentido horario.
+ */
+function ubicarPuntos(posicion: Punto, rotacion: number, puntos: Punto[]): Punto[] {
+  const angulo = (rotacion * Math.PI) / 180;
+  const cos = Math.cos(angulo);
+  const sin = Math.sin(angulo);
+  // Giro horario: (x, y) → (x·cos + y·sin, −x·sin + y·cos).
+  return puntos.map(([x, y]) => [
+    posicion[0] + x * cos + y * sin,
+    posicion[1] - x * sin + y * cos,
+  ]);
+}
+
+/** Las esquinas de un rectángulo de largo × ancho centrado en (0, 0). */
+function rectangulo(largo: number, ancho: number): Punto[] {
+  return [
+    [-largo / 2, -ancho / 2],
+    [largo / 2, -ancho / 2],
+    [largo / 2, ancho / 2],
+    [-largo / 2, ancho / 2],
+  ];
+}
+
 /** Las cuatro esquinas de la huella, en metros desde el origen. */
 export function huellaDeInstalacion(
   instalacion: Pick<InstalacionUbicada, "posicion" | "rotacion" | "medidas">,
 ): Punto[] {
   const { posicion, rotacion, medidas } = instalacion;
   // El in-goal (rugby) se suma en cada punta del largo.
-  const medioLargo = medidas.largo / 2 + (medidas.ingoal ?? 0);
-  const medioAncho = medidas.ancho / 2;
-  const angulo = (rotacion * Math.PI) / 180;
-  const cos = Math.cos(angulo);
-  const sin = Math.sin(angulo);
-  const esquinas: Punto[] = [
-    [-medioLargo, -medioAncho],
-    [medioLargo, -medioAncho],
-    [medioLargo, medioAncho],
-    [-medioLargo, medioAncho],
-  ];
-  // Giro horario: (x, y) → (x·cos + y·sin, −x·sin + y·cos).
-  return esquinas.map(([x, y]) => [
-    posicion[0] + x * cos + y * sin,
-    posicion[1] - x * sin + y * cos,
-  ]);
+  const largo = medidas.largo + 2 * (medidas.ingoal ?? 0);
+  return ubicarPuntos(posicion, rotacion, rectangulo(largo, medidas.ancho));
 }
 
 /** Una medida, en metros: de medio metro a 300 m. */
@@ -374,10 +486,93 @@ export function medidasDelTipo(
   tipo: ClaveTipoInstalacion,
   guardadas: Record<string, unknown> | null,
 ): Record<string, number> {
+  return medidasSegun(tipoInstalacion(tipo).medidas, guardadas);
+}
+
+function medidasSegun(
+  definidas: readonly MedidaInstalacion[],
+  guardadas: Record<string, unknown> | null,
+): Record<string, number> {
   return Object.fromEntries(
-    tipoInstalacion(tipo).medidas.map((medida) => {
+    definidas.map((medida) => {
       const guardada = guardadas?.[medida.clave];
       return [medida.clave, esMedidaValida(guardada) ? guardada : medida.porDefecto];
     }),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Elementos de referencia (#46): árbol, piedra, bebedero, gradas y tribuna.
+// Se ubican y se giran como las instalaciones; el tamaño sale de las medidas
+// de su tipo (src/dominio/tipos-referencia.ts).
+// ---------------------------------------------------------------------------
+
+/** Un elemento de referencia ubicado en el predio. */
+export type ReferenciaUbicada = Ubicado & {
+  /** Lo pone el editor al agregarlo (un uuid). */
+  id: string;
+  tipo: ClaveTipoReferencia;
+  /** Nombre propio opcional, por ejemplo «El ombú» o «Gradas Tito». */
+  nombre: string | null;
+  /** Lugar en la leyenda, o null si no entra (sin número). Ver leyenda.ts. */
+  ordenLeyenda: number | null;
+};
+
+/** Tope del nombre de un elemento de referencia, en caracteres. */
+export const NOMBRE_MAXIMO = 60;
+
+/** El nombre como se guarda: en una línea y sin espacios de más; vacío es null. */
+export function nombreLimpio(texto: string | null): string | null {
+  const limpio = (texto ?? "").replace(/\s+/g, " ").trim();
+  return limpio === "" ? null : limpio;
+}
+
+function errorDeNombre(nombre: unknown): string | null {
+  if (nombre === null) return null;
+  if (typeof nombre !== "string") return "El nombre de un elemento de referencia no es válido.";
+  if (Array.from(nombreLimpio(nombre) ?? "").length > NOMBRE_MAXIMO) {
+    return `El nombre de un elemento de referencia tiene más de ${NOMBRE_MAXIMO} caracteres.`;
+  }
+  return null;
+}
+
+/** Las medidas del tipo, tomando las guardadas que sirvan (como medidasDelTipo). */
+export function medidasDeReferencia(
+  tipo: ClaveTipoReferencia,
+  guardadas: Record<string, unknown> | null,
+): Record<string, number> {
+  return medidasSegun(tipoReferencia(tipo).medidas, guardadas);
+}
+
+/** Lados del polígono con el que se dibuja una planta redonda. */
+const LADOS_DEL_CIRCULO = 24;
+
+/** La huella en el mapa: un círculo (árbol, piedra) o un rectángulo. */
+export function huellaDeReferencia(
+  referencia: Pick<ReferenciaUbicada, "tipo" | "posicion" | "rotacion" | "medidas">,
+): Punto[] {
+  const { tipo, posicion, rotacion, medidas } = referencia;
+  const { largo, ancho } = plantaDeReferencia(tipo, medidas);
+  if (tipoReferencia(tipo).planta === "rectangular") {
+    return ubicarPuntos(posicion, rotacion, rectangulo(largo, ancho));
+  }
+  return Array.from({ length: LADOS_DEL_CIRCULO }, (_, i): Punto => {
+    const angulo = (2 * Math.PI * i) / LADOS_DEL_CIRCULO;
+    return [posicion[0] + (largo / 2) * Math.cos(angulo), posicion[1] + (ancho / 2) * Math.sin(angulo)];
+  });
+}
+
+/**
+ * El borde del frente de las gradas o la tribuna (el escalón más bajo), en
+ * metros desde el origen. Con 0° mira al sur; se gira para que mire a la cancha.
+ */
+export function frenteDeGradas(
+  gradas: Pick<ReferenciaUbicada, "posicion" | "rotacion" | "medidas">,
+): [Punto, Punto] {
+  const { largo, ancho } = gradas.medidas;
+  const [a, b] = ubicarPuntos(gradas.posicion, gradas.rotacion, [
+    [-largo / 2, -ancho / 2],
+    [largo / 2, -ancho / 2],
+  ]);
+  return [a, b];
 }

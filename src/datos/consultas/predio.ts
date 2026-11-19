@@ -3,6 +3,7 @@ import "server-only";
 import { coordenadasDesdeLinkMaps } from "@/dominio/maps";
 import {
   errorDelArea,
+  medidasDeReferencia,
   medidasDelTipo,
   origenInicial,
   tiposPorInstalacion,
@@ -11,9 +12,11 @@ import {
   type InstalacionUbicada,
   type OrigenInicial,
   type Punto,
+  type ReferenciaUbicada,
 } from "@/dominio/predio";
 import { predioParaVisor, type PredioEnVisor } from "@/dominio/predio-3d";
 import type { ClaveTipoInstalacion } from "@/dominio/tipos-instalacion";
+import { esClaveTipoReferencia } from "@/dominio/tipos-referencia";
 import { coordenadasDeDireccion } from "../geocodificar";
 import { listarSedes, sedePorId } from "./sedes";
 import { supabaseServidor } from "../supabase-servidor";
@@ -44,18 +47,35 @@ export async function predioDeSede(
 
   const { data: elementos, error: errorElementos } = await supabase
     .from("elemento_predio")
-    .select("instalacion_id, este, norte, rotacion, medidas, descripcion, orden_leyenda")
+    .select(
+      "id, instalacion_id, tipo_referencia, nombre, este, norte, rotacion, medidas, descripcion, orden_leyenda",
+    )
     .eq("predio_id", data.id);
   if (errorElementos) throw errorElementos;
 
   const instalaciones: InstalacionUbicada[] = [];
+  const referencias: ReferenciaUbicada[] = [];
   for (const fila of elementos ?? []) {
-    const tipo = fila.instalacion_id ? tiposDeLaSede.get(fila.instalacion_id) : undefined;
-    if (!fila.instalacion_id || !tipo) continue;
     const medidas =
       fila.medidas && typeof fila.medidas === "object" && !Array.isArray(fila.medidas)
         ? (fila.medidas as Record<string, unknown>)
         : null;
+    // Un tipo que el código ya no conoce no se muestra (la base no lo deja guardar).
+    if (esClaveTipoReferencia(fila.tipo_referencia)) {
+      referencias.push({
+        id: fila.id,
+        tipo: fila.tipo_referencia,
+        nombre: fila.nombre,
+        posicion: [fila.este, fila.norte],
+        rotacion: fila.rotacion,
+        medidas: medidasDeReferencia(fila.tipo_referencia, medidas),
+        descripcion: fila.descripcion,
+        ordenLeyenda: fila.orden_leyenda,
+      });
+      continue;
+    }
+    const tipo = fila.instalacion_id ? tiposDeLaSede.get(fila.instalacion_id) : undefined;
+    if (!fila.instalacion_id || !tipo) continue;
     instalaciones.push({
       instalacionId: fila.instalacion_id,
       posicion: [fila.este, fila.norte],
@@ -68,7 +88,12 @@ export async function predioDeSede(
 
   // La base ya valida el área; si algo raro quedara, se abre sin área.
   const area = errorDelArea(data.area) ? [] : (data.area as Punto[]);
-  return { origen: { lat: data.origen_lat, lng: data.origen_lng }, area, instalaciones };
+  return {
+    origen: { lat: data.origen_lat, lng: data.origen_lng },
+    area,
+    instalaciones,
+    referencias,
+  };
 }
 
 /**

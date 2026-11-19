@@ -10,8 +10,14 @@ import {
   medidasDelTipo,
   ORIGEN_POR_DEFECTO,
   origenInicial,
+  frenteDeGradas,
+  huellaDeReferencia,
+  medidasDeReferencia,
+  NOMBRE_MAXIMO,
   predioParaGuardar,
+  type DatosPredio,
   type InstalacionUbicada,
+  type ReferenciaUbicada,
 } from "./predio";
 
 describe("aMetros y aCoordenadas", () => {
@@ -115,6 +121,7 @@ describe("hayCambiosEnPredio", () => {
     origen: { lat: -37.336, lng: -59.08 },
     area: [[0, 0], [10, 0], [10, 10]] as [number, number][],
     instalaciones: [cancha, pileta],
+    referencias: [],
   };
 
   it("no ve cambios por ruido de menos de un centímetro", () => {
@@ -135,6 +142,7 @@ describe("hayCambiosEnPredio", () => {
             descripcion: " La cancha  principal. ",
           },
         ],
+        referencias: [],
       }),
     ).toBe(false);
   });
@@ -213,11 +221,13 @@ describe("predioParaGuardar", () => {
         origen: { lat: -37.336001234567, lng: -59.08 },
         area: [[1.23456, -7.891], [10, 0], [10, 10.005001]],
         instalaciones: [],
+        referencias: [],
       }),
     ).toEqual({
       origen: { lat: -37.3360012, lng: -59.08 },
       area: [[1.23, -7.89], [10, 0], [10, 10.01]],
       instalaciones: [],
+      referencias: [],
     });
   });
 });
@@ -239,6 +249,7 @@ describe("predioParaGuardar con instalaciones", () => {
             ordenLeyenda: null,
           },
         ],
+        referencias: [],
       }).instalaciones[0];
     expect(guardar(47.26)).toEqual({
       instalacionId: "cancha",
@@ -272,6 +283,7 @@ describe("predioParaGuardar con la leyenda", () => {
         ubicada("quincho", null, "   "),
         ubicada("cancha", 2, null),
       ],
+      referencias: [],
     });
     expect(instalaciones.map((i) => [i.instalacionId, i.ordenLeyenda, i.descripcion])).toEqual([
       ["pileta", 2, "Pileta climatizada"],
@@ -296,17 +308,17 @@ describe("errorDelPredio", () => {
     ordenLeyenda: 1,
   };
   const conInstalaciones = (instalaciones: unknown[]) =>
-    errorDelPredio({ origen, area: [], instalaciones }, tipos);
+    errorDelPredio({ origen, area: [], instalaciones, referencias: [] }, tipos);
 
   it("acepta un origen válido con o sin área", () => {
-    expect(errorDelPredio({ origen, area: [], instalaciones: [] }, tipos)).toBeNull();
+    expect(errorDelPredio({ origen, area: [], instalaciones: [], referencias: [] }, tipos)).toBeNull();
     expect(
-      errorDelPredio({ origen, area: [[0, 0], [10, 0], [0, 10]], instalaciones: [] }, tipos),
+      errorDelPredio({ origen, area: [[0, 0], [10, 0], [0, 10]], instalaciones: [], referencias: [] }, tipos),
     ).toBeNull();
   });
 
   it("rechaza un origen fuera del mapa o que no es número", () => {
-    const sinInstalaciones = (datos: object) => errorDelPredio({ ...datos, instalaciones: [] }, tipos);
+    const sinInstalaciones = (datos: object) => errorDelPredio({ ...datos, instalaciones: [], referencias: [] }, tipos);
     expect(sinInstalaciones({ origen: { lat: 91, lng: 0 }, area: [] })).toMatch(/origen/);
     expect(sinInstalaciones({ origen: { lat: "x", lng: 0 }, area: [] })).toMatch(/origen/);
     expect(sinInstalaciones({ area: [] })).toMatch(/origen/);
@@ -315,7 +327,7 @@ describe("errorDelPredio", () => {
 
   it("trae el error del área", () => {
     expect(
-      errorDelPredio({ origen: { lat: 0, lng: 0 }, area: [[0, 0]], instalaciones: [] }, tipos),
+      errorDelPredio({ origen: { lat: 0, lng: 0 }, area: [[0, 0]], instalaciones: [], referencias: [] }, tipos),
     ).toMatch(/tres puntos/);
   });
 
@@ -338,7 +350,7 @@ describe("errorDelPredio", () => {
   it("rechaza una instalación que no es de la sede o que está ubicada dos veces", () => {
     expect(conInstalaciones([{ ...cancha, instalacionId: "de-otra-sede" }])).toMatch(/sede/);
     expect(conInstalaciones([cancha, { ...cancha, posicion: [0, 0] }])).toMatch(/dos veces/);
-    expect(errorDelPredio({ origen, area: [] }, tipos)).toMatch(/instalaciones/);
+    expect(errorDelPredio({ origen, area: [], referencias: [] }, tipos)).toMatch(/instalaciones/);
   });
 
   it("rechaza una posición inválida o a más de 5 km del origen, y una rotación que no es número", () => {
@@ -433,5 +445,181 @@ describe("medidasDelTipo", () => {
 
   it("cambia una medida guardada que no es un número positivo por la del tipo", () => {
     expect(medidasDelTipo("pileta", { largo: -4, ancho: "x" })).toEqual({ largo: 25, ancho: 12 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Elementos de referencia (#46)
+// ---------------------------------------------------------------------------
+
+const OMBU_ID = "6f1c1f7e-0d7a-4c43-9d3e-1a2b3c4d5e6f";
+const GRADAS_ID = "0b8a7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d";
+
+const ombu: ReferenciaUbicada = {
+  id: OMBU_ID,
+  tipo: "arbol",
+  nombre: "El ombú",
+  posicion: [-78, -18],
+  rotacion: 0,
+  medidas: { alto: 12, copa: 14 },
+  descripcion: "Al lado de la cancha principal.",
+  ordenLeyenda: 2,
+};
+const gradas: ReferenciaUbicada = {
+  id: GRADAS_ID,
+  tipo: "gradas",
+  nombre: null,
+  posicion: [8, -40],
+  rotacion: 137,
+  medidas: { largo: 20, ancho: 4, alto: 2 },
+  descripcion: null,
+  ordenLeyenda: null,
+};
+const canchaConNumero: InstalacionUbicada = {
+  instalacionId: "cancha",
+  posicion: [40, -60],
+  rotacion: 47,
+  medidas: { largo: 100, ancho: 70, ingoal: 10 },
+  descripcion: null,
+  ordenLeyenda: 1,
+};
+const conReferencias: DatosPredio = {
+  origen: { lat: -37.336, lng: -59.08 },
+  area: [],
+  instalaciones: [canchaConNumero],
+  referencias: [ombu, gradas],
+};
+
+describe("errorDelPredio con elementos de referencia", () => {
+  const tipos = new Map([["cancha", "cancha_rugby" as const]]);
+  const con = (referencias: unknown) => errorDelPredio({ ...conReferencias, referencias }, tipos);
+
+  it("acepta árboles, gradas y demás con las medidas de su tipo, con nombre o sin él", () => {
+    expect(con([ombu, gradas])).toBeNull();
+    expect(
+      con([
+        { ...ombu, id: "a6b1c2d3-e4f5-4a6b-8c7d-9e0f1a2b3c4d", tipo: "piedra", nombre: null, medidas: { diametro: 1.5, alto: 1 }, ordenLeyenda: null },
+        { ...gradas, id: "b7c2d3e4-f5a6-4b7c-9d8e-0f1a2b3c4d5e", tipo: "tribuna" },
+        { ...gradas, id: "c8d3e4f5-a6b7-4c8d-8e9f-1a2b3c4d5e6f", tipo: "bebedero", medidas: { largo: 1, ancho: 0.5, alto: 1 } },
+      ]),
+    ).toBeNull();
+  });
+
+  it("rechaza un tipo que no está en código (los caminos van aparte)", () => {
+    expect(con([{ ...gradas, tipo: "camino" }])).toMatch(/tipo/);
+  });
+
+  it("pide exactamente las medidas del tipo", () => {
+    expect(con([{ ...ombu, medidas: { alto: 12 } }])).toMatch(/medidas/);
+    expect(con([{ ...ombu, medidas: { largo: 20, ancho: 4, alto: 2 } }])).toMatch(/medidas/);
+    expect(con([{ ...ombu, medidas: { alto: 400, copa: 14 } }])).toMatch(/0,5 y 300/);
+  });
+
+  it(`acepta un nombre de hasta ${NOMBRE_MAXIMO} caracteres`, () => {
+    expect(con([{ ...ombu, nombre: "a".repeat(NOMBRE_MAXIMO) }])).toBeNull();
+    expect(con([{ ...ombu, nombre: "a".repeat(NOMBRE_MAXIMO + 1) }])).toMatch(/nombre/);
+    expect(con([{ ...ombu, nombre: 7 }])).toMatch(/nombre/);
+  });
+
+  it("pide un id propio para cada uno", () => {
+    expect(con([{ ...ombu, id: "ombu" }])).toMatch(/no es válido/);
+    expect(con([ombu, { ...gradas, id: OMBU_ID }])).toMatch(/dos veces/);
+  });
+
+  it("valida posición, rotación, descripción y lugar en la leyenda como en una instalación", () => {
+    expect(con([{ ...ombu, posicion: [6000, 0] }])).toMatch(/lejos/);
+    expect(con([{ ...ombu, rotacion: "0" }])).toMatch(/rotación/);
+    expect(con([{ ...ombu, descripcion: "a".repeat(281) }])).toMatch(/280/);
+    expect(con([{ ...ombu, ordenLeyenda: 0 }])).toMatch(/leyenda/);
+  });
+
+  it("pide la lista de elementos de referencia", () => {
+    expect(con(undefined)).toMatch(/referencia/);
+  });
+});
+
+describe("hayCambiosEnPredio con elementos de referencia", () => {
+  const con = (referencias: ReferenciaUbicada[], instalaciones = conReferencias.instalaciones) => ({
+    ...conReferencias,
+    instalaciones,
+    referencias,
+  });
+
+  it("no ve cambios por ruido ni por otro orden de la lista", () => {
+    expect(
+      hayCambiosEnPredio(conReferencias, con([gradas, { ...ombu, posicion: [-78.004, -18], nombre: " El  ombú " }])),
+    ).toBe(false);
+  });
+
+  it("ve uno agregado, borrado, movido, renombrado o con otra medida", () => {
+    expect(hayCambiosEnPredio(conReferencias, con([ombu]))).toBe(true);
+    expect(hayCambiosEnPredio(conReferencias, con([ombu, gradas, { ...gradas, id: "otro" }]))).toBe(true);
+    expect(hayCambiosEnPredio(conReferencias, con([{ ...ombu, posicion: [-70, -18] }, gradas]))).toBe(true);
+    expect(hayCambiosEnPredio(conReferencias, con([{ ...ombu, nombre: "El ombú viejo" }, gradas]))).toBe(true);
+    expect(hayCambiosEnPredio(conReferencias, con([{ ...ombu, nombre: null }, gradas]))).toBe(true);
+    expect(hayCambiosEnPredio(conReferencias, con([{ ...ombu, medidas: { alto: 12, copa: 10 } }, gradas]))).toBe(true);
+  });
+
+  it("la leyenda es una sola: ve un elemento de referencia que pasa adelante de una instalación", () => {
+    expect(
+      hayCambiosEnPredio(
+        conReferencias,
+        con([{ ...ombu, ordenLeyenda: 1 }, gradas], [{ ...canchaConNumero, ordenLeyenda: 2 }]),
+      ),
+    ).toBe(true);
+  });
+});
+
+describe("predioParaGuardar con elementos de referencia", () => {
+  it("limpia el nombre, redondea y numera la leyenda junto con las instalaciones", () => {
+    const guardado = predioParaGuardar({
+      ...conReferencias,
+      instalaciones: [{ ...canchaConNumero, ordenLeyenda: 4 }],
+      referencias: [
+        { ...ombu, nombre: "  El   ombú ", posicion: [-78.004, -18.123], ordenLeyenda: 9 },
+        { ...gradas, nombre: "   ", rotacion: -90 },
+      ],
+    });
+    expect(guardado.instalaciones[0].ordenLeyenda).toBe(1);
+    expect(guardado.referencias).toEqual([
+      { ...ombu, nombre: "El ombú", posicion: [-78, -18.12], ordenLeyenda: 2 },
+      { ...gradas, nombre: null, rotacion: 270 },
+    ]);
+  });
+});
+
+describe("medidasDeReferencia", () => {
+  it("sin medidas guardadas, usa las del tipo", () => {
+    expect(medidasDeReferencia("arbol", null)).toEqual({ alto: 10, copa: 7 });
+  });
+
+  it("conserva las guardadas que sirven y completa el resto", () => {
+    expect(medidasDeReferencia("arbol", { alto: 15, copa: -1, largo: 3 })).toEqual({ alto: 15, copa: 7 });
+  });
+});
+
+describe("huellaDeReferencia", () => {
+  it("el árbol ocupa un círculo del diámetro de su copa", () => {
+    const huella = huellaDeReferencia({ tipo: "arbol", posicion: [10, 20], rotacion: 0, medidas: { alto: 12, copa: 14 } });
+    expect(huella.length).toBeGreaterThanOrEqual(12);
+    for (const [e, n] of huella) expect(Math.hypot(e - 10, n - 20)).toBeCloseTo(7, 6);
+  });
+
+  it("las gradas ocupan un rectángulo de largo por ancho, girado como una instalación", () => {
+    const huella = huellaDeReferencia({ tipo: "gradas", posicion: [0, 0], rotacion: 90, medidas: { largo: 20, ancho: 4, alto: 2 } });
+    expect(redondeadas(huella)).toEqual([
+      [-2, 10],
+      [-2, -10],
+      [2, -10],
+      [2, 10],
+    ]);
+  });
+
+  it("con 0°, el frente de las gradas (el escalón más bajo) mira al sur", () => {
+    const frente = frenteDeGradas({ posicion: [0, 0], rotacion: 0, medidas: { largo: 20, ancho: 4, alto: 2 } });
+    expect(redondeadas(frente)).toEqual([
+      [-10, -2],
+      [10, -2],
+    ]);
   });
 });

@@ -1,14 +1,16 @@
 "use client";
 
 /**
- * Editor de predio a pantalla completa (variante B del mock, #42, #43 y #45).
+ * Editor de predio a pantalla completa (variante B del mock, #42, #43, #45 y #46).
  *
  * El área se dibuja con Terra Draw sobre el mapa satelital (MapLibre). Las
- * instalaciones de la sede se ubican, se arrastran y se giran sobre el mapa;
- * su huella sale de las medidas del tipo. Cada una puede tener descripción y
- * entrar en la leyenda, que se reordena. El editor tiene el área y los
- * centros de las instalaciones en lat/lng, y los pasa a metros desde el origen
- * recién al comparar y al guardar: así, mover el origen no corre nada del mapa.
+ * instalaciones de la sede y los elementos de referencia (árbol, piedra,
+ * bebedero, gradas y tribuna) se ubican, se arrastran y se giran sobre el
+ * mapa; su huella sale de las medidas del tipo. Cada uno puede tener
+ * descripción y entrar en la leyenda, que se reordena; los elementos de
+ * referencia, además, un nombre propio. El editor tiene el área y los centros
+ * en lat/lng, y los pasa a metros desde el origen recién al comparar y al
+ * guardar: así, mover el origen no corre nada del mapa.
  */
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
@@ -23,7 +25,7 @@ import {
   type GeoJSONStoreFeatures,
 } from "terra-draw";
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
-import { Crosshair, MapPin, MousePointer2, Pencil, Shrink, Trash2 } from "lucide-react";
+import { Crosshair, MapPin, MousePointer2, Pencil, Shrink, Trash2, Trees } from "lucide-react";
 import { Button } from "@/ui/nativos/button";
 import { cambiarEnLeyenda, moverEnLeyenda, numerosDeLeyenda } from "@/dominio/leyenda";
 import type { Coordenadas } from "@/dominio/maps";
@@ -31,21 +33,30 @@ import {
   aCoordenadas,
   aMetros,
   errorDelPredio,
+  frenteDeGradas,
   hayCambiosEnPredio,
   huellaDeInstalacion,
+  huellaDeReferencia,
+  medidasDeReferencia,
   medidasDelTipo,
   type DatosPredio,
   type DesdeOrigen,
   type InstalacionDeLaSede,
   type OrigenInicial,
+  type Punto,
 } from "@/dominio/predio";
+import { nombreDeReferencia } from "@/dominio/predio-3d";
 import { tipoInstalacion } from "@/dominio/tipos-instalacion";
+import { tipoReferencia, type ClaveTipoReferencia } from "@/dominio/tipos-referencia";
 import {
   BarraInstalaciones,
   COLOR_POR_FORMA,
-  PanelInstalacion,
+  COLOR_POR_REFERENCIA,
+  PaletaReferencias,
+  PanelElemento,
+  type DatosPanel,
 } from "./instalaciones-editor";
-import { CamposLeyenda, OrdenLeyenda } from "./leyenda-editor";
+import { CampoNombre, CamposLeyenda, OrdenLeyenda } from "./leyenda-editor";
 import {
   ATRIBUCION_ESRI,
   esRechazoDeGoogle,
@@ -68,14 +79,17 @@ type LngLat = [number, number];
 
 export type ResultadoGuardarPredio = { ok: true } | { ok: false; error: string };
 
-type Herramienta = "mover" | "area";
+type Herramienta = "mover" | "area" | "referencias";
 
 /**
- * Una instalación ubicada, como la tiene el editor: el centro en lat/lng y la
- * descripción como se escribe (se limpia al guardar).
+ * Algo ubicado, como lo tiene el editor: el centro en lat/lng y la
+ * descripción y el nombre como se escriben (se limpian al guardar).
  */
 type EnMapa = {
-  instalacionId: string;
+  /** El id de la instalación o, en un elemento de referencia, el suyo. */
+  id: string;
+  /** null si es una instalación de la sede. */
+  referencia: { tipo: ClaveTipoReferencia; nombre: string } | null;
   centro: Coordenadas;
   rotacion: number;
   medidas: Record<string, number>;
@@ -83,7 +97,11 @@ type EnMapa = {
   ordenLeyenda: number | null;
 };
 
-const CAPA_INSTALACIONES = "instalaciones-relleno";
+/** Las huellas, que se tocan y se arrastran. */
+const CAPA_HUELLAS = "elementos-relleno";
+/** Un punto en el centro de cada elemento de referencia: un bebedero mide 1 m. */
+const CAPA_PUNTOS = "elementos-punto";
+const CAPAS_TOCABLES = [CAPA_HUELLAS, CAPA_PUNTOS];
 
 const AVISO_ORIGEN: Partial<Record<DesdeOrigen, string>> = {
   ciudad:
@@ -105,33 +123,94 @@ function anilloDelArea(features: GeoJSONStoreFeatures[]): LngLat[] | null {
   return anillo.slice(0, -1);
 }
 
-/** Las huellas de las instalaciones ubicadas, para la capa del mapa. */
-function geojsonInstalaciones(
+/**
+ * Las huellas de lo ubicado, para la capa del mapa. Los elementos de
+ * referencia suman un punto en el centro y las gradas y la tribuna, la línea
+ * de su frente.
+ */
+function geojsonElementos(
   ubicadas: EnMapa[],
   instalaciones: InstalacionDeLaSede[],
   seleccion: string | null,
 ): GeoJSON.FeatureCollection {
   const porId = new Map(instalaciones.map((i) => [i.id, i]));
+  const aLngLat = (centro: Coordenadas) => (p: Punto) => {
+    const { lat, lng } = aCoordenadas(centro, p);
+    return [lng, lat];
+  };
   return {
     type: "FeatureCollection",
-    features: ubicadas.flatMap((u) => {
-      const instalacion = porId.get(u.instalacionId);
-      if (!instalacion) return [];
-      const anillo = huellaDeInstalacion({ posicion: [0, 0], rotacion: u.rotacion, medidas: u.medidas })
-        .map((p) => aCoordenadas(u.centro, p))
-        .map(({ lat, lng }) => [lng, lat]);
-      return [
+    features: ubicadas.flatMap((u): GeoJSON.Feature[] => {
+      const local = { posicion: [0, 0] as Punto, rotacion: u.rotacion, medidas: u.medidas };
+      const instalacion = u.referencia ? undefined : porId.get(u.id);
+      if (!u.referencia && !instalacion) return [];
+      const color = u.referencia
+        ? COLOR_POR_REFERENCIA[u.referencia.tipo]
+        : COLOR_POR_FORMA[tipoInstalacion(instalacion!.tipo).forma];
+      const properties = { id: u.id, color, elegida: u.id === seleccion ? 1 : 0 };
+      const anillo = (
+        u.referencia
+          ? huellaDeReferencia({ ...local, tipo: u.referencia.tipo })
+          : huellaDeInstalacion(local)
+      ).map(aLngLat(u.centro));
+      const features: GeoJSON.Feature[] = [
         {
-          type: "Feature" as const,
-          properties: {
-            id: u.instalacionId,
-            color: COLOR_POR_FORMA[tipoInstalacion(instalacion.tipo).forma],
-            elegida: u.instalacionId === seleccion ? 1 : 0,
-          },
-          geometry: { type: "Polygon" as const, coordinates: [[...anillo, anillo[0]]] },
+          type: "Feature",
+          properties,
+          geometry: { type: "Polygon", coordinates: [[...anillo, anillo[0]]] },
         },
       ];
+      if (u.referencia) {
+        features.push({
+          type: "Feature",
+          properties,
+          geometry: { type: "Point", coordinates: [u.centro.lng, u.centro.lat] },
+        });
+      }
+      if (u.referencia?.tipo === "gradas" || u.referencia?.tipo === "tribuna") {
+        features.push({
+          type: "Feature",
+          properties: { ...properties, frente: 1 },
+          geometry: { type: "LineString", coordinates: frenteDeGradas(local).map(aLngLat(u.centro)) },
+        });
+      }
+      return features;
     }),
+  };
+}
+
+/** Con qué nombre se ve algo ubicado en el mapa y en la leyenda. */
+function nombreEnMapa(u: EnMapa, nombres: ReadonlyMap<string, string>): string {
+  if (!u.referencia) return nombres.get(u.id) ?? "";
+  return nombreDeReferencia({ tipo: u.referencia.tipo, nombre: u.referencia.nombre.trim() || null });
+}
+
+/** Lo que el panel dice de algo ubicado. */
+function datosDelPanel(u: EnMapa, instalacion: InstalacionDeLaSede | undefined): DatosPanel | null {
+  if (u.referencia) {
+    const tipo = tipoReferencia(u.referencia.tipo);
+    const esGradas = u.referencia.tipo === "gradas" || u.referencia.tipo === "tribuna";
+    return {
+      id: u.id,
+      titulo: `Elemento de referencia · ${tipo.nombre}`,
+      nombre: u.referencia.nombre.trim() || tipo.nombre,
+      medidasDelTipo: tipo.medidas,
+      quitar: "Borrar",
+      ayudaQuitar: "Se borra del predio.",
+      ayudaRotacion: esGradas
+        ? "La línea blanca es el frente (el escalón más bajo): girala para que mire a la cancha. Con 0°, mira al sur."
+        : undefined,
+    };
+  }
+  if (!instalacion) return null;
+  const tipo = tipoInstalacion(instalacion.tipo);
+  return {
+    id: u.id,
+    titulo: `Instalación · ${tipo.nombre}`,
+    nombre: instalacion.nombre,
+    medidasDelTipo: tipo.medidas,
+    quitar: "Quitar del predio",
+    ayudaQuitar: "Sale del mapa, pero sigue en la sede.",
   };
 }
 
@@ -172,16 +251,28 @@ export function EditorPredio({
       : null,
   );
   const anilloInicial = useRef(anillo);
-  const [ubicadas, setUbicadas] = useState<EnMapa[]>(() =>
-    (guardadoInicial?.instalaciones ?? []).map((i) => ({
-      instalacionId: i.instalacionId,
-      centro: aCoordenadas(guardadoInicial!.origen, i.posicion),
-      rotacion: i.rotacion,
-      medidas: i.medidas,
-      descripcion: i.descripcion ?? "",
-      ordenLeyenda: i.ordenLeyenda,
-    })),
-  );
+  const [ubicadas, setUbicadas] = useState<EnMapa[]>(() => {
+    if (!guardadoInicial) return [];
+    const comoEnMapa = (
+      id: string,
+      referencia: EnMapa["referencia"],
+      u: DatosPredio["instalaciones"][number] | DatosPredio["referencias"][number],
+    ): EnMapa => ({
+      id,
+      referencia,
+      centro: aCoordenadas(guardadoInicial.origen, u.posicion),
+      rotacion: u.rotacion,
+      medidas: u.medidas,
+      descripcion: u.descripcion ?? "",
+      ordenLeyenda: u.ordenLeyenda,
+    });
+    return [
+      ...guardadoInicial.instalaciones.map((i) => comoEnMapa(i.instalacionId, null, i)),
+      ...guardadoInicial.referencias.map((r) =>
+        comoEnMapa(r.id, { tipo: r.tipo, nombre: r.nombre ?? "" }, r),
+      ),
+    ];
+  });
   const [seleccion, setSeleccion] = useState<string | null>(null);
   const [mapaListo, setMapaListo] = useState(false);
   const etiquetasRef = useRef<maplibregl.Marker[]>([]);
@@ -193,28 +284,39 @@ export function EditorPredio({
   const [recienGuardado, setRecienGuardado] = useState(false);
   const [guardando, startGuardar] = useTransition();
 
-  const actual = useMemo<DatosPredio>(
-    () => ({
+  const actual = useMemo<DatosPredio>(() => {
+    const enMetros = (u: EnMapa) => ({
+      posicion: aMetros(origen, u.centro),
+      rotacion: u.rotacion,
+      medidas: u.medidas,
+      descripcion: u.descripcion,
+      ordenLeyenda: u.ordenLeyenda,
+    });
+    return {
       origen,
       area: areaEnMetros(anillo, origen),
-      instalaciones: ubicadas.map((u) => ({
-        instalacionId: u.instalacionId,
-        posicion: aMetros(origen, u.centro),
-        rotacion: u.rotacion,
-        medidas: u.medidas,
-        descripcion: u.descripcion,
-        ordenLeyenda: u.ordenLeyenda,
-      })),
-    }),
-    [origen, anillo, ubicadas],
-  );
+      instalaciones: ubicadas.flatMap((u) =>
+        u.referencia ? [] : [{ instalacionId: u.id, ...enMetros(u) }],
+      ),
+      referencias: ubicadas.flatMap((u) =>
+        u.referencia
+          ? [{ id: u.id, tipo: u.referencia.tipo, nombre: u.referencia.nombre, ...enMetros(u) }]
+          : [],
+      ),
+    };
+  }, [origen, anillo, ubicadas]);
   const numeros = useMemo(() => numerosDeLeyenda(ubicadas), [ubicadas]);
   const tiposDeLaSede = useMemo(
     () => new Map(instalaciones.map((i) => [i.id, i.tipo])),
     [instalaciones],
   );
   // Sin predio guardado, la base es el origen con el que abrió, sin nada encima.
-  const base = guardado ?? { origen: origenInicial.coordenadas, area: [], instalaciones: [] };
+  const base = guardado ?? {
+    origen: origenInicial.coordenadas,
+    area: [],
+    instalaciones: [],
+    referencias: [],
+  };
 
   // Lo que leen los manejadores del mapa, que se registran una sola vez.
   const vivo = useRef({ herramienta: "mover" as Herramienta, ubicadas });
@@ -284,38 +386,62 @@ export function EditorPredio({
         mapa.on("error", alFallarTile);
       }
 
-      // Las instalaciones van debajo del dibujo del área.
-      mapa.addSource("instalaciones", {
+      // Lo ubicado va debajo del dibujo del área.
+      mapa.addSource("elementos", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
       });
+      const esPoligono = ["==", ["geometry-type"], "Polygon"] as maplibregl.FilterSpecification;
+      const esElegida: maplibregl.ExpressionSpecification = ["==", ["get", "elegida"], 1];
       mapa.addLayer({
-        id: CAPA_INSTALACIONES,
+        id: CAPA_HUELLAS,
         type: "fill",
-        source: "instalaciones",
+        source: "elementos",
+        filter: esPoligono,
         paint: {
           "fill-color": ["get", "color"],
-          "fill-opacity": ["case", ["==", ["get", "elegida"], 1], 0.8, 0.55],
+          "fill-opacity": ["case", esElegida, 0.8, 0.55],
         },
       });
       mapa.addLayer({
-        id: "instalaciones-borde",
+        id: "elementos-borde",
         type: "line",
-        source: "instalaciones",
+        source: "elementos",
+        filter: esPoligono,
         paint: {
-          "line-color": ["case", ["==", ["get", "elegida"], 1], "#ffffff", "#1d1d1d"],
-          "line-width": ["case", ["==", ["get", "elegida"], 1], 3, 1],
+          "line-color": ["case", esElegida, "#ffffff", "#1d1d1d"],
+          "line-width": ["case", esElegida, 3, 1],
+        },
+      });
+      // El frente de las gradas y la tribuna.
+      mapa.addLayer({
+        id: "elementos-frente",
+        type: "line",
+        source: "elementos",
+        filter: ["==", ["get", "frente"], 1],
+        paint: { "line-color": "#ffffff", "line-width": 4 },
+      });
+      mapa.addLayer({
+        id: CAPA_PUNTOS,
+        type: "circle",
+        source: "elementos",
+        filter: ["==", ["geometry-type"], "Point"],
+        paint: {
+          "circle-radius": 5,
+          "circle-color": ["get", "color"],
+          "circle-stroke-color": ["case", esElegida, "#ffffff", "#1d1d1d"],
+          "circle-stroke-width": ["case", esElegida, 3, 1.5],
         },
       });
 
-      // Arrastrar una instalación la mueve (solo con «Mover y elegir»).
+      // Arrastrar algo ubicado lo mueve (con «Mover y elegir» o con la paleta abierta).
       let arrastrando: { id: string; desfase: [number, number] } | null = null;
-      mapa.on("mousedown", CAPA_INSTALACIONES, (evento) => {
-        if (vivo.current.herramienta !== "mover") return;
-        // Lo que empieza sobre el pin del origen mueve el origen, no la instalación.
+      const alBajar = (evento: maplibregl.MapLayerMouseEvent) => {
+        if (vivo.current.herramienta === "area" || arrastrando) return;
+        // Lo que empieza sobre el pin del origen mueve el origen, no el elemento.
         if (evento.originalEvent.target !== mapa.getCanvas()) return;
         const id = evento.features?.[0]?.properties?.id as string | undefined;
-        const ubicada = vivo.current.ubicadas.find((u) => u.instalacionId === id);
+        const ubicada = vivo.current.ubicadas.find((u) => u.id === id);
         if (!id || !ubicada) return;
         evento.preventDefault();
         setSeleccion(id);
@@ -325,14 +451,15 @@ export function EditorPredio({
         });
         arrastrando = { id, desfase: [-este, -norte] };
         mapa.dragPan.disable();
-      });
+      };
+      // El punto va arriba: si se tocan los dos, el punto lo toma primero.
+      mapa.on("mousedown", CAPA_PUNTOS, alBajar);
+      mapa.on("mousedown", CAPA_HUELLAS, alBajar);
       mapa.on("mousemove", (evento) => {
         if (!arrastrando) return;
         const { id, desfase } = arrastrando;
         const centro = aCoordenadas({ lat: evento.lngLat.lat, lng: evento.lngLat.lng }, desfase);
-        setUbicadas((lista) =>
-          lista.map((u) => (u.instalacionId === id ? { ...u, centro } : u)),
-        );
+        setUbicadas((lista) => lista.map((u) => (u.id === id ? { ...u, centro } : u)));
       });
       mapa.on("mouseup", () => {
         if (!arrastrando) return;
@@ -340,16 +467,18 @@ export function EditorPredio({
         mapa.dragPan.enable();
       });
       mapa.on("click", (evento) => {
-        if (vivo.current.herramienta !== "mover") return;
-        const tocadas = mapa.queryRenderedFeatures(evento.point, { layers: [CAPA_INSTALACIONES] });
+        if (vivo.current.herramienta === "area") return;
+        const tocadas = mapa.queryRenderedFeatures(evento.point, { layers: CAPAS_TOCABLES });
         if (tocadas.length === 0) setSeleccion(null);
       });
-      mapa.on("mouseenter", CAPA_INSTALACIONES, () => {
-        if (vivo.current.herramienta === "mover") mapa.getCanvas().style.cursor = "move";
-      });
-      mapa.on("mouseleave", CAPA_INSTALACIONES, () => {
-        mapa.getCanvas().style.cursor = "";
-      });
+      for (const capa of CAPAS_TOCABLES) {
+        mapa.on("mouseenter", capa, () => {
+          if (vivo.current.herramienta !== "area") mapa.getCanvas().style.cursor = "move";
+        });
+        mapa.on("mouseleave", capa, () => {
+          mapa.getCanvas().style.cursor = "";
+        });
+      }
       setMapaListo(true);
 
       const estiloArea = {
@@ -386,7 +515,7 @@ export function EditorPredio({
         ],
       });
       dibujo.start();
-      // Con «Mover y elegir», el área queda quieta y se arrastran las instalaciones.
+      // Con «Mover y elegir», el área queda quieta y se arrastra lo ubicado.
       dibujo.setMode("static");
       dibujoRef.current = dibujo;
 
@@ -455,25 +584,30 @@ export function EditorPredio({
     };
   }, [fuente]);
 
-  // Las huellas, los números y los nombres de las instalaciones siguen al estado.
+  // Las huellas, los números y los nombres siguen al estado.
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa || !mapaListo) return;
-    (mapa.getSource("instalaciones") as GeoJSONSource | undefined)?.setData(
-      geojsonInstalaciones(ubicadas, instalaciones, seleccion),
+    (mapa.getSource("elementos") as GeoJSONSource | undefined)?.setData(
+      geojsonElementos(ubicadas, instalaciones, seleccion),
     );
     for (const etiqueta of etiquetasRef.current) etiqueta.remove();
     const nombres = new Map(instalaciones.map((i) => [i.id, i.nombre]));
-    etiquetasRef.current = ubicadas.map((u) => {
+    etiquetasRef.current = ubicadas.flatMap((u) => {
+      const numero = numeros.get(u.id);
+      // Un elemento de referencia sin nombre ni número es decorado: va sin etiqueta.
+      if (u.referencia && !numero && !u.referencia.nombre.trim()) return [];
       const elemento = document.createElement("span");
       elemento.className =
         "pointer-events-none rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-semibold text-white";
-      const numero = numeros.get(u.instalacionId);
-      const nombre = nombres.get(u.instalacionId) ?? "";
+      const nombre = nombreEnMapa(u, nombres);
       elemento.textContent = numero ? `${numero} · ${nombre}` : nombre;
-      return new maplibregl.Marker({ element: elemento })
-        .setLngLat([u.centro.lng, u.centro.lat])
-        .addTo(mapa);
+      // Debajo del centro, para no tapar el punto que se arrastra.
+      return [
+        new maplibregl.Marker({ element: elemento, offset: u.referencia ? [0, 16] : [0, 0] })
+          .setLngLat([u.centro.lng, u.centro.lat])
+          .addTo(mapa),
+      ];
     });
   }, [mapaListo, ubicadas, instalaciones, seleccion, numeros]);
 
@@ -488,7 +622,8 @@ export function EditorPredio({
         [
           ...lista,
           {
-            instalacionId,
+            id: instalacionId,
+            referencia: null,
             centro: { lat, lng },
             rotacion: 0,
             medidas: medidasDelTipo(instalacion.tipo, null),
@@ -504,49 +639,71 @@ export function EditorPredio({
     setSeleccion(instalacionId);
   }
 
-  function elegirInstalacion(instalacionId: string) {
+  /**
+   * Agrega un elemento de referencia en el centro del mapa. Entra sin número:
+   * casi todos son decorado, y el Super Admin lo pone en la leyenda si quiere.
+   */
+  function agregarReferencia(tipo: ClaveTipoReferencia) {
     const mapa = mapaRef.current;
-    const ubicada = ubicadas.find((u) => u.instalacionId === instalacionId);
+    if (!mapa) return;
+    const { lat, lng } = mapa.getCenter();
+    const id = crypto.randomUUID();
+    setUbicadas((lista) => [
+      ...lista,
+      {
+        id,
+        referencia: { tipo, nombre: "" },
+        centro: { lat, lng },
+        rotacion: 0,
+        medidas: medidasDeReferencia(tipo, null),
+        descripcion: "",
+        ordenLeyenda: null,
+      },
+    ]);
+    setSeleccion(id);
+  }
+
+  function elegirElemento(id: string) {
+    const mapa = mapaRef.current;
+    const ubicada = ubicadas.find((u) => u.id === id);
     if (mapa && ubicada) mapa.easeTo({ center: [ubicada.centro.lng, ubicada.centro.lat] });
-    elegirHerramienta("mover");
-    setSeleccion(instalacionId);
+    if (herramienta === "area") elegirHerramienta("mover");
+    setSeleccion(id);
   }
 
-  function cambiarUbicada(instalacionId: string, cambio: Partial<EnMapa>) {
-    setUbicadas((lista) =>
-      lista.map((u) => (u.instalacionId === instalacionId ? { ...u, ...cambio } : u)),
-    );
+  function cambiarUbicada(id: string, cambio: Partial<EnMapa>) {
+    setUbicadas((lista) => lista.map((u) => (u.id === id ? { ...u, ...cambio } : u)));
   }
 
-  function ponerEnLeyenda(instalacionId: string, entra: boolean) {
-    setUbicadas((lista) => cambiarEnLeyenda(lista, instalacionId, entra));
+  function ponerEnLeyenda(id: string, entra: boolean) {
+    setUbicadas((lista) => cambiarEnLeyenda(lista, id, entra));
   }
 
-  function reordenarLeyenda(instalacionId: string, delta: -1 | 1) {
-    setUbicadas((lista) => moverEnLeyenda(lista, instalacionId, delta));
+  function reordenarLeyenda(id: string, delta: -1 | 1) {
+    setUbicadas((lista) => moverEnLeyenda(lista, id, delta));
   }
 
-  function quitarDelPredio(instalacionId: string) {
-    setUbicadas((lista) => lista.filter((u) => u.instalacionId !== instalacionId));
+  function quitarDelPredio(id: string) {
+    setUbicadas((lista) => lista.filter((u) => u.id !== id));
     setSeleccion(null);
   }
 
   function elegirHerramienta(nueva: Herramienta) {
     setHerramienta(nueva);
-    if (nueva !== "mover") setSeleccion(null);
+    if (nueva === "area") setSeleccion(null);
     const dibujo = dibujoRef.current;
     if (!dibujo) return;
-    if (nueva === "mover") {
+    if (nueva !== "area") {
       dibujo.setMode("static");
       return;
     }
-    if (nueva === "area" && !anilloDelArea(dibujo.getSnapshot())) {
+    if (!anilloDelArea(dibujo.getSnapshot())) {
       dibujo.setMode("polygon");
       return;
     }
     dibujo.setMode("select");
     const area = dibujo.getSnapshot().find((f) => f.geometry.type === "Polygon");
-    if (nueva === "area" && area?.id !== undefined) dibujo.selectFeature(area.id);
+    if (area?.id !== undefined) dibujo.selectFeature(area.id);
   }
 
   function borrarArea() {
@@ -586,16 +743,20 @@ export function EditorPredio({
   const herramientas = [
     { clave: "mover" as const, icono: MousePointer2, etiqueta: "Mover y elegir" },
     { clave: "area" as const, icono: Pencil, etiqueta: "Área del predio" },
+    { clave: "referencias" as const, icono: Trees, etiqueta: "Elementos de referencia" },
   ];
   const avisoOrigen = guardado ? undefined : AVISO_ORIGEN[origenInicial.desde];
   const dibujandoArea = herramienta === "area" && !anillo;
-  const elegida = ubicadas.find((u) => u.instalacionId === seleccion);
-  const instalacionElegida = instalaciones.find((i) => i.id === seleccion);
+  const elegida = ubicadas.find((u) => u.id === seleccion);
+  const panel = elegida
+    ? datosDelPanel(elegida, instalaciones.find((i) => i.id === elegida.id))
+    : null;
   const nombres = new Map(instalaciones.map((i) => [i.id, i.nombre]));
+  const porId = new Map(ubicadas.map((u) => [u.id, u]));
   const lineasLeyenda = [...numeros].map(([id, numero]) => ({
     id,
     numero,
-    nombre: nombres.get(id) ?? "",
+    nombre: porId.has(id) ? nombreEnMapa(porId.get(id)!, nombres) : "",
   }));
 
   return (
@@ -655,7 +816,16 @@ export function EditorPredio({
       </div>
 
       <div className="absolute left-20 top-24 flex w-72 flex-col gap-3 rounded-2xl bg-background/95 p-3 text-sm shadow-lg">
-        {herramienta === "area" ? (
+        {herramienta === "referencias" ? (
+          <>
+            <p className="font-medium">Elementos de referencia</p>
+            <p className="text-muted-foreground">
+              Tocá uno para agregarlo en el centro del mapa. Después se arrastra, se gira y se
+              le cambian las medidas como a una instalación.
+            </p>
+            <PaletaReferencias onAgregar={agregarReferencia} />
+          </>
+        ) : herramienta === "area" ? (
           <>
             <p className="font-medium">Área del predio</p>
             <p className="text-muted-foreground">
@@ -674,8 +844,8 @@ export function EditorPredio({
           <>
             <p className="font-medium">Origen del predio</p>
             <p className="text-muted-foreground">
-              Arrastrá una instalación para moverla, o tocala para girarla y cambiar sus
-              medidas. Las que faltan ubicar están abajo.
+              Arrastrá una instalación o un elemento de referencia para moverlo, o tocalo para
+              girarlo y cambiar sus medidas. Las instalaciones que faltan ubicar están abajo.
             </p>
             <p className="text-muted-foreground">
               <MapPin className="mr-1 inline size-4 text-amber-500" />
@@ -710,32 +880,41 @@ export function EditorPredio({
 
       <BarraInstalaciones
         instalaciones={instalaciones}
-        ubicadas={new Set(ubicadas.map((u) => u.instalacionId))}
+        ubicadas={new Set(ubicadas.flatMap((u) => (u.referencia ? [] : [u.id])))}
         seleccion={seleccion}
-        onElegir={elegirInstalacion}
+        onElegir={elegirElemento}
         onUbicar={ubicar}
       />
 
-      {elegida && instalacionElegida ? (
-        <PanelInstalacion
-          instalacion={instalacionElegida}
-          numero={numeros.get(elegida.instalacionId) ?? null}
+      {elegida && panel ? (
+        <PanelElemento
+          elemento={panel}
+          numero={numeros.get(elegida.id) ?? null}
           rotacion={elegida.rotacion}
           medidas={elegida.medidas}
-          onRotar={(rotacion) => cambiarUbicada(elegida.instalacionId, { rotacion })}
+          onRotar={(rotacion) => cambiarUbicada(elegida.id, { rotacion })}
           onMedida={(clave, valor) =>
-            cambiarUbicada(elegida.instalacionId, {
+            cambiarUbicada(elegida.id, {
               medidas: { ...elegida.medidas, [clave]: valor },
             })
           }
-          onQuitar={() => quitarDelPredio(elegida.instalacionId)}
+          onQuitar={() => quitarDelPredio(elegida.id)}
           onCerrar={() => setSeleccion(null)}
         >
+          {elegida.referencia ? (
+            <CampoNombre
+              key={`nombre-${elegida.id}`}
+              nombre={elegida.referencia.nombre}
+              onNombre={(nombre) =>
+                cambiarUbicada(elegida.id, { referencia: { ...elegida.referencia!, nombre } })
+              }
+            />
+          ) : null}
           <CamposLeyenda
             descripcion={elegida.descripcion}
             enLeyenda={elegida.ordenLeyenda !== null}
-            onDescripcion={(descripcion) => cambiarUbicada(elegida.instalacionId, { descripcion })}
-            onEnLeyenda={(entra) => ponerEnLeyenda(elegida.instalacionId, entra)}
+            onDescripcion={(descripcion) => cambiarUbicada(elegida.id, { descripcion })}
+            onEnLeyenda={(entra) => ponerEnLeyenda(elegida.id, entra)}
           />
           <div className="flex flex-col gap-2 border-t border-border pt-3">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -744,11 +923,11 @@ export function EditorPredio({
             <OrdenLeyenda
               leyenda={lineasLeyenda}
               seleccion={seleccion}
-              onElegir={elegirInstalacion}
+              onElegir={elegirElemento}
               onMover={reordenarLeyenda}
             />
           </div>
-        </PanelInstalacion>
+        </PanelElemento>
       ) : null}
 
       {/* Atribución: abajo y sin nada encima (términos de la Map Tiles API). */}

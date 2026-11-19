@@ -3,12 +3,13 @@
 /**
  * Visor 3D del predio, de solo lectura (#44, variante D del mock).
  *
- * Piso de pasto estilizado (sin foto satelital) y cada instalación ubicada
- * armada con las piezas de su tipo (src/dominio/predio-3d.ts). Se orbita y se
- * hace zoom. Dibuja solo cuando algo cambia: no hay un bucle de animación.
+ * Piso de pasto estilizado (sin foto satelital) y cada instalación ubicada y
+ * cada elemento de referencia (#46) armados con las piezas de su tipo
+ * (src/dominio/predio-3d.ts). Se orbita y se hace zoom. Dibuja solo cuando
+ * algo cambia: no hay un bucle de animación.
  *
  * Lo que entra en la leyenda lleva su número encima (#45). Solo eso se puede
- * tocar: el número o la instalación. Lo demás es decorado.
+ * tocar: el número o el elemento. Lo demás es decorado.
  */
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -16,7 +17,12 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DObject, CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
 import type { Punto } from "@/dominio/predio";
-import { piezasDeInstalacion, type Pieza, type PredioEnVisor } from "@/dominio/predio-3d";
+import {
+  piezasDeInstalacion,
+  piezasDeReferencia,
+  type Pieza,
+  type PredioEnVisor,
+} from "@/dominio/predio-3d";
 
 const CIELO = "#cfe6f5";
 const PASTO_AFUERA = "#6f8f52";
@@ -25,7 +31,7 @@ const PASTO_OSCURO = "#93c463";
 /** Cada franja del corte de pasto, en metros. */
 const FRANJA = 8;
 
-/** Altura del número sobre lo más alto de la instalación, en metros. */
+/** Altura del número sobre lo más alto del elemento, en metros. */
 const ALTURA_NUMERO = 4;
 /** Cuánto se puede mover el puntero entre bajar y soltar para que sea un toque. */
 const TOLERANCIA_TOQUE = 4;
@@ -53,25 +59,37 @@ function texturaPasto(): THREE.Texture {
   return textura;
 }
 
-function mallaDePieza(pieza: Pieza, material: THREE.Material): THREE.Mesh {
-  const [largo, alto, ancho] = pieza.tamano;
-  let malla: THREE.Mesh;
-  if (pieza.forma === "techo") {
-    // Pirámide de base cuadrada de lado 1, estirada a la base del edificio.
-    const geometria = new THREE.ConeGeometry(Math.SQRT1_2, 1, 4, 1);
-    geometria.rotateY(Math.PI / 4);
-    malla = new THREE.Mesh(geometria, material);
-    malla.scale.set(largo, alto, ancho);
-  } else {
-    malla = new THREE.Mesh(new THREE.BoxGeometry(largo, alto, ancho), material);
+/** Geometría de lado 1 para cada forma; la malla la estira a su tamaño. */
+function geometriaUnitaria(forma: Pieza["forma"]): THREE.BufferGeometry {
+  switch (forma) {
+    case "caja":
+      return new THREE.BoxGeometry(1, 1, 1);
+    case "techo": {
+      // Pirámide de base cuadrada de lado 1.
+      const geometria = new THREE.ConeGeometry(Math.SQRT1_2, 1, 4, 1);
+      geometria.rotateY(Math.PI / 4);
+      return geometria;
+    }
+    case "cilindro":
+      return new THREE.CylinderGeometry(0.5, 0.5, 1, 12);
+    case "esfera":
+      return new THREE.SphereGeometry(0.5, 16, 12);
+    case "roca":
+      return new THREE.DodecahedronGeometry(0.5);
   }
+}
+
+function mallaDePieza(pieza: Pieza, material: THREE.Material): THREE.Mesh {
+  const malla = new THREE.Mesh(geometriaUnitaria(pieza.forma), material);
+  const [largo, alto, ancho] = pieza.tamano;
+  malla.scale.set(largo, alto, ancho);
   malla.position.set(...pieza.centro);
   malla.castShadow = alto > 0.5;
   malla.receiveShadow = true;
   return malla;
 }
 
-/** El número de la leyenda sobre una instalación: un botón que se puede tocar. */
+/** El número de la leyenda sobre un elemento: un botón que se puede tocar. */
 function botonNumero(
   id: string,
   numero: number,
@@ -157,25 +175,27 @@ function armarEscena(predio: PredioEnVisor, onTocar: (id: string) => void) {
   escena.add(borde);
 
   const tocables: THREE.Object3D[] = [];
-  for (const instalacion of predio.instalaciones) {
+  const elementos = [
+    ...predio.instalaciones.map((i) => ({ ...i, piezas: piezasDeInstalacion(i.tipo, i.medidas) })),
+    ...predio.referencias.map((r) => ({ ...r, piezas: piezasDeReferencia(r.tipo, r.medidas) })),
+  ];
+  for (const elemento of elementos) {
     const grupo = new THREE.Group();
-    for (const pieza of piezasDeInstalacion(instalacion.tipo, instalacion.medidas)) {
+    for (const pieza of elemento.piezas) {
       grupo.add(mallaDePieza(pieza, material(pieza.color)));
     }
-    grupo.position.copy(enEscena(instalacion.posicion));
+    grupo.position.copy(enEscena(elemento.posicion));
     // La rotación va en sentido horario visto desde arriba; en three.js, un
     // ángulo positivo en y gira en sentido antihorario.
-    grupo.rotation.y = -THREE.MathUtils.degToRad(instalacion.rotacion);
-    grupo.name = instalacion.nombre;
+    grupo.rotation.y = -THREE.MathUtils.degToRad(elemento.rotacion);
+    grupo.name = elemento.nombre;
     escena.add(grupo);
 
-    if (instalacion.numero === null) continue;
-    grupo.userData.id = instalacion.id;
+    if (elemento.numero === null) continue;
+    grupo.userData.id = elemento.id;
     tocables.push(grupo);
     const marca = new CSS2DObject(
-      botonNumero(instalacion.id, instalacion.numero, instalacion.nombre, () =>
-        onTocar(instalacion.id),
-      ),
+      botonNumero(elemento.id, elemento.numero, elemento.nombre, () => onTocar(elemento.id)),
     );
     const caja3 = new THREE.Box3().setFromObject(grupo);
     const arriba = caja3.getCenter(new THREE.Vector3());
@@ -218,7 +238,7 @@ export function VisorPredio({
   predio: PredioEnVisor;
   /** Para lectores de pantalla, por ejemplo «Predio 3D de la sede Los Cardos». */
   etiqueta: string;
-  /** La instalación con número elegida, que se marca en amarillo. */
+  /** El elemento con número elegido, que se marca en amarillo. */
   seleccion?: string | null;
   /** Al tocar algo con número (su id) o el resto del predio (null). */
   onElegir?: (id: string | null) => void;

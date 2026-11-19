@@ -31,7 +31,7 @@
 %% origen del predio y area, el área del predio como lista jsonb de puntos
 %% [este, norte] en metros desde el origen. Escribe solo el Super Admin;
 %% leen los Admins del club.
-%% elemento_predio (#43) es lo ubicado en el predio: por ahora, instalaciones
+%% elemento_predio (#43) es lo ubicado en el predio: una instalación
 %% de la sede, a lo sumo una vez cada una (instalacion_id único; si se borra
 %% la instalación, sale del predio). este/norte es el centro en metros desde
 %% el origen, rotacion en grados (sentido horario, 0 a 360) y medidas, un
@@ -41,6 +41,13 @@
 %% se ve en la leyenda, distinto de las notas de la instalación. orden_leyenda
 %% es el lugar en la leyenda (1, 2, 3…, único por predio) o null si no entra;
 %% en_leyenda se calcula de él. El número que se ve es el puesto en ese orden.
+%% Elementos de referencia (#46): un elemento_predio es una instalación
+%% (instalacion_id) o un elemento de referencia (tipo_referencia), nunca las
+%% dos. tipo_referencia es la clave de un tipo definido en código
+%% (src/dominio/tipos-referencia.ts: arbol, piedra, bebedero, gradas,
+%% tribuna); la base solo acepta esas claves. nombre es el nombre propio
+%% opcional de un elemento de referencia (hasta 60 caracteres). Se guardan
+%% con guardar_predio(), que recibe también p_referencias.
 %% El email del Super Admin no se guarda en el repo: el alta se hace
 %% directo en la base (ver scripts/sembrar-super-admin.sql).
 erDiagram
@@ -98,6 +105,8 @@ erDiagram
         uuid id PK
         uuid predio_id FK
         uuid instalacion_id FK,UK
+        string tipo_referencia
+        string nombre
         float este
         float norte
         float rotacion
