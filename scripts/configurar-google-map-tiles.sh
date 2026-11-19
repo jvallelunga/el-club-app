@@ -277,9 +277,9 @@ if command -v curl >/dev/null 2>&1; then
     SKIPPED+=("Revisar la clave: createSession falló (ver respuesta arriba)")
   fi
 else
-  SKIPPED+=("Probar la clave: npm run dev y abrir http://localhost:3000/mocks/predio?variant=B")
+  SKIPPED+=("Probar la clave: npm run dev, entrar como Super Admin a una sede y tocar «Editar predio»")
 fi
-say "Para verlo: npm run dev y abrí http://localhost:3000/mocks/predio?variant=B → «Editar predio»."
+say "Para verlo: npm run dev, entrá como Super Admin a una sede (Sedes → la sede) y tocá «Editar predio»."
 pause "Enter para terminar"
 
 finish

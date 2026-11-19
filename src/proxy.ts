@@ -16,7 +16,6 @@ function codigoRedireccion(request: NextRequest): 303 | 307 {
 function esRutaPublica(pathname: string): boolean {
   if (pathname === "/" || pathname === "/ingreso") return true;
   if (pathname.startsWith("/auth/")) return true;
-  if (pathname.startsWith("/mocks/")) return true;
   // Worker de MapLibre (archivo estático de la librería).
   if (pathname.startsWith("/maplibre/")) return true;
   return false;
