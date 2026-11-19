@@ -12,6 +12,7 @@ import {
   validarDatosNuevoClub,
 } from "@/dominio/nuevo-club";
 import { rutaFallbackClub } from "@/dominio/host";
+import type { ResultadoSimple } from "@/dominio/resultado";
 import {
   errorAlQuitarAdmin,
   errorSiNoPuedeAdministrarAdmins,
@@ -308,10 +309,6 @@ export type ResultadoInvitar =
     }
   | { ok: false; error: string };
 
-export type ResultadoReenviarLink =
-  | { ok: true }
-  | { ok: false; error: string };
-
 async function enviarLinkInvitacion(
   email: string,
   slug: string,
@@ -404,7 +401,7 @@ export async function invitarAdminClub(
 export async function reenviarLinkInvitacionClub(
   clubId: string,
   invitacionId: string,
-): Promise<ResultadoReenviarLink> {
+): Promise<ResultadoSimple> {
   const sesion = await cargarSesion();
   const permiso = errorSiNoPuedeAdministrarAdmins(sesion, clubId);
   if (permiso || !sesion) {
@@ -441,8 +438,6 @@ export async function reenviarLinkInvitacionClub(
   }
   return { ok: true };
 }
-
-export type ResultadoSimple = { ok: true } | { ok: false; error: string };
 
 export async function quitarAdminClub(
   clubId: string,

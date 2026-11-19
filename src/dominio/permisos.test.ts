@@ -3,6 +3,7 @@ import {
   destinoTrasIngreso,
   errorAlQuitarAdmin,
   errorSiNoPuedeAdministrarAdmins,
+  errorSiNoPuedeAdministrarDeportes,
   errorSiNoPuedeEditarClub,
   errorSiNoPuedeEditarPredio,
   puedeAdministrarClub,
@@ -194,5 +195,21 @@ describe("errorSiNoPuedeEditarPredio", () => {
 
   it("sin sesión pide ingresar", () => {
     expect(errorSiNoPuedeEditarPredio(null)).toMatch(/ingresar/);
+  });
+});
+
+describe("errorSiNoPuedeAdministrarDeportes", () => {
+  it("solo el Super Admin administra el catálogo", () => {
+    expect(errorSiNoPuedeAdministrarDeportes(sesion({ esSuperAdmin: true }))).toBeNull();
+  });
+
+  it("un Admin de un club no lo administra", () => {
+    expect(errorSiNoPuedeAdministrarDeportes(sesion({ membresias: [norte] }))).toMatch(
+      /Super Admin/,
+    );
+  });
+
+  it("sin sesión pide ingresar", () => {
+    expect(errorSiNoPuedeAdministrarDeportes(null)).toMatch(/ingresar/);
   });
 });

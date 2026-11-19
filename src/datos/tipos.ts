@@ -312,6 +312,36 @@ export type Database = {
           },
         ];
       };
+      deporte: {
+        Row: {
+          id: string;
+          nombre: string;
+          icono: string;
+          descripcion: string | null;
+          borrado_en: string | null;
+          creado_en: string;
+          actualizado_en: string;
+        };
+        Insert: {
+          id?: string;
+          nombre: string;
+          icono: string;
+          descripcion?: string | null;
+          borrado_en?: string | null;
+          creado_en?: string;
+          actualizado_en?: string;
+        };
+        Update: {
+          id?: string;
+          nombre?: string;
+          icono?: string;
+          descripcion?: string | null;
+          borrado_en?: string | null;
+          creado_en?: string;
+          actualizado_en?: string;
+        };
+        Relationships: [];
+      };
       elemento_predio: {
         Row: {
           id: string;

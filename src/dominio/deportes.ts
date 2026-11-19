@@ -1,0 +1,115 @@
+/**
+ * Catálogo de deportes (#73): lo arma el Super Admin y cada club elige de él.
+ * El ícono de un deporte se elige de un set definido en código; la base solo
+ * acepta esas claves (deporte_icono_check).
+ */
+
+import { textoOpcional } from "./contacto";
+
+/** El set de íconos, en el orden en que se ofrecen. Cada clave tiene su ícono de lucide en `ui`. */
+export const ICONOS_DEPORTE = [
+  { clave: "rugby", nombre: "Rugby" },
+  { clave: "hockey", nombre: "Hockey" },
+  { clave: "futbol", nombre: "Fútbol" },
+  { clave: "voley", nombre: "Vóley" },
+  { clave: "natacion", nombre: "Natación" },
+  { clave: "atletismo", nombre: "Atletismo" },
+  { clave: "running", nombre: "Running" },
+  { clave: "ciclismo", nombre: "Ciclismo" },
+  { clave: "remo", nombre: "Remo" },
+  { clave: "vela", nombre: "Vela" },
+  { clave: "montania", nombre: "Montaña" },
+  { clave: "gimnasio", nombre: "Gimnasio" },
+  { clave: "tiro", nombre: "Tiro" },
+  { clave: "esgrima", nombre: "Esgrima" },
+  { clave: "boxeo", nombre: "Boxeo" },
+  { clave: "trofeo", nombre: "Trofeo" },
+] as const;
+
+export type ClaveIconoDeporte = (typeof ICONOS_DEPORTE)[number]["clave"];
+
+/** El ícono de un deporte nuevo, y el que se muestra si una clave no se reconoce. */
+export const ICONO_DEPORTE_POR_DEFECTO: ClaveIconoDeporte = "trofeo";
+
+export const LARGO_MAXIMO_NOMBRE_DEPORTE = 60;
+export const LARGO_MAXIMO_DESCRIPCION_DEPORTE = 280;
+
+/** Lo que muestra la columna «Condición» mientras los deportes no tienen condición (#74). */
+export const TEXTO_SIN_CONDICION = "Sin condición: puede jugar cualquier socio";
+
+export function esClaveIconoDeporte(valor: string): valor is ClaveIconoDeporte {
+  return ICONOS_DEPORTE.some((icono) => icono.clave === valor);
+}
+
+/** Un deporte del catálogo. `borradoEn` es null mientras no se borra (soft delete). */
+export type Deporte = {
+  id: string;
+  nombre: string;
+  icono: ClaveIconoDeporte;
+  descripcion: string;
+  borradoEn: string | null;
+};
+
+export type DeporteInput = {
+  nombre: string;
+  icono: string;
+  descripcion: string;
+};
+
+export type ErroresDeporte = {
+  nombre?: string;
+  icono?: string;
+  descripcion?: string;
+};
+
+export function validarDeporte(input: DeporteInput): ErroresDeporte {
+  const errores: ErroresDeporte = {};
+  const nombre = input.nombre.trim();
+  if (!nombre) {
+    errores.nombre = "Poné un nombre, por ejemplo «Rugby masculino».";
+  } else if (nombre.length > LARGO_MAXIMO_NOMBRE_DEPORTE) {
+    errores.nombre = `El nombre puede tener hasta ${LARGO_MAXIMO_NOMBRE_DEPORTE} caracteres.`;
+  }
+  if (!esClaveIconoDeporte(input.icono)) {
+    errores.icono = "Elegí un ícono.";
+  }
+  if (input.descripcion.trim().length > LARGO_MAXIMO_DESCRIPCION_DEPORTE) {
+    errores.descripcion = `La descripción puede tener hasta ${LARGO_MAXIMO_DESCRIPCION_DEPORTE} caracteres.`;
+  }
+  return errores;
+}
+
+/** Solo para un input que pasó `validarDeporte`. */
+export function deporteParaGuardar(input: DeporteInput): {
+  nombre: string;
+  icono: ClaveIconoDeporte;
+  descripcion: string | null;
+} {
+  if (!esClaveIconoDeporte(input.icono)) {
+    throw new Error(`Ícono de deporte desconocido: ${input.icono}`);
+  }
+  return {
+    nombre: input.nombre.trim(),
+    icono: input.icono,
+    descripcion: textoOpcional(input.descripcion),
+  };
+}
+
+/** «0 clubes», «1 club», «3 clubes». */
+export function textoClubes(cantidad: number): string {
+  return cantidad === 1 ? "1 club" : `${cantidad} clubes`;
+}
+
+/** Los deportes activos y los borrados, cada grupo ordenado por nombre. */
+export function separarBorrados(deportes: Deporte[]): {
+  activos: Deporte[];
+  borrados: Deporte[];
+} {
+  const porNombre = [...deportes].sort((a, b) =>
+    a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
+  );
+  return {
+    activos: porNombre.filter((deporte) => deporte.borradoEn === null),
+    borrados: porNombre.filter((deporte) => deporte.borradoEn !== null),
+  };
+}

@@ -10,7 +10,7 @@ import {
 } from "@/dominio/tipos-instalacion";
 import { cargarSesion } from "../consultas/sesion";
 import { supabaseServidor } from "../supabase-servidor";
-import type { ResultadoSimple } from "./sedes";
+import type { ResultadoSimple } from "@/dominio/resultado";
 
 /**
  * Guarda el origen, el área, las instalaciones ubicadas y los elementos de

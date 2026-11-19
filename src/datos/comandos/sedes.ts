@@ -6,6 +6,7 @@ import {
   validarContacto,
   type RedSocialInput,
 } from "@/dominio/contacto";
+import type { ResultadoConId, ResultadoSimple } from "@/dominio/resultado";
 import { errorSiNoPuedeAdministrarSedes, errorSiNoPuedeEditarClub } from "@/dominio/permisos";
 import {
   instalacionParaGuardar,
@@ -15,15 +16,6 @@ import {
 } from "@/dominio/sedes";
 import { cargarSesion } from "../consultas/sesion";
 import { supabaseServidor } from "../supabase-servidor";
-
-export type ResultadoSimple =
-  | { ok: true }
-  | { ok: false; error: string };
-
-export type ResultadoConId =
-  | { ok: true; id: string }
-  | { ok: false; error: string };
-
 
 function primerMensaje(
   errores: Record<string, string | undefined>,

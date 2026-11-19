@@ -8,7 +8,7 @@ const CLUB = {
 };
 
 describe("itemsNav", () => {
-  it("en Super Admin sin club solo muestra Clubes", () => {
+  it("en Super Admin sin club muestra Clubes y Deportes", () => {
     expect(
       itemsNav({
         rol: "super-admin",
@@ -17,10 +17,22 @@ describe("itemsNav", () => {
       }),
     ).toEqual([
       { etiqueta: "Clubes", href: "/super-admin", activo: true },
+      { etiqueta: "Deportes", href: "/super-admin/deportes", activo: false },
     ]);
   });
 
-  it("en Super Admin dentro de un club muestra Inicio, Clubes, Club, Sedes y Admins", () => {
+  it("marca Deportes como activo en el catálogo", () => {
+    const items = itemsNav({
+      rol: "super-admin",
+      activo: "deportes",
+      rutas: RUTAS_SHELL_APP,
+    });
+    expect(items.filter((item) => item.activo).map((item) => item.etiqueta)).toEqual([
+      "Deportes",
+    ]);
+  });
+
+  it("en Super Admin dentro de un club muestra Inicio, Clubes, Deportes, Club, Sedes y Admins", () => {
     expect(
       itemsNav({
         club: CLUB,
@@ -35,6 +47,7 @@ describe("itemsNav", () => {
         activo: true,
       },
       { etiqueta: "Clubes", href: "/super-admin", activo: false },
+      { etiqueta: "Deportes", href: "/super-admin/deportes", activo: false },
       {
         etiqueta: "Club",
         href: "/c/club-de-ejemplo-del-norte/admin/club",

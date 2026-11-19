@@ -8,11 +8,18 @@ import { LogoElClub } from "@/ui/marca/logo-el-club";
 import { MenuMovil } from "./menu-movil";
 
 export type RolShell = "super-admin" | "admin";
-export type ActivoShell = "clubes" | "inicio" | "club" | "sedes" | "admins";
+export type ActivoShell =
+  | "clubes"
+  | "deportes"
+  | "inicio"
+  | "club"
+  | "sedes"
+  | "admins";
 
 export type RutasShell = {
   inicioClub: (slug: string) => string;
   superAdmin: string;
+  deportes: string;
   elegirClub: string;
   club: (slug: string) => string;
   sedes: (slug: string) => string;
@@ -22,6 +29,7 @@ export type RutasShell = {
 export const RUTAS_SHELL_APP: RutasShell = {
   inicioClub: (slug) => `/c/${slug}/admin`,
   superAdmin: "/super-admin",
+  deportes: "/super-admin/deportes",
   elegirClub: "/elegir-club",
   club: (slug) => `/c/${slug}/admin/club`,
   sedes: (slug) => `/c/${slug}/admin/sedes`,
@@ -69,6 +77,11 @@ export function itemsNav({
       etiqueta: "Clubes",
       href: rutas.superAdmin,
       activo: activo === "clubes",
+    });
+    items.push({
+      etiqueta: "Deportes",
+      href: rutas.deportes,
+      activo: activo === "deportes",
     });
   } else if (esMultiClub) {
     items.push({
