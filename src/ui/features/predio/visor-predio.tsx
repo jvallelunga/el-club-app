@@ -346,7 +346,8 @@ export function VisorPredio({
   return (
     <div
       ref={contenedor}
-      role="img"
+      // Con números, adentro hay botones: un «img» los escondería.
+      role={predio.leyenda.length > 0 ? "group" : "img"}
       aria-label={etiqueta}
       className={`relative overflow-hidden ${className}`}
     >
