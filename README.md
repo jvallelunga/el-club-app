@@ -27,12 +27,12 @@ El paso a paso con los comandos de cada momento está en [Cómo trabajamos](docs
 | `refinement` | Se sacó del backlog para refinarlo. |
 | `ready` | Tiene información suficiente para desarrollarlo. |
 | `in progress` | En desarrollo. |
-| `done` | Mergeado a `desarrollo`. El issue sigue abierto hasta que llega a producción. |
+| `done` | Mergeado a su rama destino: un ticket, a la rama de su issue padre; el resto, a `desarrollo`. Sigue abierto hasta que llega a producción. |
 | cerrado | Llegó a producción: se cierra al mergear el pase de `desarrollo` a `main`. |
 
 - Si hay UI nueva, primero se aprueban los mocks y después se implementa.
 - Las preguntas y las decisiones se anotan en el issue, con fecha y hora ART.
-- Ramas `feature/`, `fix/`, `enhancement/` o `task/` (kebab-case), PR contra `desarrollo`, merge normal (nunca squash), sin force-push.
+- Cada issue tiene su rama `issue/<n>-<slug>`, salida de `desarrollo`. Los tickets de un padre salen de la rama del padre y su PR vuelve a ella; la rama del padre (o la de un issue suelto) va por PR a `desarrollo`. Merge normal (nunca squash), sin force-push.
 - El desarrollo mergea su propio PR cuando está listo: typecheck, lint de lo tocado y tests en verde y, si hay UI nueva, los mocks aprobados.
 - `desarrollo` es la rama de integración. Producción solo con el OK de Jerónimo; nunca se toca el proyecto de producción de Supabase.
 
@@ -56,7 +56,7 @@ npm run dev                  # http://localhost:3000
 
 Otros comandos: `npm run build`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run tipos` (regenera `src/datos/tipos.ts` desde un Supabase local).
 
-Las migraciones y las políticas RLS se prueban en un Postgres 16 común (nunca en Supabase) con `bash scripts/probar-rls.sh`: aplica cada migración dos veces seguidas y corre `supabase/tests/*.sql`. El script explica cómo levantar el Postgres con Docker. Al mergear a `desarrollo`, las migraciones nuevas se aplican enseguida en el Supabase de desarrollo (ver «Apply migrations to development» en `docs/agents/issue-tracker.md`); producción, solo con el OK de Jerónimo.
+Las migraciones y las políticas RLS se prueban en un Postgres 16 común (nunca en Supabase) con `bash scripts/probar-rls.sh`: aplica cada migración dos veces seguidas y corre `supabase/tests/*.sql`. El script explica cómo levantar el Postgres con Docker. Cada push a `desarrollo` o a una rama `issue/*` que trae migraciones las aplica solo en el Supabase de desarrollo (workflow «Migraciones en desarrollo», con `scripts/aplicar-migraciones-desarrollo.sh`); producción, solo con el OK de Jerónimo.
 
 El CI (`.github/workflows/ci.yml`) corre todo esto en cada PR a `desarrollo` o `main`.
 

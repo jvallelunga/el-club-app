@@ -14,30 +14,42 @@ Each issue carries one state label at a time:
 | `refinement` | To be refined. A session takes it from `/next-issue` and refines it (`/grill-with-docs`); don't implement it. |
 | `ready` | Has enough information to be developed. |
 | `in progress` | Being developed. Set when the work is taken (remove `ready`) with a comment «Tomado. Rama: <rama>». |
-| `done` | Merged into `desarrollo` (remove `in progress`). The issue stays **open** until it reaches production. |
+| `done` | Merged into its target branch (remove `in progress`): a ticket into its parent's issue branch, any other issue into `desarrollo`. The issue stays **open** until it reaches production. |
 | `manual` | Has to be done by a person (DNS, Supabase dashboard, keys, etc.), not code. |
 | `wontfix` | Will not be done. |
 
-The issue closes when it reaches production (`main`), never on the merge into `desarrollo`. GitHub only closes from `Closes #<n>` on `main`, so a PR into `desarrollo` keeps it open.
+The issue closes when it reaches production (`main`), never on an earlier merge. GitHub only closes from `Closes #<n>` on `main`, so PRs into other branches say `Part of #<n>` and keep it open.
 
-**Release to production** (only with Jerónimo's OK): open a PR from `desarrollo` to `main` whose body has one `Closes #<n>` line per open issue labelled `done`. Merging it closes them all. A parent closes when its last sub-issue does, so list the parent too once all its sub-issues are `done`.
+**Release to production** (only with Jerónimo's OK): open a PR from `desarrollo` to `main` whose body has one `Closes #<n>` line per open issue labelled `done` whose work is already in `desarrollo`: a standalone issue, or a parent in `done` together with each of its sub-issues. A ticket whose parent is still `in progress` waits for the next release. Merging the PR closes them all.
+
+## Issue branches
+
+Every issue taken from `ready`, and every parent, gets its own **issue branch** `issue/<n>-<slug>` (kebab-case) off the latest `desarrollo`, created by the session that takes it. Record it on the issue in the «Tomado. Rama: <rama>» comment.
+
+- **Standalone issue:** the session works on its issue branch and opens the PR into `desarrollo`. The issue moves to `done` when that PR merges.
+- **Parent:** its issue branch collects its tickets; see below.
 
 ## Parent issues and their tickets
 
 A **parent** is an issue split into tickets (GitHub sub-issues), like #26 and #41–#48.
 
-- **Label:** the parent keeps `in progress` from the split until all its sub-issues are `done`; then it moves to `done` too, and it closes with them on the release to `main`. It never goes back to no label while a sub-issue is open.
-- **Refinement session:** the session that refines an issue, from the moment it takes it out of `refinement`. Record it on the issue right away as a comment «Sesión de refinamiento: <link to the session>». If the issue gets split, that session becomes the parent's session.
-- **One subagent per ticket:** every ticket of a parent is worked from the refinement session, never from a separate session. That session takes the next unblocked ticket and hands it to a fresh subagent (Agent tool, `isolation: "worktree"`, in the foreground). The subagent creates its own `claude/<slug>` branch off the latest `desarrollo`, takes the ticket («Tomado. Rama: <rama>»), follows `.claude/skills/implement/SKILL.md`, opens and merges the PR as the README says, applies the PR's new migrations to the development Supabase (see **Apply migrations to development**), moves the ticket to `done`, and reports the PR link. One ticket at a time, in blocker order.
+- **Refinement session:** the session that refines an issue, from the moment it takes it out of `refinement`. Record it on the issue right away as a comment «Sesión de refinamiento: <link to the session>». If the issue gets split, that session becomes the parent's session and the **orchestrator** of its tickets.
+- **Parent branch:** when the first ticket starts, the orchestrator creates the parent's issue branch off `desarrollo` (if it doesn't exist yet), pushes it, and comments «Rama del padre: <rama>» on the parent.
+- **Label:** the parent is `in progress` from the split until its issue branch merges into `desarrollo`; then it's `done`. Its tickets are `done` as soon as each one's PR merges into the parent branch.
+- **One subagent per ticket:** every ticket is worked from the refinement session, never from a separate session, one at a time in blocker order. The orchestrator hands the next unblocked ticket to a fresh subagent (Agent tool, `isolation: "worktree"`), which:
+  1. creates its ticket branch `claude/<slug>` off the latest parent branch, takes the ticket («Tomado. Rama: <rama>»), and pushes its first green commit right away, so an interrupted run leaves nothing stranded in the worktree;
+  2. follows `.claude/skills/implement/SKILL.md` up to its review step;
+  3. opens the PR into the **parent branch** (`Part of #<ticket>`), waits for CI green, and reports the PR link **without merging**.
+- **Review by the orchestrator:** a subagent cannot dispatch the two reviewers `matt-code-review` needs, so the orchestrator runs `matt-code-review` on the ticket PR (fixed point: the parent branch). It resumes the same subagent (SendMessage) with the findings to fix, and once the PR is green and the findings are settled, merges it into the parent branch and moves the ticket to `done`.
+- **Closing the parent:** when every ticket is `done`, the orchestrator updates the parent branch from `desarrollo`, opens its PR into `desarrollo` (`Part of #<parent>`), merges it once `clean`, and moves the parent to `done`.
 
 ## Apply migrations to development
 
-Every PR merged into `desarrollo` that adds files to `supabase/migrations/` gets them applied **right after the merge** to the development Supabase project (`el-club-app-desarrollo`, ref `paacpcdurdcmbamdhcmt`). Production is never touched this way: it moves only with Jerónimo's OK.
+The development Supabase project (`el-club-app-desarrollo`) follows `desarrollo` and the issue branches. The workflow `.github/workflows/migraciones-desarrollo.yml` does it on every push to `desarrollo` or `issue/*` that touches `supabase/migrations/`: it runs `scripts/probar-rls.sh`, then `scripts/aplicar-migraciones-desarrollo.sh`, which applies the migrations missing from `interno.migracion_aplicada`, in order, and records them. Production is never touched this way: it moves only with Jerónimo's OK.
 
-- **How:** the Management API, `POST https://api.supabase.com/v1/projects/paacpcdurdcmbamdhcmt/database/query` with `{"query": "<file contents>"}`. The session's network proxy adds the token (the environment's `api.supabase.com` secret): never send or print it yourself. One file per call, in filename order, and stop at the first error.
-- **Check first:** if an earlier migration is missing in development (a table, column or function it creates doesn't exist), apply the missing ones in order before yours. All migrations are idempotent, so re-running one changes nothing.
-- **Record it:** comment on the issue which migrations were applied and how you checked them (for example, that the new columns exist).
-- **Without the token** (401/403, or the host is blocked): don't skip it silently. Say so in the issue and in your report so Jerónimo can run the files in the Supabase SQL editor.
+- **After a merge that brings migrations:** check that the run of «Migraciones en desarrollo» for that push went green, and say so on the issue. If it failed, fix it before going on.
+- **By hand** (CI down, or to check): `bash scripts/aplicar-migraciones-desarrollo.sh --pendientes` lists what's missing, and without arguments applies it. In a cloud session the network proxy adds the token (the environment's `api.supabase.com` secret): never send or print it.
+- **Without a token** (401/403, the host blocked, or the GitHub secret `SUPABASE_ACCESS_TOKEN` missing): say so on the issue and in your report so Jerónimo can fix it.
 
 ## Conventions
 
@@ -47,7 +59,7 @@ Every PR merged into `desarrollo` that adds files to `supabase/migrations/` gets
 - **Comment on an issue**: `gh api repos/jvallelunga/el-club-app/issues/<n>/comments -F body=@comment.md`.
 - **Apply / remove labels**: `gh api repos/jvallelunga/el-club-app/issues/<n>/labels -f "labels[]=<label>"` / `gh api -X DELETE "repos/jvallelunga/el-club-app/issues/<n>/labels/<label>"` (URL-encode spaces: `in%20progress`).
 - **Make an issue a sub-issue of a parent**: `gh api --method POST repos/jvallelunga/el-club-app/issues/<parent>/sub_issues -F sub_issue_id=<child-db-id>` (database id, as in **Blocking** below). Without sub-issues, put `Part of #<parent>` at the top of the child body.
-- **Blocking**: GitHub's native issue dependencies: `gh api --method POST repos/jvallelunga/el-club-app/issues/<child>/dependencies/blocked_by -F issue_id=<blocker-db-id>`, where `<blocker-db-id>` is the blocker's numeric database id (`gh api repos/jvallelunga/el-club-app/issues/<n> --jq .id`, not the `#number` or `node_id`). Where dependencies aren't available, fall back to a `Blocked by: #<n>, #<n>` line at the top of the child body. A ticket is unblocked when every blocker is **resolved**: closed, or open with the `done` label (merged into `desarrollo`, waiting for production).
+- **Blocking**: GitHub's native issue dependencies: `gh api --method POST repos/jvallelunga/el-club-app/issues/<child>/dependencies/blocked_by -F issue_id=<blocker-db-id>`, where `<blocker-db-id>` is the blocker's numeric database id (`gh api repos/jvallelunga/el-club-app/issues/<n> --jq .id`, not the `#number` or `node_id`). Where dependencies aren't available, fall back to a `Blocked by: #<n>, #<n>` line at the top of the child body. A ticket is unblocked when every blocker is **resolved**: closed, or open with the `done` label (merged into its target branch, waiting for production).
 - **Count open blockers**: an open blocker is one that is open and **not** labelled `done`. `issue_dependencies_summary.blocked_by` counts every open blocker, `done` ones included, so don't use it for this. Count them with `gh api repos/jvallelunga/el-club-app/issues/<n>/dependencies/blocked_by --jq '[.[] | select(.state == "open" and ([.labels[].name] | index("done") | not))] | length'`. Also read the body's `Blocked by` section: every issue listed there that is open and not `done` counts too. The ticket is startable only when both are 0.
 - **Close**: first post the explanation as a comment, then `gh api -X PATCH repos/jvallelunga/el-club-app/issues/<n> -f state=closed`.
 
@@ -59,7 +71,7 @@ Questions about missing requirements and product decisions (with date and time A
 
 **PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/triage` reads this flag.)_
 
-PRs go against `desarrollo`, with `Closes #<n>`. Use `gh api repos/jvallelunga/el-club-app/pulls` to create, read and list them. GitHub shares one number space across issues and PRs, so a bare `#42` may be either.
+A PR goes into its target branch (see **Issue branches**) with `Part of #<n>`; only the release PR into `main` says `Closes`. Use `gh api repos/jvallelunga/el-club-app/pulls` to create, read and list them. GitHub shares one number space across issues and PRs, so a bare `#42` may be either.
 
 Merge with `gh api -X PUT repos/jvallelunga/el-club-app/pulls/<n>/merge -f merge_method=merge` (a merge commit, never squash), once `mergeable_state` is `clean` (`gh api repos/jvallelunga/el-club-app/pulls/<n> --jq .mergeable_state`).
 

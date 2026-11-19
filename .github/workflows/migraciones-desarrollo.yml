@@ -1,0 +1,50 @@
+name: Migraciones en desarrollo
+
+# Cada push a desarrollo o a la rama de un issue (issue/<n>-<slug>) que traiga
+# migraciones nuevas las aplica en el Supabase de desarrollo, después de probarlas
+# en un Postgres común. Producción nunca: el script tiene fijo el proyecto.
+on:
+  push:
+    branches: [desarrollo, "issue/*"]
+    paths: ["supabase/migrations/**"]
+  workflow_dispatch:
+
+# Un solo job a la vez contra la misma base, sin cancelar el que está corriendo.
+concurrency:
+  group: supabase-desarrollo
+  cancel-in-progress: false
+
+jobs:
+  probar:
+    name: Probar migraciones y RLS
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/probar-rls.sh
+
+  aplicar:
+    name: Aplicar en el Supabase de desarrollo
+    needs: probar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/aplicar-migraciones-desarrollo.sh
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

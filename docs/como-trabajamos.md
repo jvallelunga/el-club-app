@@ -15,15 +15,15 @@ Machete para las personas del equipo: qué escribir en cada momento y qué hace 
 
 ## Los estados de un issue
 
-`backlog` (idea, no se toca) → `refinement` (se está refinando) → `ready` (listo para el agente) → `in progress` (se está implementando) → `done` (mergeado a `desarrollo`, sigue abierto) → cerrado (llegó a producción).
+`backlog` (idea, no se toca) → `refinement` (se está refinando) → `ready` (listo para el agente) → `in progress` (se está implementando) → `done` (mergeado a su rama destino, sigue abierto) → cerrado (llegó a producción).
 
-Los issues abiertos en `done` son justo lo que sale en el próximo pase a producción. Un issue padre queda en `in progress` hasta que todos sus tickets están en `done`.
+Un ticket está en `done` cuando su PR entra en la rama del padre; el padre, cuando su rama entra en `desarrollo`. Los issues en `done` que ya están en `desarrollo` son lo que sale en el próximo pase a producción.
 
 ## Desarrollar: siempre con `/next-issue`
 
 Depende de dónde lo escribas:
 
-- **En la sesión de refinamiento de un padre:** toma el siguiente ticket libre y se lo pasa a un subagente, que lo implementa y te devuelve el PR. Se hace de a un ticket, en orden de bloqueos. Para seguir, otra vez `/next-issue` en la misma sesión.
+- **En la sesión de refinamiento de un padre:** el padre tiene su rama `issue/<n>-…`. Toma el siguiente ticket libre y se lo pasa a un subagente, que lo implementa en una rama salida de la del padre y abre el PR hacia ella. La sesión lo revisa (`/matt-code-review`), le pide los arreglos, lo mergea a la rama del padre y lo pasa a `done`. De a un ticket, en orden de bloqueos; para seguir, otra vez `/next-issue`. Con todos los tickets en `done`, la rama del padre va por PR a `desarrollo` y el padre pasa a `done`.
 - **En una sesión nueva:** te muestra un menú con:
   - los issues en `refinement`, para refinar;
   - el siguiente ticket de cada padre en curso: te da el link de su sesión de refinamiento para seguir ahí;
@@ -31,7 +31,7 @@ Depende de dónde lo escribas:
 
 Siempre te muestra el camino que propone y espera tu OK.
 
-Lo que sigue lo hace el agente solo: la rama, el código con tests (`/implement`, que usa `/tdd` y cierra con `/matt-code-review`), las docs de usuario (`/user-docs`), el PR, el CI en verde, el merge a `desarrollo` y la etiqueta `done`. El issue queda abierto: se cierra solo cuando llega a producción.
+Lo que sigue lo hace el agente solo: la rama `issue/<n>-…`, el código con tests (`/implement`, que usa `/tdd` y cierra con `/matt-code-review`), las docs de usuario (`/user-docs`), el PR, el CI en verde, el merge y la etiqueta `done`. El issue queda abierto: se cierra solo cuando llega a producción.
 
 ## Después de cada issue
 
@@ -41,7 +41,6 @@ Lo que sigue lo hace el agente solo: la rama, el código con tests (`/implement`
 ## Lo que hacés vos
 
 - Contestar las preguntas del refinamiento y aprobar los mocks.
-- Aplicar las migraciones nuevas en el Supabase de desarrollo (el agente avisa cuál).
 - Los issues `manual`: claves, paneles de terceros, DNS. `/wizard` arma un script que te guía paso a paso.
 - Dar el OK para pasar `desarrollo` a `main` (producción). Pedile al agente «pasá a producción»: arma el PR a `main` con un `Closes #n` por cada issue en `done`, y al mergearlo se cierran todos.
 

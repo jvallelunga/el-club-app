@@ -12,7 +12,7 @@ Talk to the user in Spanish.
 
 ## Tools
 
-- **GitHub**: use the GitHub MCP tools when the session has them (`list_issues` with `labels` and `state: OPEN`, `issue_read` with `get` / `get_comments` / `get_sub_issues` / `get_parent`, `add_issue_comment`, `issue_write` for labels). Otherwise use the `gh api` calls in `docs/agents/issue-tracker.md`; plain `gh issue` fails in cloud sessions. To count open blockers, follow **Count open blockers** in `docs/agents/issue-tracker.md`: a blocker labelled `done` is already merged into `desarrollo` and doesn't block, even though it stays open until production.
+- **GitHub**: use the GitHub MCP tools when the session has them (`list_issues` with `labels` and `state: OPEN`, `issue_read` with `get` / `get_comments` / `get_sub_issues` / `get_parent`, `add_issue_comment`, `issue_write` for labels). Otherwise use the `gh api` calls in `docs/agents/issue-tracker.md`; plain `gh issue` fails in cloud sessions. To count open blockers, follow **Count open blockers** in `docs/agents/issue-tracker.md`: a blocker labelled `done` is already merged into its target branch and doesn't block, even though it stays open until production.
 - **Session**: `get_session` (no id) gives this session's id; its link is `https://claude.ai/code/<id>`. `set_session_title` renames it. Without these tools, ask the user for the link and tell them the title to set by hand.
 - **Skills**: the Skill tool can call only model-invocable skills. These are user-invoked only (`disable-model-invocation: true`): `grill-with-docs`, `to-spec`, `to-tickets`, `implement`, `triage`, `wayfinder`. When the route needs one, ask the user to type it and wait.
 
@@ -28,7 +28,7 @@ With an argument `#<n>`, skip the menu and treat `#<n>` as the user's choice in 
 
 ## 2A. Ticket mode: the next ticket of this session's parent
 
-List the parent's open sub-issues. If one is `in progress`, show it and ask whether to wait for it or take another one anyway: the repo works **one ticket at a time**. Otherwise the ticket is the first sub-issue, in the parent's order, labelled `ready` with no assignee and no open blocker. None left: tell the user (all closed, or the rest blocked by what) and stop. Go on to step 3.
+List the parent's open sub-issues. If one is `in progress`, show it and ask whether to wait for it or take another one anyway: the repo works **one ticket at a time**. Otherwise the ticket is the first sub-issue, in the parent's order, labelled `ready` with no assignee and no open blocker. None left: if every ticket is `done`, offer to close the parent (step 6); otherwise tell the user what blocks the rest and stop. Go on to step 3.
 
 ## 2B. Menu mode: ask what to work on
 
@@ -74,7 +74,7 @@ Show the user:
 - the issue (`#n`, title, link) and its goal in one or two lines,
 - the route: detours in order, then the main skill, each with the quoted evidence; say which steps they will have to type themselves,
 - the near-miss skills and why not,
-- the branch: a new `claude/<slug>` branch off the latest `desarrollo` (locally, `feature/`, `fix/`, `enhancement/` or `task/` plus a short kebab-case name); for a ticket, the subagent creates it.
+- the branch, as **Issue branches** in `docs/agents/issue-tracker.md` says: for a standalone issue, `issue/<n>-<slug>` off the latest `desarrollo`; for a ticket, the parent branch (created now if missing) and the subagent's `claude/<slug>` off it.
 
 Then wait. The user may confirm, change the skill, or pick another issue.
 
@@ -82,9 +82,13 @@ Then wait. The user may confirm, change the skill, or pick another issue.
 
 On OK:
 
-- **A ticket (2A)**: hand it to a fresh subagent as **Parent issues and their tickets** in `docs/agents/issue-tracker.md` says, passing the issue number and link, the route and the parent. Wait for its report and show the user the PR link. The session keeps the parent's title.
+- **A ticket (2A)**: follow **Parent issues and their tickets** in `docs/agents/issue-tracker.md`:
+  1. Make sure the parent branch exists and is pushed; create it off `origin/desarrollo` if missing.
+  2. Hand the ticket to a fresh subagent, passing the issue number and link, the route, the parent and the parent branch. It stops at a green PR into the parent branch.
+  3. Run `matt-code-review` on that PR yourself, resume the subagent with the findings, then merge into the parent branch and move the ticket to `done`. Show the user the PR link. The session keeps the parent's title.
+- **Closing a parent** (every ticket `done`): update the parent branch from `desarrollo`, open its PR into `desarrollo`, merge it once `clean`, move the parent to `done`, and check «Migraciones en desarrollo» if it brought migrations.
 - **A standalone issue (2B)**:
-  1. Create the branch from `origin/desarrollo` after `git fetch origin desarrollo`.
+  1. Create the issue branch `issue/<n>-<slug>` from `origin/desarrollo` after `git fetch origin desarrollo`, and push it.
   2. Take the issue as `docs/agents/issue-tracker.md` says: `ready` → `in progress`, with the comment «Tomado. Rama: <rama>».
   3. Rename the session to `#<n> <issue title>`.
   4. Start the first skill of the route, passing the issue number and link; the issue and its comments are the spec. A model-invocable skill: call it with the Skill tool. A user-invoked one: ask the user to type it (e.g. `/implement #45`) and wait.
