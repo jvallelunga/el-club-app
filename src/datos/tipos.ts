@@ -201,6 +201,39 @@ export type Database = {
           },
         ];
       };
+      club_deporte: {
+        Row: {
+          club_id: string;
+          deporte_id: string;
+          creado_en: string;
+        };
+        Insert: {
+          club_id: string;
+          deporte_id: string;
+          creado_en?: string;
+        };
+        Update: {
+          club_id?: string;
+          deporte_id?: string;
+          creado_en?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "club_deporte_club_id_fkey";
+            columns: ["club_id"];
+            isOneToOne: false;
+            referencedRelation: "club";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "club_deporte_deporte_id_fkey";
+            columns: ["deporte_id"];
+            isOneToOne: false;
+            referencedRelation: "deporte";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       club_red_social: {
         Row: {
           id: string;
