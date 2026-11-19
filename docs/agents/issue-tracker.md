@@ -14,17 +14,19 @@ Each issue carries one state label at a time:
 | `refinement` | To be refined. A session takes it from `/next-issue` and refines it (`/grill-with-docs`); don't implement it. |
 | `ready` | Has enough information to be developed. |
 | `in progress` | Being developed. Set when the work is taken (remove `ready`) with a comment «Tomado. Rama: <rama>». |
-| `done` | Development finished and PR open against `desarrollo` (remove `in progress`). |
+| `done` | Merged into `desarrollo` (remove `in progress`). The issue stays **open** until it reaches production. |
 | `manual` | Has to be done by a person (DNS, Supabase dashboard, keys, etc.), not code. |
 | `wontfix` | Will not be done. |
 
-The issue closes when the PR (with `Closes #<n>`) is merged.
+The issue closes when it reaches production (`main`), never on the merge into `desarrollo`. GitHub only closes from `Closes #<n>` on `main`, so a PR into `desarrollo` keeps it open.
+
+**Release to production** (only with Jerónimo's OK): open a PR from `desarrollo` to `main` whose body has one `Closes #<n>` line per open issue labelled `done`. Merging it closes them all. A parent closes when its last sub-issue does, so list the parent too once all its sub-issues are `done`.
 
 ## Parent issues and their tickets
 
 A **parent** is an issue split into tickets (GitHub sub-issues), like #26 and #41–#48.
 
-- **Label:** the parent keeps `in progress` from the split until its last sub-issue closes; it closes with that last one. It never goes back to no label or to `done` while a sub-issue is open.
+- **Label:** the parent keeps `in progress` from the split until all its sub-issues are `done`; then it moves to `done` too, and it closes with them on the release to `main`. It never goes back to no label while a sub-issue is open.
 - **Refinement session:** the session that refines an issue, from the moment it takes it out of `refinement`. Record it on the issue right away as a comment «Sesión de refinamiento: <link to the session>». If the issue gets split, that session becomes the parent's session.
 - **One subagent per ticket:** every ticket of a parent is worked from the refinement session, never from a separate session. That session takes the next unblocked ticket and hands it to a fresh subagent (Agent tool, `isolation: "worktree"`, in the foreground). The subagent creates its own `claude/<slug>` branch off the latest `desarrollo`, takes the ticket («Tomado. Rama: <rama>»), follows `.claude/skills/implement/SKILL.md`, opens and merges the PR as the README says, moves the ticket to `done`, and reports the PR link. One ticket at a time, in blocker order.
 

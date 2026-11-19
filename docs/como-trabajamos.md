@@ -13,6 +13,12 @@ Machete para las personas del equipo: qué escribir en cada momento y qué hace 
    - **Sí:** el issue pasa a `ready` y queda como «suelto».
    - **No:** en la misma sesión, `/to-tickets #<n>`. Lo divide en tickets (sub-issues) con sus bloqueos. El issue padre queda en `in progress` hasta que se cierre su último ticket.
 
+## Los estados de un issue
+
+`backlog` (idea, no se toca) → `refinement` (se está refinando) → `ready` (listo para el agente) → `in progress` (se está implementando) → `done` (mergeado a `desarrollo`, sigue abierto) → cerrado (llegó a producción).
+
+Los issues abiertos en `done` son justo lo que sale en el próximo pase a producción. Un issue padre queda en `in progress` hasta que todos sus tickets están en `done`.
+
 ## Desarrollar: siempre con `/next-issue`
 
 Depende de dónde lo escribas:
@@ -25,7 +31,7 @@ Depende de dónde lo escribas:
 
 Siempre te muestra el camino que propone y espera tu OK.
 
-Lo que sigue lo hace el agente solo: la rama, el código con tests (`/implement`, que usa `/tdd` y cierra con `/matt-code-review`), las docs de usuario (`/user-docs`), el PR, el CI en verde, el merge a `desarrollo`, la etiqueta `done` y el cierre del issue.
+Lo que sigue lo hace el agente solo: la rama, el código con tests (`/implement`, que usa `/tdd` y cierra con `/matt-code-review`), las docs de usuario (`/user-docs`), el PR, el CI en verde, el merge a `desarrollo` y la etiqueta `done`. El issue queda abierto: se cierra solo cuando llega a producción.
 
 ## Después de cada issue
 
@@ -37,7 +43,7 @@ Lo que sigue lo hace el agente solo: la rama, el código con tests (`/implement`
 - Contestar las preguntas del refinamiento y aprobar los mocks.
 - Aplicar las migraciones nuevas en el Supabase de desarrollo (el agente avisa cuál).
 - Los issues `manual`: claves, paneles de terceros, DNS. `/wizard` arma un script que te guía paso a paso.
-- Pasar `desarrollo` a `main` (producción): solo con tu OK.
+- Dar el OK para pasar `desarrollo` a `main` (producción). Pedile al agente «pasá a producción»: arma el PR a `main` con un `Closes #n` por cada issue en `done`, y al mergearlo se cierran todos.
 
 ## Las skills
 

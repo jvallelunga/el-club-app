@@ -27,8 +27,8 @@ El paso a paso con los comandos de cada momento está en [Cómo trabajamos](docs
 | `refinement` | Se sacó del backlog para refinarlo. |
 | `ready` | Tiene información suficiente para desarrollarlo. |
 | `in progress` | En desarrollo. |
-| `done` | Desarrollo terminado y PR abierto contra `desarrollo`. |
-| cerrado | Se mergeó el PR («Closes #n»). |
+| `done` | Mergeado a `desarrollo`. El issue sigue abierto hasta que llega a producción. |
+| cerrado | Llegó a producción: se cierra al mergear el pase de `desarrollo` a `main`. |
 
 - Si hay UI nueva, primero se aprueban los mocks y después se implementa.
 - Las preguntas y las decisiones se anotan en el issue, con fecha y hora ART.
