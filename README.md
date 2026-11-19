@@ -52,13 +52,16 @@ npm install
 npm run dev                  # http://localhost:3000
 ```
 
-Otros comandos: `npm run build`, `npm run lint -- <archivos>`, `npm run typecheck`, `npm test`, `npm run tipos` (regenera `src/datos/tipos.ts` desde un Supabase local).
+Otros comandos: `npm run build`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run tipos` (regenera `src/datos/tipos.ts` desde un Supabase local).
+
+Las migraciones y las políticas RLS se prueban en un Postgres 16 común (nunca en Supabase) con `bash scripts/probar-rls.sh`: aplica cada migración dos veces seguidas y corre `supabase/tests/*.sql`. El script explica cómo levantar el Postgres con Docker.
+
+El CI (`.github/workflows/ci.yml`) corre todo esto en cada PR a `desarrollo` o `main`.
 
 ## Modelo de datos
 
-El modelo está en el [DER](docs/der-el-club.mmd) ([imagen](docs/der-el-club.png)). Cada cambio de modelo lleva, en el mismo commit, su migración idempotente y el DER actualizado. Dentro de `erDiagram` no van comentarios `%%`. El PNG se regenera con Kroki:
+El modelo está en el [DER](docs/der-el-club.mmd) ([imagen](docs/der-el-club.png)). Cada cambio de modelo lleva, en el mismo commit, su migración idempotente y el DER actualizado. Dentro de `erDiagram` no van comentarios `%%`. El PNG se regenera en local con Mermaid:
 
 ```bash
-curl -s -X POST https://kroki.io/mermaid/png -H "Content-Type: text/plain" \
-  --data-binary @docs/der-el-club.mmd -o docs/der-el-club.png
+bash scripts/der-png.sh
 ```

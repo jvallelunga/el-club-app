@@ -12,7 +12,7 @@ Talk to the user in Spanish.
 
 ## Tools
 
-- **GitHub**: use the GitHub MCP tools when the session has them (`list_issues` with `labels` and `state: OPEN`, `issue_read` with `get` / `get_comments`, `add_issue_comment`, `issue_write` for labels). Otherwise use the `gh api` calls in `docs/agents/issue-tracker.md`; plain `gh issue` fails in cloud sessions. To count open blockers, read `issue_dependencies_summary.blocked_by` with `gh api repos/jvallelunga/el-club-app/issues/<n>`.
+- **GitHub**: use the GitHub MCP tools when the session has them (`list_issues` with `labels` and `state: OPEN`, `issue_read` with `get` / `get_comments`, `add_issue_comment`, `issue_write` for labels). Otherwise use the `gh api` calls in `docs/agents/issue-tracker.md`; plain `gh issue` fails in cloud sessions. To count open blockers, follow **Count open blockers** in `docs/agents/issue-tracker.md` (native links plus the body's `Blocked by`).
 - **Skills**: the Skill tool can call only model-invocable skills. These are user-invoked only (`disable-model-invocation: true`): `grill-with-docs`, `to-spec`, `to-tickets`, `implement`, `triage`, `wayfinder`. Step 6 says what to do with them.
 - **Branch**: a cloud session is assigned one `claude/…` branch and may push only there. Locally, use the repo prefixes in step 5.
 
