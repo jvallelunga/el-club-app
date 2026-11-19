@@ -137,3 +137,15 @@ export function errorSiNoPuedeAdministrarDeportes(sesion: SesionApp | null): str
   if (!sesion.esSuperAdmin) return "Solo el Super Admin puede administrar el catálogo de deportes.";
   return null;
 }
+
+/** Mensaje si no puede elegir los deportes de ese club: su Admin o el Super Admin. */
+export function errorSiNoPuedeElegirDeportesDelClub(
+  sesion: SesionApp | null,
+  clubId: string,
+): string | null {
+  if (!sesion) return "Tenés que ingresar de nuevo.";
+  if (!puedeAdministrarClub(sesion, clubId)) {
+    return "No tenés permiso para elegir los deportes de este club.";
+  }
+  return null;
+}

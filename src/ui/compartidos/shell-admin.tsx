@@ -14,6 +14,7 @@ export type ActivoShell =
   | "inicio"
   | "club"
   | "sedes"
+  | "deportes-club"
   | "admins";
 
 export type RutasShell = {
@@ -23,6 +24,7 @@ export type RutasShell = {
   elegirClub: string;
   club: (slug: string) => string;
   sedes: (slug: string) => string;
+  deportesClub: (slug: string) => string;
   admins: (slug: string) => string;
 };
 
@@ -33,8 +35,17 @@ export const RUTAS_SHELL_APP: RutasShell = {
   elegirClub: "/elegir-club",
   club: (slug) => `/c/${slug}/admin/club`,
   sedes: (slug) => `/c/${slug}/admin/sedes`,
+  deportesClub: (slug) => `/c/${slug}/admin/deportes`,
   admins: (slug) => `/c/${slug}/admin/admins`,
 };
+
+/**
+ * El nombre de los deportes del club en el menú y en su página. El Super
+ * Admin ya tiene «Deportes» (el catálogo), así que para él lleva «del club».
+ */
+export function etiquetaDeportesDelClub(rol: RolShell): string {
+  return rol === "super-admin" ? "Deportes del club" : "Deportes";
+}
 
 /** Cabeceras de escritorio (sidebar y barra superior): misma altura fija para que el borde inferior quede alineado. */
 const CABECERA_ESCRITORIO =
@@ -102,6 +113,11 @@ export function itemsNav({
       etiqueta: "Sedes",
       href: `${rutas.sedes(club.slug)}${queryClub}`,
       activo: activo === "sedes",
+    });
+    items.push({
+      etiqueta: etiquetaDeportesDelClub(rol),
+      href: `${rutas.deportesClub(club.slug)}${queryClub}`,
+      activo: activo === "deportes-club",
     });
     items.push({
       etiqueta: "Admins",

@@ -15,6 +15,8 @@ import {
   LARGO_MAXIMO_NOMBRE_DEPORTE,
   separarBorrados,
   textoClubes,
+  textoUso,
+  type ClubesPorDeporte,
   type Deporte,
 } from "@/dominio/deportes";
 import type { ResultadoConId, ResultadoSimple } from "@/dominio/resultado";
@@ -46,11 +48,13 @@ const FORMATO_FECHA = new Intl.DateTimeFormat("es-AR", {
 
 export function CatalogoDeportes({
   deportes,
+  clubesPorDeporte,
   crear,
   editar,
   borrar,
 }: {
   deportes: Deporte[];
+  clubesPorDeporte: ClubesPorDeporte;
   crear: (formData: FormData) => Promise<ResultadoConId>;
   editar: (deporteId: string, formData: FormData) => Promise<ResultadoSimple>;
   borrar: (deporteId: string) => Promise<ResultadoSimple>;
@@ -62,6 +66,7 @@ export function CatalogoDeportes({
   const [errorBorrar, setErrorBorrar] = useState<string | null>(null);
   const [borrando, startBorrar] = useTransition();
   const [verBorrados, setVerBorrados] = useState(false);
+  const clubesDe = (deporte: Deporte) => clubesPorDeporte[deporte.id] ?? 0;
 
   function confirmarBorrado() {
     if (!aBorrar) return;
@@ -151,7 +156,7 @@ export function CatalogoDeportes({
                 </span>
               </button>
               <span className="hidden w-20 text-xs text-muted-foreground sm:block">
-                {textoClubes(0)}
+                {textoClubes(clubesDe(deporte))}
               </span>
               <Button
                 type="button"
@@ -231,10 +236,10 @@ export function CatalogoDeportes({
         error={errorBorrar}
         onConfirmar={confirmarBorrado}
       >
-        <p>Lo usan {textoClubes(0)}.</p>
+        {aBorrar ? <p>{textoUso(clubesDe(aBorrar))}</p> : null}
         <p>
-          Los clubes ya no lo van a poder elegir. Queda en «Ver borrados» y ya no se puede
-          editar.
+          Los clubes ya no lo van a poder elegir, y los que lo tienen lo ven marcado como
+          borrado. Queda en «Ver borrados» y ya no se puede editar.
         </p>
       </DialogoConfirmar>
     </div>
