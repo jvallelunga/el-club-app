@@ -45,9 +45,12 @@
 %% (instalacion_id) o un elemento de referencia (tipo_referencia), nunca las
 %% dos. tipo_referencia es la clave de un tipo definido en código
 %% (src/dominio/tipos-referencia.ts: arbol, piedra, bebedero, gradas,
-%% tribuna); la base solo acepta esas claves. nombre es el nombre propio
-%% opcional de un elemento de referencia (hasta 60 caracteres). Se guardan
-%% con guardar_predio(), que recibe también p_referencias.
+%% tribuna, camino, valla); la base solo acepta esas claves. nombre es el
+%% nombre propio opcional de un elemento de referencia (hasta 60 caracteres).
+%% Se guardan con guardar_predio(), que recibe también p_referencias.
+%% Caminos y vallas (#47): en vez de este/norte/rotacion (null) guardan
+%% puntos, una lista jsonb de 2 a 500 puntos [este, norte] en metros desde el
+%% origen; medidas lleva el ancho del camino o el alto de la valla.
 %% El email del Super Admin no se guarda en el repo: el alta se hace
 %% directo en la base (ver scripts/sembrar-super-admin.sql).
 erDiagram
@@ -110,6 +113,7 @@ erDiagram
         float este
         float norte
         float rotacion
+        jsonb puntos
         jsonb medidas
         string descripcion
         int orden_leyenda

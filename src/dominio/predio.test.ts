@@ -12,11 +12,17 @@ import {
   origenInicial,
   frenteDeGradas,
   huellaDeReferencia,
+  largoDeLinea,
+  lineaEnCoordenadas,
+  lineaEnMetros,
   medidasDeReferencia,
+  puntoMedioDeLinea,
+  type Punto,
   NOMBRE_MAXIMO,
   predioParaGuardar,
   type DatosPredio,
   type InstalacionUbicada,
+  type LineaUbicada,
   type ReferenciaUbicada,
 } from "./predio";
 
@@ -40,6 +46,53 @@ describe("aMetros y aCoordenadas", () => {
     const [este, norte] = aMetros(origen, punto);
     expect(este).toBeCloseTo(120.5, 6);
     expect(norte).toBeCloseTo(-48.25, 6);
+  });
+});
+
+describe("los puntos de un camino o una valla, en metros desde el origen", () => {
+  const origen = { lat: -37.336, lng: -59.08 };
+
+  it("cada punto del mapa pasa a [este, norte] desde el origen", () => {
+    const puntos = lineaEnMetros(origen, [
+      { lat: -37.336, lng: -59.08 },
+      { lat: -37.335, lng: -59.08 },
+      { lat: -37.335, lng: -59.079 },
+    ]);
+    expect(puntos[0]).toEqual([0, 0]);
+    // Un milésimo de grado al norte son unos 111,2 m.
+    expect(puntos[1][0]).toBeCloseTo(0, 6);
+    expect(puntos[1][1]).toBeCloseTo(111.2, 0);
+    // Y uno al este, a 37,3° de latitud, unos 88,4 m.
+    expect(puntos[2][0]).toBeCloseTo(88.4, 0);
+    expect(puntos[2][1]).toBeCloseTo(111.2, 0);
+  });
+
+  it("ida y vuelta devuelve los mismos puntos, en el mismo orden", () => {
+    const enMetros: Punto[] = [[-20, 5], [0, 0], [35.5, -12.25]];
+    const vuelta = lineaEnMetros(origen, lineaEnCoordenadas(origen, enMetros));
+    vuelta.forEach(([este, norte], i) => {
+      expect(este).toBeCloseTo(enMetros[i][0], 6);
+      expect(norte).toBeCloseTo(enMetros[i][1], 6);
+    });
+  });
+
+  it("mover el origen corre los puntos en metros, no en el mapa", () => {
+    const enElMapa = lineaEnCoordenadas(origen, [[0, 0], [100, 0]]);
+    // El origen nuevo, 50 m al este del anterior.
+    const nuevo = aCoordenadas(origen, [50, 0]);
+    const [a, b] = lineaEnMetros(nuevo, enElMapa);
+    expect(a[0]).toBeCloseTo(-50, 6);
+    expect(b[0]).toBeCloseTo(50, 6);
+  });
+
+  it("el largo es la suma de sus tramos", () => {
+    expect(largoDeLinea([[0, 0], [30, 40], [30, 0]])).toBeCloseTo(90, 9);
+  });
+
+  it("el punto del medio está a mitad del largo, sobre la línea", () => {
+    // Una L de 100 m: la mitad cae sobre el primer tramo.
+    expect(puntoMedioDeLinea([[0, 0], [60, 0], [60, 40]])).toEqual([50, 0]);
+    expect(puntoMedioDeLinea([[0, 0], [10, 0], [10, 30]])).toEqual([10, 10]);
   });
 });
 
@@ -121,7 +174,7 @@ describe("hayCambiosEnPredio", () => {
     origen: { lat: -37.336, lng: -59.08 },
     area: [[0, 0], [10, 0], [10, 10]] as [number, number][],
     instalaciones: [cancha, pileta],
-    referencias: [],
+    referencias: [], lineas: [],
   };
 
   it("no ve cambios por ruido de menos de un centímetro", () => {
@@ -142,7 +195,7 @@ describe("hayCambiosEnPredio", () => {
             descripcion: " La cancha  principal. ",
           },
         ],
-        referencias: [],
+        referencias: [], lineas: [],
       }),
     ).toBe(false);
   });
@@ -221,13 +274,13 @@ describe("predioParaGuardar", () => {
         origen: { lat: -37.336001234567, lng: -59.08 },
         area: [[1.23456, -7.891], [10, 0], [10, 10.005001]],
         instalaciones: [],
-        referencias: [],
+        referencias: [], lineas: [],
       }),
     ).toEqual({
       origen: { lat: -37.3360012, lng: -59.08 },
       area: [[1.23, -7.89], [10, 0], [10, 10.01]],
       instalaciones: [],
-      referencias: [],
+      referencias: [], lineas: [],
     });
   });
 });
@@ -249,7 +302,7 @@ describe("predioParaGuardar con instalaciones", () => {
             ordenLeyenda: null,
           },
         ],
-        referencias: [],
+        referencias: [], lineas: [],
       }).instalaciones[0];
     expect(guardar(47.26)).toEqual({
       instalacionId: "cancha",
@@ -283,7 +336,7 @@ describe("predioParaGuardar con la leyenda", () => {
         ubicada("quincho", null, "   "),
         ubicada("cancha", 2, null),
       ],
-      referencias: [],
+      referencias: [], lineas: [],
     });
     expect(instalaciones.map((i) => [i.instalacionId, i.ordenLeyenda, i.descripcion])).toEqual([
       ["pileta", 2, "Pileta climatizada"],
@@ -308,17 +361,17 @@ describe("errorDelPredio", () => {
     ordenLeyenda: 1,
   };
   const conInstalaciones = (instalaciones: unknown[]) =>
-    errorDelPredio({ origen, area: [], instalaciones, referencias: [] }, tipos);
+    errorDelPredio({ origen, area: [], instalaciones, referencias: [], lineas: [] }, tipos);
 
   it("acepta un origen válido con o sin área", () => {
-    expect(errorDelPredio({ origen, area: [], instalaciones: [], referencias: [] }, tipos)).toBeNull();
+    expect(errorDelPredio({ origen, area: [], instalaciones: [], referencias: [], lineas: [] }, tipos)).toBeNull();
     expect(
-      errorDelPredio({ origen, area: [[0, 0], [10, 0], [0, 10]], instalaciones: [], referencias: [] }, tipos),
+      errorDelPredio({ origen, area: [[0, 0], [10, 0], [0, 10]], instalaciones: [], referencias: [], lineas: [] }, tipos),
     ).toBeNull();
   });
 
   it("rechaza un origen fuera del mapa o que no es número", () => {
-    const sinInstalaciones = (datos: object) => errorDelPredio({ ...datos, instalaciones: [], referencias: [] }, tipos);
+    const sinInstalaciones = (datos: object) => errorDelPredio({ ...datos, instalaciones: [], referencias: [], lineas: [] }, tipos);
     expect(sinInstalaciones({ origen: { lat: 91, lng: 0 }, area: [] })).toMatch(/origen/);
     expect(sinInstalaciones({ origen: { lat: "x", lng: 0 }, area: [] })).toMatch(/origen/);
     expect(sinInstalaciones({ area: [] })).toMatch(/origen/);
@@ -327,7 +380,7 @@ describe("errorDelPredio", () => {
 
   it("trae el error del área", () => {
     expect(
-      errorDelPredio({ origen: { lat: 0, lng: 0 }, area: [[0, 0]], instalaciones: [], referencias: [] }, tipos),
+      errorDelPredio({ origen: { lat: 0, lng: 0 }, area: [[0, 0]], instalaciones: [], referencias: [], lineas: [] }, tipos),
     ).toMatch(/tres puntos/);
   });
 
@@ -350,7 +403,7 @@ describe("errorDelPredio", () => {
   it("rechaza una instalación que no es de la sede o que está ubicada dos veces", () => {
     expect(conInstalaciones([{ ...cancha, instalacionId: "de-otra-sede" }])).toMatch(/sede/);
     expect(conInstalaciones([cancha, { ...cancha, posicion: [0, 0] }])).toMatch(/dos veces/);
-    expect(errorDelPredio({ origen, area: [], referencias: [] }, tipos)).toMatch(/instalaciones/);
+    expect(errorDelPredio({ origen, area: [], referencias: [], lineas: [] }, tipos)).toMatch(/instalaciones/);
   });
 
   it("rechaza una posición inválida o a más de 5 km del origen, y una rotación que no es número", () => {
@@ -488,6 +541,7 @@ const conReferencias: DatosPredio = {
   area: [],
   instalaciones: [canchaConNumero],
   referencias: [ombu, gradas],
+  lineas: [],
 };
 
 describe("errorDelPredio con elementos de referencia", () => {
@@ -620,6 +674,118 @@ describe("huellaDeReferencia", () => {
     expect(redondeadas(frente)).toEqual([
       [-10, -2],
       [10, -2],
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Caminos y vallas (#47)
+// ---------------------------------------------------------------------------
+
+const CAMINO_ID = "1d2e3f4a-5b6c-4d7e-8f9a-0b1c2d3e4f5a";
+const VALLA_ID = "2e3f4a5b-6c7d-4e8f-9a0b-1c2d3e4f5a6b";
+
+const camino: LineaUbicada = {
+  id: CAMINO_ID,
+  tipo: "camino",
+  nombre: "Camino de los pinos",
+  puntos: [[-60, 30], [10, 30], [60, -20]],
+  medidas: { ancho: 4 },
+  descripcion: "Va del estacionamiento a la cancha.",
+  ordenLeyenda: 3,
+};
+const valla: LineaUbicada = {
+  id: VALLA_ID,
+  tipo: "valla",
+  nombre: null,
+  puntos: [[-70, -10], [-5, -75]],
+  medidas: { alto: 1.5 },
+  descripcion: null,
+  ordenLeyenda: null,
+};
+const conLineas: DatosPredio = { ...conReferencias, lineas: [camino, valla] };
+
+describe("errorDelPredio con caminos y vallas", () => {
+  const tipos = new Map([["cancha", "cancha_rugby" as const]]);
+  const con = (lineas: unknown) => errorDelPredio({ ...conLineas, lineas }, tipos);
+
+  it("acepta un camino y una valla con sus medidas, con nombre o sin él", () => {
+    expect(con([camino, valla])).toBeNull();
+  });
+
+  it("solo acepta caminos y vallas", () => {
+    expect(con([{ ...camino, tipo: "arbol" }])).toMatch(/tipo/);
+  });
+
+  it("pide de 2 a 500 puntos válidos, cerca del origen", () => {
+    expect(con([{ ...camino, puntos: [[0, 0]] }])).toMatch(/dos puntos/);
+    expect(con([{ ...camino, puntos: Array.from({ length: 501 }, (_, i) => [i, 0]) }])).toMatch(/500/);
+    expect(con([{ ...camino, puntos: [[0, 0], [0, "1"]] }])).toMatch(/puntos/);
+    expect(con([{ ...camino, puntos: [[0, 0], [6000, 0]] }])).toMatch(/lejos/);
+    expect(con([{ ...camino, puntos: undefined }])).toMatch(/puntos/);
+  });
+
+  it("pide un largo: no todos sus puntos en el mismo lugar", () => {
+    expect(con([{ ...valla, puntos: [[5, 5], [5, 5]] }])).toMatch(/largo/);
+  });
+
+  it("el camino pide su ancho y la valla su alto", () => {
+    expect(con([{ ...camino, medidas: { alto: 1.5 } }])).toMatch(/medidas/);
+    expect(con([{ ...valla, medidas: { alto: 0.2 } }])).toMatch(/0,5 y 300/);
+  });
+
+  it("valida nombre, descripción, leyenda e id como en los demás elementos de referencia", () => {
+    expect(con([{ ...camino, nombre: "a".repeat(NOMBRE_MAXIMO + 1) }])).toMatch(/nombre/);
+    expect(con([{ ...camino, descripcion: "a".repeat(281) }])).toMatch(/280/);
+    expect(con([{ ...camino, ordenLeyenda: 0 }])).toMatch(/leyenda/);
+    expect(con([{ ...camino, id: "camino" }])).toMatch(/no es válido/);
+    expect(con([camino, { ...valla, id: OMBU_ID }])).toMatch(/dos veces/);
+  });
+
+  it("pide la lista de caminos y vallas", () => {
+    expect(con(undefined)).toMatch(/caminos y vallas/);
+  });
+});
+
+describe("hayCambiosEnPredio con caminos y vallas", () => {
+  const con = (lineas: LineaUbicada[]) => ({ ...conLineas, lineas });
+
+  it("no ve cambios por ruido ni por otro orden de la lista", () => {
+    expect(
+      hayCambiosEnPredio(
+        conLineas,
+        con([valla, { ...camino, nombre: " Camino de  los pinos", puntos: [[-60.004, 30], [10, 30], [60, -20]] }]),
+      ),
+    ).toBe(false);
+  });
+
+  it("ve un punto movido, agregado o quitado, otra medida o un camino borrado", () => {
+    const otrosPuntos = (puntos: Punto[]) => con([{ ...camino, puntos }, valla]);
+    expect(hayCambiosEnPredio(conLineas, otrosPuntos([[-60, 31], [10, 30], [60, -20]]))).toBe(true);
+    expect(hayCambiosEnPredio(conLineas, otrosPuntos([[-60, 30], [10, 30], [60, -20], [90, -20]]))).toBe(true);
+    expect(hayCambiosEnPredio(conLineas, otrosPuntos([[-60, 30], [60, -20]]))).toBe(true);
+    expect(hayCambiosEnPredio(conLineas, con([{ ...camino, medidas: { ancho: 3 } }, valla]))).toBe(true);
+    expect(hayCambiosEnPredio(conLineas, con([valla]))).toBe(true);
+  });
+
+  it("ve el sentido dado vuelta: los puntos tienen orden", () => {
+    expect(hayCambiosEnPredio(conLineas, con([camino, { ...valla, puntos: [[-5, -75], [-70, -10]] }]))).toBe(true);
+  });
+});
+
+describe("predioParaGuardar con caminos y vallas", () => {
+  it("redondea los puntos al centímetro, limpia el nombre y numera la leyenda con todo lo demás", () => {
+    const guardado = predioParaGuardar({
+      ...conLineas,
+      lineas: [
+        { ...camino, nombre: " Camino  de los pinos ", puntos: [[-60.004, 30.126], [10, 30], [60, -20]], ordenLeyenda: 7 },
+        { ...valla, nombre: "  " },
+      ],
+    });
+    // La cancha es la 1 y el ombú la 2: el camino pasa a ser la 3.
+    expect(guardado.lineas).toEqual([
+      { ...camino, puntos: [[-60, 30.13], [10, 30], [60, -20]], ordenLeyenda: 3 },
+      valla,
     ]);
   });
 });

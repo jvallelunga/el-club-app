@@ -12,7 +12,12 @@ import { Check, Circle, RotateCcw, RotateCw, Trash2, X } from "lucide-react";
 import { Button } from "@/ui/nativos/button";
 import { MEDIDA_MAXIMA, MEDIDA_MINIMA, type InstalacionDeLaSede } from "@/dominio/predio";
 import type { FormaInstalacion, MedidaInstalacion } from "@/dominio/tipos-instalacion";
-import { TIPOS_REFERENCIA, type ClaveTipoReferencia } from "@/dominio/tipos-referencia";
+import {
+  TIPOS_LINEA,
+  TIPOS_REFERENCIA,
+  type ClaveTipoLinea,
+  type ClaveTipoReferencia,
+} from "@/dominio/tipos-referencia";
 import { NumeroLeyenda } from "./leyenda-predio";
 
 /** Color de la huella en el mapa, según la forma del tipo. */
@@ -32,23 +37,47 @@ export const COLOR_POR_REFERENCIA: Record<ClaveTipoReferencia, string> = {
   tribuna: "#9aa7b3",
 };
 
-/** Los tipos de elemento de referencia: tocar uno lo agrega en el centro del mapa. */
-export function PaletaReferencias({ onAgregar }: { onAgregar: (tipo: ClaveTipoReferencia) => void }) {
+/** Color de cada camino o valla en el mapa (#47). */
+export const COLOR_POR_LINEA: Record<ClaveTipoLinea, string> = {
+  camino: "#d9c49a",
+  valla: "#f4f4f4",
+};
+
+const botonPaleta =
+  "flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-left text-sm hover:bg-muted";
+
+/**
+ * Los tipos de elemento de referencia: tocar uno puntual lo agrega en el
+ * centro del mapa; un camino o una valla empieza a dibujarse punto a punto.
+ */
+export function PaletaReferencias({
+  onAgregar,
+  onTrazar,
+}: {
+  onAgregar: (tipo: ClaveTipoReferencia) => void;
+  onTrazar: (tipo: ClaveTipoLinea) => void;
+}) {
   return (
     <div className="grid grid-cols-1 gap-1">
       {TIPOS_REFERENCIA.map((tipo) => (
-        <button
-          key={tipo.clave}
-          type="button"
-          onClick={() => onAgregar(tipo.clave)}
-          className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-left text-sm hover:bg-muted"
-        >
+        <button key={tipo.clave} type="button" onClick={() => onAgregar(tipo.clave)} className={botonPaleta}>
           <span
             className="size-3 shrink-0 rounded-full border border-black/20"
             style={{ backgroundColor: COLOR_POR_REFERENCIA[tipo.clave] }}
             aria-hidden
           />
           {tipo.nombre}
+        </button>
+      ))}
+      {TIPOS_LINEA.map((tipo) => (
+        <button key={tipo.clave} type="button" onClick={() => onTrazar(tipo.clave)} className={botonPaleta}>
+          <span
+            className="h-1 w-3 shrink-0 rounded-full border border-black/20"
+            style={{ backgroundColor: COLOR_POR_LINEA[tipo.clave] }}
+            aria-hidden
+          />
+          {tipo.nombre}
+          <span className="text-xs text-muted-foreground">· se dibuja</span>
         </button>
       ))}
     </div>
@@ -190,6 +219,10 @@ export type DatosPanel = {
   ayudaQuitar: string;
   /** Algo más que hay que saber para ubicarlo, si hace falta. */
   ayudaRotacion?: string;
+  /** Cómo se mueve; por defecto, arrastrándolo. */
+  ayudaMover?: string;
+  /** Qué cambian las medidas; por defecto, la huella en el mapa. */
+  ayudaMedidas?: string;
 };
 
 export function PanelElemento({
@@ -206,7 +239,8 @@ export function PanelElemento({
   elemento: DatosPanel;
   /** Su número en la leyenda, o null si no entra. */
   numero: number | null;
-  rotacion: number;
+  /** null si no se gira: un camino o una valla sigue sus puntos. */
+  rotacion: number | null;
   medidas: Record<string, number>;
   onRotar: (grados: number) => void;
   onMedida: (clave: string, valor: number) => void;
@@ -215,7 +249,7 @@ export function PanelElemento({
   /** El nombre (si es un elemento de referencia) y la leyenda. */
   children: ReactNode;
 }) {
-  const girar = (delta: number) => onRotar((((rotacion + delta) % 360) + 360) % 360);
+  const girar = (delta: number) => onRotar(((((rotacion ?? 0) + delta) % 360) + 360) % 360);
   return (
     <div className="absolute right-16 top-24 flex max-h-[calc(100%-14rem)] w-80 flex-col gap-4 overflow-y-auto rounded-2xl bg-background/95 p-4 text-sm shadow-lg">
       <div className="flex items-start justify-between gap-2">
@@ -238,56 +272,60 @@ export function PanelElemento({
         </button>
       </div>
 
-      <p className="text-muted-foreground">Arrastralo en el mapa para moverlo.</p>
+      <p className="text-muted-foreground">
+        {elemento.ayudaMover ?? "Arrastralo en el mapa para moverlo."}
+      </p>
 
-      <div className="flex flex-col gap-2">
-        <div className="flex items-end gap-2">
-          <div className="flex-1">
-            <CampoNumero
-              key={`rotacion-${elemento.id}`}
-              etiqueta="Rotación (sentido horario)"
-              unidad="°"
-              valor={Math.round(rotacion * 10) / 10}
-              min={0}
-              max={359.9}
-              paso={1}
-              onCambio={onRotar}
-            />
+      {rotacion === null ? null : (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <CampoNumero
+                key={`rotacion-${elemento.id}`}
+                etiqueta="Rotación (sentido horario)"
+                unidad="°"
+                valor={Math.round(rotacion * 10) / 10}
+                min={0}
+                max={359.9}
+                paso={1}
+                onCambio={onRotar}
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-9 rounded-lg"
+              title="Girar 15° a la izquierda"
+              aria-label="Girar 15° a la izquierda"
+              onClick={() => girar(-15)}
+            >
+              <RotateCcw className="size-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-9 rounded-lg"
+              title="Girar 15° a la derecha"
+              aria-label="Girar 15° a la derecha"
+              onClick={() => girar(15)}
+            >
+              <RotateCw className="size-4" />
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-9 rounded-lg"
-            title="Girar 15° a la izquierda"
-            aria-label="Girar 15° a la izquierda"
-            onClick={() => girar(-15)}
-          >
-            <RotateCcw className="size-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-9 rounded-lg"
-            title="Girar 15° a la derecha"
-            aria-label="Girar 15° a la derecha"
-            onClick={() => girar(15)}
-          >
-            <RotateCw className="size-4" />
-          </Button>
+          <input
+            type="range"
+            min={0}
+            max={359}
+            step={1}
+            value={Math.round(rotacion) % 360}
+            onChange={(evento) => onRotar(Number(evento.target.value))}
+            aria-label="Rotación"
+          />
+          {elemento.ayudaRotacion ? (
+            <p className="text-xs text-muted-foreground">{elemento.ayudaRotacion}</p>
+          ) : null}
         </div>
-        <input
-          type="range"
-          min={0}
-          max={359}
-          step={1}
-          value={Math.round(rotacion) % 360}
-          onChange={(evento) => onRotar(Number(evento.target.value))}
-          aria-label="Rotación"
-        />
-        {elemento.ayudaRotacion ? (
-          <p className="text-xs text-muted-foreground">{elemento.ayudaRotacion}</p>
-        ) : null}
-      </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         {elemento.medidasDelTipo.map((medida) => (
@@ -304,7 +342,7 @@ export function PanelElemento({
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        La huella en el mapa sale de estas medidas.
+        {elemento.ayudaMedidas ?? "La huella en el mapa sale de estas medidas."}
       </p>
 
       {children}

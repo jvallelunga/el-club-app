@@ -10,11 +10,18 @@ import {
   type DatosPredio,
   type InstalacionDeLaSede,
   type InstalacionUbicada,
+  type LineaUbicada,
   type Punto,
   type ReferenciaUbicada,
 } from "./predio";
 import { tipoInstalacion, type ClaveTipoInstalacion } from "./tipos-instalacion";
-import { tipoReferencia, type ClaveTipoReferencia } from "./tipos-referencia";
+import {
+  esClaveTipoLinea,
+  tipoLinea,
+  tipoReferencia,
+  type ClaveTipoLinea,
+  type ClaveTipoReferencia,
+} from "./tipos-referencia";
 
 /**
  * Un predio está armado si tiene área y al menos una instalación ubicada.
@@ -42,9 +49,21 @@ export type ReferenciaEnVisor = Pick<
   numero: number | null;
 };
 
-/** El nombre con el que se muestra un elemento de referencia. */
-export function nombreDeReferencia(referencia: Pick<ReferenciaUbicada, "tipo" | "nombre">): string {
-  return referencia.nombre ?? tipoReferencia(referencia.tipo).nombre;
+/** Un camino o una valla, con lo que el visor necesita para dibujarlo. */
+export type LineaEnVisor = Pick<LineaUbicada, "id" | "tipo" | "puntos" | "medidas" | "descripcion"> & {
+  /** Su nombre propio o, si no tiene, el de su tipo («Camino»). */
+  nombre: string;
+  /** Su número en la leyenda, o null: sin número no se puede tocar. */
+  numero: number | null;
+};
+
+/** El nombre con el que se muestra un elemento de referencia, puntual o línea. */
+export function nombreDeReferencia(referencia: {
+  tipo: ClaveTipoReferencia | ClaveTipoLinea;
+  nombre: string | null;
+}): string {
+  const { tipo, nombre } = referencia;
+  return nombre ?? (esClaveTipoLinea(tipo) ? tipoLinea(tipo) : tipoReferencia(tipo)).nombre;
 }
 
 /** Una línea de la leyenda: el número, el nombre y la descripción. */
@@ -60,6 +79,8 @@ export type PredioEnVisor = {
   area: Punto[];
   instalaciones: InstalacionEnVisor[];
   referencias: ReferenciaEnVisor[];
+  /** Los caminos y las vallas (#47). */
+  lineas: LineaEnVisor[];
   /** Lo que tiene número, en el orden de la leyenda. */
   leyenda: EntradaLeyenda[];
 };
@@ -104,12 +125,21 @@ export function predioParaVisor(
       numero: numeros.get(id) ?? null,
     }),
   );
-  const leyenda = [...instalaciones, ...referencias]
+  const lineas = vigente.lineas.map(({ id, tipo, nombre, puntos, medidas, descripcion }) => ({
+    id,
+    tipo,
+    nombre: nombreDeReferencia({ tipo, nombre }),
+    puntos,
+    medidas,
+    descripcion,
+    numero: numeros.get(id) ?? null,
+  }));
+  const leyenda = [...instalaciones, ...referencias, ...lineas]
     .flatMap(({ id, numero, nombre, descripcion }) =>
       numero === null ? [] : [{ id, numero, nombre, descripcion }],
     )
     .sort((a, b) => a.numero - b.numero);
-  return { area: vigente.area, instalaciones, referencias, leyenda };
+  return { area: vigente.area, instalaciones, referencias, lineas, leyenda };
 }
 
 // ---------------------------------------------------------------------------
@@ -130,6 +160,11 @@ export type Pieza = {
   /** [largo (x), alto (y), ancho (z)]. */
   tamano: Tripla;
   color: string;
+  /**
+   * Giro sobre su centro alrededor del eje vertical, en radianes, en sentido
+   * antihorario visto desde arriba (como three.js). Sin giro, el largo va en x.
+   */
+  giro?: number;
 };
 
 const caja = (centro: Tripla, tamano: Tripla, color: string): Pieza => ({
@@ -367,6 +402,113 @@ export function piezasDeReferencia(
     default: {
       const sinPiezas: never = tipo;
       throw new Error(`Elemento de referencia sin piezas 3D: ${String(sinPiezas)}`);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Piezas 3D de caminos y vallas (#47). No tienen posición ni rotación: sus
+// piezas van directo en coordenadas de la escena (x al este, y hacia arriba,
+// z al sur), en metros desde el origen, y cada tramo lleva su giro.
+// ---------------------------------------------------------------------------
+
+const COLOR_CAMINO = "#cdb88f";
+const COLOR_VALLA = "#f2f2f2";
+/** El camino apenas sobresale del pasto, debajo del piso de una cancha. */
+const ALTO_CAMINO = 0.05;
+/** Cada cuánto va un poste de la valla, como mucho. */
+const SEPARACION_POSTES_VALLA = 2.5;
+const LADO_POSTE = 0.1;
+const ALTO_TRAVESANO = 0.06;
+
+type Tramo = {
+  desde: Punto;
+  hasta: Punto;
+  largo: number;
+  /** Su centro, en la escena. */
+  medio: Tripla;
+  giro: number;
+};
+
+/** [este, norte] → (x, y, z) de la escena: el norte va hacia −z. */
+const enEscena = ([este, norte]: Punto, y: number): Tripla => [este, y, 0 - norte];
+
+/** Los tramos entre puntos seguidos, sin los que no tienen largo. */
+function tramosDe(puntos: readonly Punto[], y: number): Tramo[] {
+  const tramos: Tramo[] = [];
+  for (let i = 1; i < puntos.length; i++) {
+    const [desde, hasta] = [puntos[i - 1], puntos[i]];
+    const [de, dn] = [hasta[0] - desde[0], hasta[1] - desde[1]];
+    const largo = Math.hypot(de, dn);
+    if (largo === 0) continue;
+    const medio: Punto = [(desde[0] + hasta[0]) / 2, (desde[1] + hasta[1]) / 2];
+    // Visto desde arriba, el norte (−z) queda a 90° antihorario del este (x).
+    tramos.push({ desde, hasta, largo, medio: enEscena(medio, y), giro: Math.atan2(dn, de) });
+  }
+  return tramos;
+}
+
+/** Una franja por tramo y un disco en cada vuelta, para que no queden huecos. */
+function camino(puntos: readonly Punto[], { ancho }: Record<string, number>): Pieza[] {
+  const tramos = tramosDe(puntos, ALTO_CAMINO / 2);
+  const franjas = tramos.map(
+    ({ largo, medio, giro }): Pieza => ({
+      forma: "caja",
+      centro: medio,
+      tamano: [largo, ALTO_CAMINO, ancho],
+      color: COLOR_CAMINO,
+      giro,
+    }),
+  );
+  const vueltas = tramos.slice(1).map(
+    ({ desde }): Pieza => ({
+      forma: "cilindro",
+      centro: enEscena(desde, ALTO_CAMINO / 2),
+      tamano: [ancho, ALTO_CAMINO, ancho],
+      color: COLOR_CAMINO,
+    }),
+  );
+  return [...franjas, ...vueltas];
+}
+
+/** Postes en cada punto y como mucho cada 2,5 m, con dos travesaños por tramo. */
+function valla(puntos: readonly Punto[], { alto }: Record<string, number>): Pieza[] {
+  return tramosDe(puntos, alto).flatMap(({ desde, hasta, largo, medio, giro }, i) => {
+    const partes = Math.ceil(largo / SEPARACION_POSTES_VALLA);
+    // El primer poste de cada tramo, salvo el del primero, ya está puesto.
+    const postes = Array.from({ length: partes + (i === 0 ? 1 : 0) }, (_, k): Pieza => {
+      const t = (k + (i === 0 ? 0 : 1)) / partes;
+      const punto: Punto = [desde[0] + (hasta[0] - desde[0]) * t, desde[1] + (hasta[1] - desde[1]) * t];
+      return caja(enEscena(punto, alto / 2), [LADO_POSTE, alto, LADO_POSTE], COLOR_VALLA);
+    });
+    const travesano = (y: number): Pieza => ({
+      forma: "caja",
+      centro: [medio[0], y, medio[2]],
+      tamano: [largo, ALTO_TRAVESANO, LADO_POSTE / 2],
+      color: COLOR_VALLA,
+      giro,
+    });
+    return [...postes, travesano(alto - ALTO_TRAVESANO / 2), travesano(alto / 2)];
+  });
+}
+
+/**
+ * Las piezas con las que se dibuja un camino o una valla, siguiendo sus
+ * puntos (en metros desde el origen).
+ */
+export function piezasDeLinea(
+  tipo: ClaveTipoLinea,
+  puntos: readonly Punto[],
+  medidas: Record<string, number>,
+): Pieza[] {
+  switch (tipo) {
+    case "camino":
+      return camino(puntos, medidas);
+    case "valla":
+      return valla(puntos, medidas);
+    default: {
+      const sinPiezas: never = tipo;
+      throw new Error(`Camino o valla sin piezas 3D: ${String(sinPiezas)}`);
     }
   }
 }

@@ -8,9 +8,11 @@
  * bebedero, gradas y tribuna) se ubican, se arrastran y se giran sobre el
  * mapa; su huella sale de las medidas del tipo. Cada uno puede tener
  * descripción y entrar en la leyenda, que se reordena; los elementos de
- * referencia, además, un nombre propio. El editor tiene el área y los centros
- * en lat/lng, y los pasa a metros desde el origen recién al comparar y al
- * guardar: así, mover el origen no corre nada del mapa.
+ * referencia, además, un nombre propio. Los caminos y las vallas (#47) se
+ * dibujan punto a punto con Terra Draw y, elegidos, se editan sus puntos. El
+ * editor tiene el área, los centros y los puntos en lat/lng, y los pasa a
+ * metros desde el origen recién al comparar y al guardar: así, mover el
+ * origen no corre nada del mapa.
  */
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
@@ -19,13 +21,14 @@ import type { GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
   TerraDraw,
+  TerraDrawLineStringMode,
   TerraDrawPolygonMode,
   TerraDrawSelectMode,
   ValidateNotSelfIntersecting,
   type GeoJSONStoreFeatures,
 } from "terra-draw";
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
-import { Crosshair, MapPin, MousePointer2, Pencil, Shrink, Trash2, Trees } from "lucide-react";
+import { Crosshair, MapPin, MousePointer2, Pencil, Shrink, Trash2, Trees, X } from "lucide-react";
 import { Button } from "@/ui/nativos/button";
 import { cambiarEnLeyenda, moverEnLeyenda, numerosDeLeyenda } from "@/dominio/leyenda";
 import type { Coordenadas } from "@/dominio/maps";
@@ -37,8 +40,13 @@ import {
   hayCambiosEnPredio,
   huellaDeInstalacion,
   huellaDeReferencia,
+  largoDeLinea,
+  lineaEnCoordenadas,
+  lineaEnMetros,
+  medidasDeLinea,
   medidasDeReferencia,
   medidasDelTipo,
+  puntoMedioDeLinea,
   type DatosPredio,
   type DesdeOrigen,
   type InstalacionDeLaSede,
@@ -47,10 +55,16 @@ import {
 } from "@/dominio/predio";
 import { nombreDeReferencia } from "@/dominio/predio-3d";
 import { tipoInstalacion } from "@/dominio/tipos-instalacion";
-import { tipoReferencia, type ClaveTipoReferencia } from "@/dominio/tipos-referencia";
+import {
+  tipoLinea,
+  tipoReferencia,
+  type ClaveTipoLinea,
+  type ClaveTipoReferencia,
+} from "@/dominio/tipos-referencia";
 import {
   BarraInstalaciones,
   COLOR_POR_FORMA,
+  COLOR_POR_LINEA,
   COLOR_POR_REFERENCIA,
   PaletaReferencias,
   PanelElemento,
@@ -81,27 +95,67 @@ export type ResultadoGuardarPredio = { ok: true } | { ok: false; error: string }
 
 type Herramienta = "mover" | "area" | "referencias";
 
-/**
- * Algo ubicado, como lo tiene el editor: el centro en lat/lng y la
- * descripción y el nombre como se escriben (se limpian al guardar).
- */
-type EnMapa = {
+/** Lo que tiene todo lo ubicado. */
+type Comun = {
   /** El id de la instalación o, en un elemento de referencia, el suyo. */
   id: string;
-  /** null si es una instalación de la sede. */
-  referencia: { tipo: ClaveTipoReferencia; nombre: string } | null;
-  centro: Coordenadas;
-  rotacion: number;
   medidas: Record<string, number>;
+  /** Como se escribe: se limpia al guardar. */
   descripcion: string;
   ordenLeyenda: number | null;
 };
+
+/**
+ * Algo ubicado, como lo tiene el editor: el centro (o los puntos de un camino
+ * o una valla) en lat/lng, y el nombre como se escribe.
+ */
+type EnMapa =
+  | (Comun & { clase: "instalacion"; centro: Coordenadas; rotacion: number })
+  | (Comun & {
+      clase: "referencia";
+      tipo: ClaveTipoReferencia;
+      nombre: string;
+      centro: Coordenadas;
+      rotacion: number;
+    })
+  | (Comun & { clase: "linea"; tipo: ClaveTipoLinea; nombre: string; puntos: Coordenadas[] });
+
+/** Lo que el panel puede cambiar de algo ubicado. */
+type CambioEnMapa = Partial<Pick<Comun, "medidas" | "descripcion"> & { rotacion: number; nombre: string }>;
 
 /** Las huellas, que se tocan y se arrastran. */
 const CAPA_HUELLAS = "elementos-relleno";
 /** Un punto en el centro de cada elemento de referencia: un bebedero mide 1 m. */
 const CAPA_PUNTOS = "elementos-punto";
-const CAPAS_TOCABLES = [CAPA_HUELLAS, CAPA_PUNTOS];
+/** Los caminos, con su ancho real, y las vallas (#47). */
+const CAPA_CAMINOS = "elementos-camino";
+const CAPA_VALLAS = "elementos-valla";
+const CAPAS_TOCABLES = [CAPA_HUELLAS, CAPA_PUNTOS, CAPA_CAMINOS, CAPA_VALLAS];
+
+/** El modo de Terra Draw que edita los puntos del camino o la valla elegidos. */
+const MODO_EDITAR_LINEA = "editar-linea";
+
+/** Terra Draw rechaza coordenadas con más de 9 decimales. */
+const aLngLat9 = ({ lat, lng }: Coordenadas): LngLat => [Number(lng.toFixed(9)), Number(lat.toFixed(9))];
+
+/** Los puntos de un camino o una valla que está en Terra Draw, o null. */
+function puntosEnDibujo(dibujo: TerraDraw, id: string | number): Coordenadas[] | null {
+  const linea = dibujo.getSnapshotFeature(id);
+  if (!linea || linea.geometry.type !== "LineString") return null;
+  return (linea.geometry.coordinates as LngLat[]).map(([lng, lat]) => ({ lat, lng }));
+}
+
+/** Metros por píxel en el zoom 0 de MapLibre (teselas de 512 px), a esa latitud. */
+function metrosPorPixelEnZoom0(lat: number): number {
+  return (40_075_016.686 * Math.cos((lat * Math.PI) / 180)) / 512;
+}
+
+/** Dónde se ve algo ubicado: su centro o, en una línea, la mitad de su largo. */
+function dondeEsta(u: EnMapa): Coordenadas {
+  if (u.clase !== "linea") return u.centro;
+  const desde = u.puntos[0];
+  return aCoordenadas(desde, puntoMedioDeLinea(lineaEnMetros(desde, u.puntos)));
+}
 
 const AVISO_ORIGEN: Partial<Record<DesdeOrigen, string>> = {
   ciudad:
@@ -141,16 +195,29 @@ function geojsonElementos(
   return {
     type: "FeatureCollection",
     features: ubicadas.flatMap((u): GeoJSON.Feature[] => {
+      const elegida = u.id === seleccion ? 1 : 0;
+      if (u.clase === "linea") {
+        // El ancho del camino, en píxeles en el zoom 0: el mapa lo escala.
+        const ancho = (u.medidas.ancho ?? 0) / metrosPorPixelEnZoom0(u.puntos[0].lat);
+        return [
+          {
+            type: "Feature",
+            properties: { id: u.id, color: COLOR_POR_LINEA[u.tipo], elegida, linea: u.tipo, ancho },
+            geometry: { type: "LineString", coordinates: u.puntos.map(({ lat, lng }) => [lng, lat]) },
+          },
+        ];
+      }
       const local = { posicion: [0, 0] as Punto, rotacion: u.rotacion, medidas: u.medidas };
-      const instalacion = u.referencia ? undefined : porId.get(u.id);
-      if (!u.referencia && !instalacion) return [];
-      const color = u.referencia
-        ? COLOR_POR_REFERENCIA[u.referencia.tipo]
-        : COLOR_POR_FORMA[tipoInstalacion(instalacion!.tipo).forma];
-      const properties = { id: u.id, color, elegida: u.id === seleccion ? 1 : 0 };
+      const instalacion = u.clase === "instalacion" ? porId.get(u.id) : undefined;
+      if (u.clase === "instalacion" && !instalacion) return [];
+      const color =
+        u.clase === "referencia"
+          ? COLOR_POR_REFERENCIA[u.tipo]
+          : COLOR_POR_FORMA[tipoInstalacion(instalacion!.tipo).forma];
+      const properties = { id: u.id, color, elegida };
       const anillo = (
-        u.referencia
-          ? huellaDeReferencia({ ...local, tipo: u.referencia.tipo })
+        u.clase === "referencia"
+          ? huellaDeReferencia({ ...local, tipo: u.tipo })
           : huellaDeInstalacion(local)
       ).map(aLngLat(u.centro));
       const features: GeoJSON.Feature[] = [
@@ -160,14 +227,14 @@ function geojsonElementos(
           geometry: { type: "Polygon", coordinates: [[...anillo, anillo[0]]] },
         },
       ];
-      if (u.referencia) {
+      if (u.clase === "referencia") {
         features.push({
           type: "Feature",
           properties,
           geometry: { type: "Point", coordinates: [u.centro.lng, u.centro.lat] },
         });
       }
-      if (u.referencia && tipoReferencia(u.referencia.tipo).conFrente) {
+      if (u.clase === "referencia" && tipoReferencia(u.tipo).conFrente) {
         features.push({
           type: "Feature",
           properties: { ...properties, frente: 1 },
@@ -181,18 +248,35 @@ function geojsonElementos(
 
 /** Con qué nombre se ve algo ubicado en el mapa y en la leyenda. */
 function nombreEnMapa(u: EnMapa, nombres: ReadonlyMap<string, string>): string {
-  if (!u.referencia) return nombres.get(u.id) ?? "";
-  return nombreDeReferencia({ tipo: u.referencia.tipo, nombre: u.referencia.nombre.trim() || null });
+  if (u.clase === "instalacion") return nombres.get(u.id) ?? "";
+  return nombreDeReferencia({ tipo: u.tipo, nombre: u.nombre.trim() || null });
 }
 
 /** Lo que el panel dice de algo ubicado. */
 function datosDelPanel(u: EnMapa, instalacion: InstalacionDeLaSede | undefined): DatosPanel | null {
-  if (u.referencia) {
-    const tipo = tipoReferencia(u.referencia.tipo);
+  if (u.clase === "linea") {
+    const tipo = tipoLinea(u.tipo);
+    const largo = Math.round(largoDeLinea(lineaEnMetros(u.puntos[0], u.puntos)));
     return {
       id: u.id,
       titulo: `Elemento de referencia · ${tipo.nombre}`,
-      nombre: u.referencia.nombre.trim() || tipo.nombre,
+      nombre: u.nombre.trim() || tipo.nombre,
+      medidasDelTipo: tipo.medidas,
+      quitar: "Borrar",
+      ayudaQuitar: "Se borra del predio.",
+      ayudaMover: `Mide ${largo} m de largo. Arrastrá sus puntos para cambiar el recorrido, o la línea para moverla entera. Tocá un punto blanco para agregar uno; con clic derecho en un punto, se borra.`,
+      ayudaMedidas:
+        u.tipo === "camino"
+          ? "El mapa muestra el camino con su ancho."
+          : "El alto de la valla se ve en el 3D.",
+    };
+  }
+  if (u.clase === "referencia") {
+    const tipo = tipoReferencia(u.tipo);
+    return {
+      id: u.id,
+      titulo: `Elemento de referencia · ${tipo.nombre}`,
+      nombre: u.nombre.trim() || tipo.nombre,
       medidasDelTipo: tipo.medidas,
       quitar: "Borrar",
       ayudaQuitar: "Se borra del predio.",
@@ -252,23 +336,43 @@ export function EditorPredio({
   const anilloInicial = useRef(anillo);
   const [ubicadas, setUbicadas] = useState<EnMapa[]>(() => {
     if (!guardadoInicial) return [];
-    const comoEnMapa = (
+    const { origen } = guardadoInicial;
+    const comun = (
       id: string,
-      referencia: EnMapa["referencia"],
-      u: DatosPredio["instalaciones"][number] | DatosPredio["referencias"][number],
-    ): EnMapa => ({
+      u: Pick<DatosPredio["lineas"][number], "medidas" | "descripcion" | "ordenLeyenda">,
+    ): Comun => ({
       id,
-      referencia,
-      centro: aCoordenadas(guardadoInicial.origen, u.posicion),
-      rotacion: u.rotacion,
       medidas: u.medidas,
       descripcion: u.descripcion ?? "",
       ordenLeyenda: u.ordenLeyenda,
     });
     return [
-      ...guardadoInicial.instalaciones.map((i) => comoEnMapa(i.instalacionId, null, i)),
-      ...guardadoInicial.referencias.map((r) =>
-        comoEnMapa(r.id, { tipo: r.tipo, nombre: r.nombre ?? "" }, r),
+      ...guardadoInicial.instalaciones.map(
+        (i): EnMapa => ({
+          ...comun(i.instalacionId, i),
+          clase: "instalacion",
+          centro: aCoordenadas(origen, i.posicion),
+          rotacion: i.rotacion,
+        }),
+      ),
+      ...guardadoInicial.referencias.map(
+        (r): EnMapa => ({
+          ...comun(r.id, r),
+          clase: "referencia",
+          tipo: r.tipo,
+          nombre: r.nombre ?? "",
+          centro: aCoordenadas(origen, r.posicion),
+          rotacion: r.rotacion,
+        }),
+      ),
+      ...guardadoInicial.lineas.map(
+        (l): EnMapa => ({
+          ...comun(l.id, l),
+          clase: "linea",
+          tipo: l.tipo,
+          nombre: l.nombre ?? "",
+          puntos: lineaEnCoordenadas(origen, l.puntos),
+        }),
       ),
     ];
   });
@@ -276,6 +380,8 @@ export function EditorPredio({
   const [mapaListo, setMapaListo] = useState(false);
   const etiquetasRef = useRef<maplibregl.Marker[]>([]);
   const [herramienta, setHerramienta] = useState<Herramienta>("mover");
+  /** El camino o la valla que se está dibujando punto a punto, o null. */
+  const [trazando, setTrazando] = useState<ClaveTipoLinea | null>(null);
   const [fuente, setFuente] = useState<FuenteSatelital | null>(null);
   const [copyright, setCopyright] = useState("");
   const [sinLogo, setSinLogo] = useState(false);
@@ -284,22 +390,37 @@ export function EditorPredio({
   const [guardando, startGuardar] = useTransition();
 
   const actual = useMemo<DatosPredio>(() => {
-    const enMetros = (u: EnMapa) => ({
-      posicion: aMetros(origen, u.centro),
-      rotacion: u.rotacion,
+    const comun = (u: EnMapa) => ({
       medidas: u.medidas,
       descripcion: u.descripcion,
       ordenLeyenda: u.ordenLeyenda,
+    });
+    const enMetros = (u: { centro: Coordenadas; rotacion: number }) => ({
+      posicion: aMetros(origen, u.centro),
+      rotacion: u.rotacion,
     });
     return {
       origen,
       area: areaEnMetros(anillo, origen),
       instalaciones: ubicadas.flatMap((u) =>
-        u.referencia ? [] : [{ instalacionId: u.id, ...enMetros(u) }],
+        u.clase === "instalacion" ? [{ instalacionId: u.id, ...enMetros(u), ...comun(u) }] : [],
       ),
       referencias: ubicadas.flatMap((u) =>
-        u.referencia
-          ? [{ id: u.id, tipo: u.referencia.tipo, nombre: u.referencia.nombre, ...enMetros(u) }]
+        u.clase === "referencia"
+          ? [{ id: u.id, tipo: u.tipo, nombre: u.nombre, ...enMetros(u), ...comun(u) }]
+          : [],
+      ),
+      lineas: ubicadas.flatMap((u) =>
+        u.clase === "linea"
+          ? [
+              {
+                id: u.id,
+                tipo: u.tipo,
+                nombre: u.nombre,
+                puntos: lineaEnMetros(origen, u.puntos),
+                ...comun(u),
+              },
+            ]
           : [],
       ),
     };
@@ -315,12 +436,18 @@ export function EditorPredio({
     area: [],
     instalaciones: [],
     referencias: [],
+    lineas: [],
   };
 
   // Lo que leen los manejadores del mapa, que se registran una sola vez.
-  const vivo = useRef({ herramienta: "mover" as Herramienta, ubicadas });
+  const vivo = useRef({
+    herramienta: "mover" as Herramienta,
+    ubicadas,
+    seleccion: null as string | null,
+    trazando: null as ClaveTipoLinea | null,
+  });
   useLayoutEffect(() => {
-    vivo.current = { herramienta, ubicadas };
+    vivo.current = { herramienta, ubicadas, seleccion, trazando };
   });
   const hayCambios = hayCambiosEnPredio(base, actual);
 
@@ -392,6 +519,38 @@ export function EditorPredio({
       });
       const esPoligono = ["==", ["geometry-type"], "Polygon"] as maplibregl.FilterSpecification;
       const esElegida: maplibregl.ExpressionSpecification = ["==", ["get", "elegida"], 1];
+      // Los caminos van con su ancho real: en cada zoom, el doble de píxeles.
+      mapa.addLayer({
+        id: CAPA_CAMINOS,
+        type: "line",
+        source: "elementos",
+        filter: ["==", ["get", "linea"], "camino"],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ["get", "color"],
+          "line-opacity": ["case", esElegida, 0.95, 0.8],
+          "line-width": [
+            "interpolate",
+            ["exponential", 2],
+            ["zoom"],
+            0,
+            ["get", "ancho"],
+            24,
+            ["*", ["get", "ancho"], 2 ** 24],
+          ],
+        },
+      });
+      mapa.addLayer({
+        id: CAPA_VALLAS,
+        type: "line",
+        source: "elementos",
+        filter: ["==", ["get", "linea"], "valla"],
+        paint: {
+          "line-color": ["get", "color"],
+          "line-width": ["case", esElegida, 4, 3],
+          "line-dasharray": [2, 1],
+        },
+      });
       mapa.addLayer({
         id: CAPA_HUELLAS,
         type: "fill",
@@ -433,15 +592,31 @@ export function EditorPredio({
         },
       });
 
+      /** Si el puntero está sobre el camino o la valla que Terra Draw edita, o un punto suyo. */
+      const tocaLaLineaEditada = (lngLat: maplibregl.LngLat) => {
+        const dibujo = dibujoRef.current;
+        // El área también está en Terra Draw y contiene casi todo: no cuenta.
+        return (
+          dibujo?.getMode() === MODO_EDITAR_LINEA &&
+          dibujo
+            .getFeaturesAtLngLat(lngLat, { pointerDistance: 12 })
+            .some((f) => f.geometry.type !== "Polygon")
+        );
+      };
+
       // Arrastrar algo ubicado lo mueve (con «Mover y elegir» o con la paleta abierta).
       let arrastrando: { id: string; desfase: [number, number] } | null = null;
       const alBajar = (evento: maplibregl.MapLayerMouseEvent) => {
-        if (vivo.current.herramienta === "area" || arrastrando) return;
+        if (vivo.current.herramienta === "area" || vivo.current.trazando || arrastrando) return;
         // Lo que empieza sobre el pin del origen mueve el origen, no el elemento.
         if (evento.originalEvent.target !== mapa.getCanvas()) return;
+        if (tocaLaLineaEditada(evento.lngLat)) return;
         const id = evento.features?.[0]?.properties?.id as string | undefined;
         const ubicada = vivo.current.ubicadas.find((u) => u.id === id);
         if (!id || !ubicada) return;
+        // Un camino o una valla no se arrastra desde acá: se elige en el
+        // «click» y sus puntos los mueve Terra Draw.
+        if (ubicada.clase === "linea") return;
         evento.preventDefault();
         setSeleccion(id);
         const [este, norte] = aMetros(ubicada.centro, {
@@ -458,7 +633,9 @@ export function EditorPredio({
         if (!arrastrando) return;
         const { id, desfase } = arrastrando;
         const centro = aCoordenadas({ lat: evento.lngLat.lat, lng: evento.lngLat.lng }, desfase);
-        setUbicadas((lista) => lista.map((u) => (u.id === id ? { ...u, centro } : u)));
+        setUbicadas((lista) =>
+          lista.map((u) => (u.id === id && u.clase !== "linea" ? { ...u, centro } : u)),
+        );
       });
       mapa.on("mouseup", () => {
         if (!arrastrando) return;
@@ -466,9 +643,17 @@ export function EditorPredio({
         mapa.dragPan.enable();
       });
       mapa.on("click", (evento) => {
-        if (vivo.current.herramienta === "area") return;
-        const tocadas = mapa.queryRenderedFeatures(evento.point, { layers: CAPAS_TOCABLES });
-        if (tocadas.length === 0) setSeleccion(null);
+        if (vivo.current.herramienta === "area" || vivo.current.trazando) return;
+        // Un punto del camino o la valla que se edita puede quedar fuera de su línea.
+        if (tocaLaLineaEditada(evento.lngLat)) return;
+        const [tocada] = mapa.queryRenderedFeatures(evento.point, { layers: CAPAS_TOCABLES });
+        // Se elige al soltar: si se eligiera al bajar, Terra Draw tomaría este
+        // mismo toque como propio y, en la mitad de un tramo, le sumaría un punto.
+        if (tocada?.layer.id === CAPA_CAMINOS || tocada?.layer.id === CAPA_VALLAS) {
+          setSeleccion(tocada.properties.id as string);
+          return;
+        }
+        if (!tocada) setSeleccion(null);
       });
       for (const capa of CAPAS_TOCABLES) {
         mapa.on("mouseenter", capa, () => {
@@ -511,6 +696,40 @@ export function EditorPredio({
               midPointColor: "#ffffff",
             },
           }),
+          // Caminos y vallas (#47): se dibujan punto a punto…
+          new TerraDrawLineStringMode({
+            styles: {
+              lineStringColor: AMARILLO,
+              lineStringWidth: 3,
+              closingPointColor: AMARILLO,
+              closingPointOutlineColor: "#ffffff",
+              coordinatePointColor: AMARILLO,
+            },
+          }),
+          // …y el elegido se edita: el editor lo elige, no un toque en el mapa.
+          new TerraDrawSelectMode({
+            modeName: MODO_EDITAR_LINEA,
+            allowManualSelection: false,
+            allowManualDeselection: false,
+            // Sin teclas: Supr borraría la línea entera a espaldas del editor.
+            keyEvents: null,
+            flags: {
+              linestring: {
+                feature: {
+                  draggable: true,
+                  coordinates: { draggable: true, midpoints: true, deletable: true },
+                },
+              },
+            },
+            styles: {
+              selectedLineStringColor: "#ffffff",
+              selectedLineStringWidth: 2,
+              selectionPointColor: AMARILLO,
+              selectionPointOutlineColor: "#1d1d1d",
+              midPointColor: "#ffffff",
+              midPointOutlineColor: "#1d1d1d",
+            },
+          }),
         ],
       });
       dibujo.start();
@@ -531,10 +750,42 @@ export function EditorPredio({
 
       // Mientras se dibuja, el polígono está a medias: se lee al terminar.
       dibujo.on("change", () => {
+        if (dibujo.getMode() === MODO_EDITAR_LINEA) {
+          // Los puntos del camino o la valla que se edita.
+          const id = vivo.current.seleccion;
+          const puntos = id ? puntosEnDibujo(dibujo, id) : null;
+          if (!puntos) return;
+          setUbicadas((lista) =>
+            lista.map((u) => (u.id === id && u.clase === "linea" ? { ...u, puntos } : u)),
+          );
+          return;
+        }
         if (dibujo.getMode() !== "select") return;
         setAnillo(anilloDelArea(dibujo.getSnapshot()));
       });
       dibujo.on("finish", (id, contexto) => {
+        if (contexto.mode === "linestring") {
+          // Un camino o una valla recién dibujado: se agrega y queda elegido.
+          const tipo = vivo.current.trazando;
+          const puntos = puntosEnDibujo(dibujo, id);
+          if (!tipo || !puntos) return;
+          setUbicadas((lista) => [
+            ...lista,
+            {
+              id: String(id),
+              clase: "linea",
+              tipo,
+              nombre: "",
+              puntos,
+              medidas: medidasDeLinea(tipo, null),
+              descripcion: "",
+              ordenLeyenda: null,
+            },
+          ]);
+          setTrazando(null);
+          setSeleccion(String(id));
+          return;
+        }
         if (contexto.mode !== "polygon") return;
         dibujo.setMode("select");
         dibujo.selectFeature(id);
@@ -595,20 +846,54 @@ export function EditorPredio({
     etiquetasRef.current = ubicadas.flatMap((u) => {
       const numero = numeros.get(u.id);
       // Un elemento de referencia sin nombre ni número es decorado: va sin etiqueta.
-      if (u.referencia && !numero && !u.referencia.nombre.trim()) return [];
+      if (u.clase !== "instalacion" && !numero && !u.nombre.trim()) return [];
       const elemento = document.createElement("span");
       elemento.className =
         "pointer-events-none rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-semibold text-white";
       const nombre = nombreEnMapa(u, nombres);
       elemento.textContent = numero ? `${numero} · ${nombre}` : nombre;
+      const { lat, lng } = dondeEsta(u);
       // Debajo del centro, para no tapar el punto que se arrastra.
       return [
-        new maplibregl.Marker({ element: elemento, offset: u.referencia ? [0, 16] : [0, 0] })
-          .setLngLat([u.centro.lng, u.centro.lat])
+        new maplibregl.Marker({
+          element: elemento,
+          offset: u.clase === "instalacion" ? [0, 0] : [0, 16],
+        })
+          .setLngLat([lng, lat])
           .addTo(mapa),
       ];
     });
   }, [mapaListo, ubicadas, instalaciones, seleccion, numeros]);
+
+  // El camino o la valla elegidos pasan a Terra Draw para editar sus puntos;
+  // los demás, no. Lo que se dibuja de nuevo lo agrega el «finish».
+  useEffect(() => {
+    const dibujo = dibujoRef.current;
+    if (!dibujo || !mapaListo) return;
+    const editando =
+      herramienta === "area" || trazando
+        ? undefined
+        : vivo.current.ubicadas.find((u) => u.id === seleccion && u.clase === "linea");
+    // Salir del modo de edición limpia los puntos de la línea anterior.
+    if (dibujo.getMode() === MODO_EDITAR_LINEA) dibujo.setMode("static");
+    const sobran = dibujo
+      .getSnapshot()
+      .filter((f) => f.properties.mode === "linestring" && f.id !== editando?.id)
+      .flatMap((f) => (f.id === undefined ? [] : [f.id]));
+    if (sobran.length > 0) dibujo.removeFeatures(sobran);
+    if (!editando || editando.clase !== "linea") return;
+    if (!dibujo.getSnapshotFeature(editando.id)) {
+      dibujo.addFeatures([
+        {
+          id: editando.id,
+          type: "Feature",
+          geometry: { type: "LineString", coordinates: editando.puntos.map(aLngLat9) },
+          properties: { mode: "linestring" },
+        },
+      ]);
+    }
+    dibujo.selectFeature(editando.id, MODO_EDITAR_LINEA);
+  }, [mapaListo, herramienta, trazando, seleccion]);
 
   function ubicar(instalacionId: string) {
     const mapa = mapaRef.current;
@@ -622,7 +907,7 @@ export function EditorPredio({
           ...lista,
           {
             id: instalacionId,
-            referencia: null,
+            clase: "instalacion",
             centro: { lat, lng },
             rotacion: 0,
             medidas: medidasDelTipo(instalacion.tipo, null),
@@ -651,7 +936,9 @@ export function EditorPredio({
       ...lista,
       {
         id,
-        referencia: { tipo, nombre: "" },
+        clase: "referencia",
+        tipo,
+        nombre: "",
         centro: { lat, lng },
         rotacion: 0,
         medidas: medidasDeReferencia(tipo, null),
@@ -662,16 +949,38 @@ export function EditorPredio({
     setSeleccion(id);
   }
 
+  /**
+   * Empieza a dibujar un camino o una valla punto a punto (#47). Como los
+   * demás elementos de referencia, entra sin número.
+   */
+  function trazar(tipo: ClaveTipoLinea) {
+    setSeleccion(null);
+    setTrazando(tipo);
+    dibujoRef.current?.setMode("linestring");
+  }
+
+  function dejarDeTrazar() {
+    setTrazando(null);
+    // Salir del modo descarta lo que quedó a medio dibujar.
+    dibujoRef.current?.setMode("static");
+  }
+
   function elegirElemento(id: string) {
     const mapa = mapaRef.current;
     const ubicada = ubicadas.find((u) => u.id === id);
-    if (mapa && ubicada) mapa.easeTo({ center: [ubicada.centro.lng, ubicada.centro.lat] });
+    if (mapa && ubicada) {
+      const { lat, lng } = dondeEsta(ubicada);
+      mapa.easeTo({ center: [lng, lat] });
+    }
     if (herramienta === "area") elegirHerramienta("mover");
+    if (trazando) dejarDeTrazar();
     setSeleccion(id);
   }
 
-  function cambiarUbicada(id: string, cambio: Partial<EnMapa>) {
-    setUbicadas((lista) => lista.map((u) => (u.id === id ? { ...u, ...cambio } : u)));
+  function cambiarUbicada(id: string, cambio: CambioEnMapa) {
+    setUbicadas((lista) =>
+      lista.map((u) => (u.id === id ? ({ ...u, ...cambio } as EnMapa) : u)),
+    );
   }
 
   function ponerEnLeyenda(id: string, entra: boolean) {
@@ -689,6 +998,7 @@ export function EditorPredio({
 
   function elegirHerramienta(nueva: Herramienta) {
     setHerramienta(nueva);
+    setTrazando(null);
     if (nueva === "area") setSeleccion(null);
     const dibujo = dibujoRef.current;
     if (!dibujo) return;
@@ -815,14 +1125,27 @@ export function EditorPredio({
       </div>
 
       <div className="absolute left-20 top-24 flex w-72 flex-col gap-3 rounded-2xl bg-background/95 p-3 text-sm shadow-lg">
-        {herramienta === "referencias" ? (
+        {trazando ? (
+          <>
+            <p className="font-medium">Dibujar {tipoLinea(trazando).nombre.toLowerCase()}</p>
+            <p className="text-muted-foreground">
+              Tocá el mapa para marcar cada punto. Para terminar, tocá de nuevo el último punto
+              o apretá Enter. Con Esc, se descarta lo dibujado.
+            </p>
+            <Button variant="outline" className="h-9 justify-start rounded-lg" onClick={dejarDeTrazar}>
+              <X className="size-4" />
+              Cancelar
+            </Button>
+          </>
+        ) : herramienta === "referencias" ? (
           <>
             <p className="font-medium">Elementos de referencia</p>
             <p className="text-muted-foreground">
               Tocá uno para agregarlo en el centro del mapa. Después se arrastra, se gira y se
-              le cambian las medidas como a una instalación.
+              le cambian las medidas como a una instalación. Los caminos y las vallas se dibujan
+              punto a punto.
             </p>
-            <PaletaReferencias onAgregar={agregarReferencia} />
+            <PaletaReferencias onAgregar={agregarReferencia} onTrazar={trazar} />
           </>
         ) : herramienta === "area" ? (
           <>
@@ -879,7 +1202,7 @@ export function EditorPredio({
 
       <BarraInstalaciones
         instalaciones={instalaciones}
-        ubicadas={new Set(ubicadas.flatMap((u) => (u.referencia ? [] : [u.id])))}
+        ubicadas={new Set(ubicadas.flatMap((u) => (u.clase === "instalacion" ? [u.id] : [])))}
         seleccion={seleccion}
         onElegir={elegirElemento}
         onUbicar={ubicar}
@@ -889,7 +1212,7 @@ export function EditorPredio({
         <PanelElemento
           elemento={panel}
           numero={numeros.get(elegida.id) ?? null}
-          rotacion={elegida.rotacion}
+          rotacion={elegida.clase === "linea" ? null : elegida.rotacion}
           medidas={elegida.medidas}
           onRotar={(rotacion) => cambiarUbicada(elegida.id, { rotacion })}
           onMedida={(clave, valor) =>
@@ -900,13 +1223,11 @@ export function EditorPredio({
           onQuitar={() => quitarDelPredio(elegida.id)}
           onCerrar={() => setSeleccion(null)}
         >
-          {elegida.referencia ? (
+          {elegida.clase !== "instalacion" ? (
             <CampoNombre
               key={`nombre-${elegida.id}`}
-              nombre={elegida.referencia.nombre}
-              onNombre={(nombre) =>
-                cambiarUbicada(elegida.id, { referencia: { ...elegida.referencia!, nombre } })
-              }
+              nombre={elegida.nombre}
+              onNombre={(nombre) => cambiarUbicada(elegida.id, { nombre })}
             />
           ) : null}
           <CamposLeyenda

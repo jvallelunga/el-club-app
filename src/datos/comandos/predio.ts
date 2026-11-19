@@ -14,7 +14,7 @@ import type { ResultadoSimple } from "./sedes";
 
 /**
  * Guarda el origen, el área, las instalaciones ubicadas y los elementos de
- * referencia del predio de una sede, con su descripción y su lugar en la
+ * referencia (con caminos y vallas) del predio de una sede, con su descripción y su lugar en la
  * leyenda, todo junto. Solo el Super Admin.
  */
 export async function guardarPredio(
@@ -51,7 +51,7 @@ export async function guardarPredio(
 
   const invalido = errorDelPredio(deLaSede, tiposDeLaSede);
   if (invalido) return { ok: false, error: invalido };
-  const { origen, area, instalaciones, referencias } = predioParaGuardar(deLaSede);
+  const { origen, area, instalaciones, referencias, lineas } = predioParaGuardar(deLaSede);
 
   const { error } = await supabase.rpc("guardar_predio", {
     p_sede_id: sedeId,
@@ -67,17 +67,30 @@ export async function guardarPredio(
       descripcion: i.descripcion,
       orden_leyenda: i.ordenLeyenda,
     })),
-    p_referencias: referencias.map((r) => ({
-      id: r.id,
-      tipo: r.tipo,
-      nombre: r.nombre,
-      este: r.posicion[0],
-      norte: r.posicion[1],
-      rotacion: r.rotacion,
-      medidas: r.medidas,
-      descripcion: r.descripcion,
-      orden_leyenda: r.ordenLeyenda,
-    })),
+    // Los caminos y las vallas van con los demás elementos de referencia, con
+    // sus puntos en vez de posición y rotación (#47).
+    p_referencias: [
+      ...referencias.map((r) => ({
+        id: r.id,
+        tipo: r.tipo,
+        nombre: r.nombre,
+        este: r.posicion[0],
+        norte: r.posicion[1],
+        rotacion: r.rotacion,
+        medidas: r.medidas,
+        descripcion: r.descripcion,
+        orden_leyenda: r.ordenLeyenda,
+      })),
+      ...lineas.map((l) => ({
+        id: l.id,
+        tipo: l.tipo,
+        nombre: l.nombre,
+        puntos: l.puntos,
+        medidas: l.medidas,
+        descripcion: l.descripcion,
+        orden_leyenda: l.ordenLeyenda,
+      })),
+    ],
   });
   if (error) {
     return { ok: false, error: "No se pudo guardar el predio. Probá de nuevo." };

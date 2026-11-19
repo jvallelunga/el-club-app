@@ -4,6 +4,7 @@ import {
   huellaDeReferencia,
   type DatosPredio,
   type InstalacionUbicada,
+  type LineaUbicada,
   type ReferenciaUbicada,
 } from "./predio";
 import { medidasPorDefecto, TIPOS_INSTALACION } from "./tipos-instalacion";
@@ -12,6 +13,7 @@ import {
   COLOR_AGUA,
   escalonesDeGradas,
   piezasDeInstalacion,
+  piezasDeLinea,
   piezasDeReferencia,
   predioArmado,
   predioParaVisor,
@@ -39,7 +41,7 @@ function predio(cambios: Partial<DatosPredio> = {}): DatosPredio {
     origen: { lat: -37.3, lng: -59.1 },
     area: AREA,
     instalaciones: [CANCHA_1],
-    referencias: [],
+    referencias: [], lineas: [],
     ...cambios,
   };
 }
@@ -83,7 +85,7 @@ describe("predioParaVisor", () => {
           numero: 1,
         },
       ],
-      referencias: [],
+      referencias: [], lineas: [],
       leyenda: [
         { id: "cancha-1", numero: 1, nombre: "Cancha 1", descripcion: "La cancha principal." },
       ],
@@ -212,6 +214,110 @@ describe("predioParaVisor", () => {
 
   it("si ninguna instalación ubicada sigue en la sede, no muestra nada", () => {
     expect(predioParaVisor(predio(), [])).toBeNull();
+  });
+
+  const CAMINO: LineaUbicada = {
+    id: "camino",
+    tipo: "camino",
+    nombre: null,
+    puntos: [[0, 0], [50, 0], [50, 40]],
+    medidas: { ancho: 4 },
+    descripcion: "Del estacionamiento a la cancha.",
+    ordenLeyenda: 1,
+  };
+  const VALLA: LineaUbicada = {
+    id: "valla",
+    tipo: "valla",
+    nombre: "El cerco viejo",
+    puntos: [[0, 150], [200, 150]],
+    medidas: { alto: 1.5 },
+    descripcion: null,
+    ordenLeyenda: null,
+  };
+
+  it("trae los caminos y las vallas con sus puntos; sin nombre propio, se llaman como su tipo", () => {
+    const visor = predioParaVisor(
+      predio({ instalaciones: [{ ...CANCHA_1, ordenLeyenda: 2 }], lineas: [CAMINO, VALLA] }),
+      DE_LA_SEDE,
+    );
+    expect(visor?.lineas).toEqual([
+      {
+        id: "camino",
+        tipo: "camino",
+        nombre: "Camino",
+        puntos: [[0, 0], [50, 0], [50, 40]],
+        medidas: { ancho: 4 },
+        descripcion: "Del estacionamiento a la cancha.",
+        numero: 1,
+      },
+      expect.objectContaining({ id: "valla", nombre: "El cerco viejo", numero: null }),
+    ]);
+    expect(visor?.leyenda.map((e) => [e.numero, e.nombre])).toEqual([
+      [1, "Camino"],
+      [2, "Cancha 1"],
+    ]);
+  });
+
+  it("los caminos y las vallas solos no arman el predio", () => {
+    expect(predioParaVisor(predio({ instalaciones: [], lineas: [CAMINO] }), DE_LA_SEDE)).toBeNull();
+  });
+});
+
+describe("piezasDeLinea", () => {
+  /** Las piezas que no son redondas (los tramos). */
+  const tramos = (piezas: Pieza[]) => piezas.filter((p) => p.forma === "caja");
+
+  it("un camino recto al este es una franja de su largo y su ancho, apoyada en el pasto", () => {
+    const piezas = piezasDeLinea("camino", [[0, 0], [10, 0]], { ancho: 4 });
+    expect(piezas).toHaveLength(1);
+    const [franja] = piezas;
+    expect(franja.forma).toBe("caja");
+    expect(franja.tamano[0]).toBeCloseTo(10, 9);
+    expect(franja.tamano[2]).toBe(4);
+    expect(franja.centro[0]).toBeCloseTo(5, 9);
+    expect(franja.centro[2]).toBeCloseTo(0, 9);
+    // Bajita: apenas sobre el pasto, debajo del piso de una cancha (10 cm).
+    expect(franja.centro[1] - franja.tamano[1] / 2).toBe(0);
+    expect(franja.tamano[1]).toBeLessThan(0.1);
+    expect(franja.giro ?? 0).toBeCloseTo(0, 9);
+  });
+
+  it("un tramo al norte va hacia −z en la escena, girado un cuarto de vuelta", () => {
+    const [franja] = piezasDeLinea("camino", [[0, 0], [0, 10]], { ancho: 4 });
+    expect(franja.centro[0]).toBeCloseTo(0, 9);
+    expect(franja.centro[2]).toBeCloseTo(-5, 9);
+    expect(franja.giro).toBeCloseTo(Math.PI / 2, 9);
+  });
+
+  it("sigue sus puntos: un tramo por cada par, con las vueltas redondeadas", () => {
+    const piezas = piezasDeLinea("camino", [[0, 0], [50, 0], [50, 40]], { ancho: 4 });
+    expect(tramos(piezas).map((p) => Math.round(p.tamano[0]))).toEqual([50, 40]);
+    // En la vuelta, un disco del ancho del camino.
+    expect(piezas.filter((p) => p.forma === "cilindro")).toEqual([
+      expect.objectContaining({ centro: [50, expect.any(Number), 0], tamano: [4, expect.any(Number), 4] }),
+    ]);
+  });
+
+  it("se saltea un tramo sin largo (dos puntos en el mismo lugar)", () => {
+    const piezas = piezasDeLinea("camino", [[0, 0], [10, 0], [10, 0], [10, 10]], { ancho: 4 });
+    expect(tramos(piezas)).toHaveLength(2);
+  });
+
+  it("la valla es un cerco de su alto, con postes en cada punto y como mucho cada 2,5 m", () => {
+    const piezas = piezasDeLinea("valla", [[0, 0], [10, 0], [10, 4]], { alto: 1.5 });
+    const postes = piezas.filter((p) => p.tamano[1] === 1.5);
+    const xz = postes.map((p) => [Math.round(p.centro[0] * 100) / 100, Math.round(p.centro[2] * 100) / 100 + 0]);
+    // 10 m en 4 tramos de 2,5 m (5 postes) y 4 m en 2 de 2 m (2 postes más).
+    expect(xz).toEqual([
+      [0, 0], [2.5, 0], [5, 0], [7.5, 0], [10, 0],
+      [10, -2], [10, -4],
+    ]);
+    const arriba = Math.max(...piezas.map((p) => p.centro[1] + p.tamano[1] / 2));
+    expect(arriba).toBeCloseTo(1.5, 9);
+    // Cada tramo lleva dos travesaños a lo largo, girados como el tramo.
+    const travesanos = piezas.filter((p) => p.tamano[1] < 1.5);
+    expect(travesanos.map((p) => Math.round(p.tamano[0]))).toEqual([10, 10, 4, 4]);
+    expect(travesanos[2].giro).toBeCloseTo(Math.PI / 2, 9);
   });
 });
 
