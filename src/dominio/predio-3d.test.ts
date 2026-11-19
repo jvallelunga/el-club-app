@@ -15,6 +15,8 @@ const CANCHA_1: InstalacionUbicada = {
   posicion: [100, 75],
   rotacion: 0,
   medidas: { largo: 100, ancho: 70, ingoal: 10 },
+  descripcion: "La cancha principal.",
+  ordenLeyenda: 1,
 };
 
 function predio(cambios: Partial<DatosPredio> = {}): DatosPredio {
@@ -61,7 +63,12 @@ describe("predioParaVisor", () => {
           posicion: [100, 75],
           rotacion: 0,
           medidas: { largo: 100, ancho: 70, ingoal: 10 },
+          descripcion: "La cancha principal.",
+          numero: 1,
         },
+      ],
+      leyenda: [
+        { id: "cancha-1", numero: 1, nombre: "Cancha 1", descripcion: "La cancha principal." },
       ],
     });
   });
@@ -78,10 +85,54 @@ describe("predioParaVisor", () => {
       posicion: [20, 20],
       rotacion: 90,
       medidas: { largo: 25, ancho: 12 },
+      descripcion: null,
+      ordenLeyenda: null,
     };
     const borrada: InstalacionUbicada = { ...pileta, instalacionId: "borrada" };
     const visor = predioParaVisor(predio({ instalaciones: [borrada, pileta] }), DE_LA_SEDE);
     expect(visor?.instalaciones.map((i) => i.id)).toEqual(["pileta"]);
+  });
+
+  it("numera según el orden de la leyenda y la lista en ese orden; lo demás va sin número", () => {
+    const enLaSede = [
+      ...DE_LA_SEDE,
+      { id: "house", nombre: "House", tipo: "house" as const },
+    ];
+    const ubicada = (instalacionId: string, ordenLeyenda: number | null): InstalacionUbicada => ({
+      ...CANCHA_1,
+      instalacionId,
+      descripcion: null,
+      ordenLeyenda,
+    });
+    const visor = predioParaVisor(
+      predio({ instalaciones: [ubicada("cancha-1", 2), ubicada("pileta", null), ubicada("house", 1)] }),
+      enLaSede,
+    );
+    expect(visor?.instalaciones.map((i) => [i.id, i.numero])).toEqual([
+      ["cancha-1", 2],
+      ["pileta", null],
+      ["house", 1],
+    ]);
+    expect(visor?.leyenda.map((e) => [e.numero, e.nombre])).toEqual([
+      [1, "House"],
+      [2, "Cancha 1"],
+    ]);
+  });
+
+  it("si una instalación de la leyenda ya no es de la sede, los números no saltan", () => {
+    const ubicada = (instalacionId: string, ordenLeyenda: number): InstalacionUbicada => ({
+      ...CANCHA_1,
+      instalacionId,
+      ordenLeyenda,
+    });
+    const visor = predioParaVisor(
+      predio({ instalaciones: [ubicada("borrada", 1), ubicada("cancha-1", 2), ubicada("pileta", 3)] }),
+      DE_LA_SEDE,
+    );
+    expect(visor?.leyenda.map((e) => [e.numero, e.id])).toEqual([
+      [1, "cancha-1"],
+      [2, "pileta"],
+    ]);
   });
 
   it("si ninguna instalación ubicada sigue en la sede, no muestra nada", () => {

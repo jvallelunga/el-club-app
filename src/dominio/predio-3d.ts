@@ -3,6 +3,7 @@
  * arma cada instalación con primitivas. Sin three.js, para poder probarlo.
  */
 
+import { numerosDeLeyenda } from "./leyenda";
 import type { DatosPredio, InstalacionDeLaSede, InstalacionUbicada, Punto } from "./predio";
 import { tipoInstalacion, type ClaveTipoInstalacion } from "./tipos-instalacion";
 
@@ -15,9 +16,27 @@ export function predioArmado(predio: DatosPredio | null): boolean {
 }
 
 /** Una instalación ubicada, con lo que el visor necesita para dibujarla. */
-export type InstalacionEnVisor = InstalacionDeLaSede & Omit<InstalacionUbicada, "instalacionId">;
+export type InstalacionEnVisor = InstalacionDeLaSede &
+  Pick<InstalacionUbicada, "posicion" | "rotacion" | "medidas" | "descripcion"> & {
+    /** Su número en la leyenda, o null: sin número no se puede tocar. */
+    numero: number | null;
+  };
 
-export type PredioEnVisor = { area: Punto[]; instalaciones: InstalacionEnVisor[] };
+/** Una línea de la leyenda: el número, el nombre y la descripción. */
+export type EntradaLeyenda = {
+  /** El id de la instalación. */
+  id: string;
+  numero: number;
+  nombre: string;
+  descripcion: string | null;
+};
+
+export type PredioEnVisor = {
+  area: Punto[];
+  instalaciones: InstalacionEnVisor[];
+  /** Lo que tiene número, en el orden de la leyenda. */
+  leyenda: EntradaLeyenda[];
+};
 
 /**
  * Lo que muestra el visor, o null si no hay nada que mostrar: el predio no
@@ -35,15 +54,24 @@ export function predioParaVisor(
     instalaciones: guardado.instalaciones.filter((ubicada) => porId.has(ubicada.instalacionId)),
   };
   if (!predioArmado(vigente)) return null;
-  return {
-    area: vigente.area,
-    instalaciones: vigente.instalaciones.map(({ instalacionId, posicion, rotacion, medidas }) => ({
+  // Se numera después de filtrar: lo que ya no está no deja un hueco.
+  const numeros = numerosDeLeyenda(vigente.instalaciones);
+  const instalaciones = vigente.instalaciones.map(
+    ({ instalacionId, posicion, rotacion, medidas, descripcion }) => ({
       ...porId.get(instalacionId)!,
       posicion,
       rotacion,
       medidas,
-    })),
-  };
+      descripcion,
+      numero: numeros.get(instalacionId) ?? null,
+    }),
+  );
+  const leyenda = instalaciones
+    .flatMap(({ id, numero, nombre, descripcion }) =>
+      numero === null ? [] : [{ id, numero, nombre, descripcion }],
+    )
+    .sort((a, b) => a.numero - b.numero);
+  return { area: vigente.area, instalaciones, leyenda };
 }
 
 // ---------------------------------------------------------------------------

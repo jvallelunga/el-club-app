@@ -1,3 +1,9 @@
+import {
+  descripcionLimpia,
+  errorDeDescripcion,
+  numerosDeLeyenda,
+  renumerarLeyenda,
+} from "./leyenda";
 import { sonCoordenadasValidas, type Coordenadas } from "./maps";
 import { tipoInstalacion, type ClaveTipoInstalacion } from "./tipos-instalacion";
 
@@ -132,6 +138,7 @@ function diferenciaDeAngulos(a: number, b: number): number {
 function hayCambiosEnInstalacion(antes: InstalacionUbicada, ahora: InstalacionUbicada) {
   const claves = new Set([...Object.keys(antes.medidas), ...Object.keys(ahora.medidas)]);
   return (
+    descripcionLimpia(antes.descripcion) !== descripcionLimpia(ahora.descripcion) ||
     Math.hypot(antes.posicion[0] - ahora.posicion[0], antes.posicion[1] - ahora.posicion[1]) >
       TOLERANCIA_METROS ||
     diferenciaDeAngulos(antes.rotacion, ahora.rotacion) > TOLERANCIA_GRADOS ||
@@ -143,8 +150,19 @@ function hayCambiosEnInstalacion(antes: InstalacionUbicada, ahora: InstalacionUb
   );
 }
 
+/** Si cambió qué entra en la leyenda o en qué orden (los números que se ven). */
+function hayCambiosEnLeyenda(antes: InstalacionUbicada[], ahora: InstalacionUbicada[]) {
+  const numerosAntes = numerosDeLeyenda(antes);
+  const numerosAhora = numerosDeLeyenda(ahora);
+  return (
+    numerosAntes.size !== numerosAhora.size ||
+    [...numerosAhora].some(([id, numero]) => numerosAntes.get(id) !== numero)
+  );
+}
+
 function hayCambiosEnInstalaciones(antes: InstalacionUbicada[], ahora: InstalacionUbicada[]) {
   if (antes.length !== ahora.length) return true;
+  if (hayCambiosEnLeyenda(antes, ahora)) return true;
   const porId = new Map(antes.map((i) => [i.instalacionId, i]));
   return ahora.some((i) => {
     const previa = porId.get(i.instalacionId);
@@ -175,8 +193,9 @@ function rotacionParaGuardar(grados: number): number {
 }
 
 /**
- * Redondea para guardar: el área, las posiciones y las medidas al centímetro,
- * la rotación a la décima de grado y el origen a 7 decimales (~1 cm).
+ * Prepara para guardar. Redondea el área, las posiciones y las medidas al
+ * centímetro, la rotación a la décima de grado y el origen a 7 decimales
+ * (~1 cm). Limpia la descripción y deja el orden de la leyenda corrido (1, 2, 3…).
  */
 export function predioParaGuardar(datos: DatosPredio): DatosPredio {
   // «+ 0» evita guardar -0.
@@ -185,13 +204,15 @@ export function predioParaGuardar(datos: DatosPredio): DatosPredio {
   return {
     origen: { lat: grados(datos.origen.lat), lng: grados(datos.origen.lng) },
     area: datos.area.map(([e, n]) => [cm(e), cm(n)]),
-    instalaciones: datos.instalaciones.map((i) => ({
+    instalaciones: renumerarLeyenda(datos.instalaciones).map((i) => ({
       instalacionId: i.instalacionId,
       posicion: [cm(i.posicion[0]), cm(i.posicion[1])],
       rotacion: rotacionParaGuardar(i.rotacion),
       medidas: Object.fromEntries(
         Object.entries(i.medidas).map(([clave, valor]) => [clave, cm(valor)]),
       ),
+      descripcion: descripcionLimpia(i.descripcion),
+      ordenLeyenda: i.ordenLeyenda,
     })),
   };
 }
@@ -237,7 +258,8 @@ function errorDeInstalaciones(
     if (!instalacion || typeof instalacion !== "object") {
       return "Una instalación del predio no es válida.";
     }
-    const { instalacionId, posicion, rotacion, medidas } = instalacion as Record<string, unknown>;
+    const { instalacionId, posicion, rotacion, medidas, descripcion, ordenLeyenda } =
+      instalacion as Record<string, unknown>;
     const tipo = typeof instalacionId === "string" ? tiposDeLaSede.get(instalacionId) : undefined;
     if (!tipo) return "Una de las instalaciones no es de esta sede.";
     if (vistas.has(instalacionId as string)) return "Una instalación está ubicada dos veces.";
@@ -250,7 +272,10 @@ function errorDeInstalaciones(
     if (typeof rotacion !== "number" || !Number.isFinite(rotacion)) {
       return "La rotación de una instalación no es válida.";
     }
-    const error = errorDeMedidas(tipo, medidas);
+    if (ordenLeyenda !== null && !(Number.isInteger(ordenLeyenda) && (ordenLeyenda as number) >= 1)) {
+      return "El lugar de una instalación en la leyenda no es válido.";
+    }
+    const error = errorDeMedidas(tipo, medidas) ?? errorDeDescripcion(descripcion);
     if (error) return error;
   }
   return null;
@@ -290,13 +315,17 @@ export function tiposPorInstalacion(
   return new Map(instalaciones.map((i) => [i.id, i.tipo]));
 }
 
-/** Una instalación de la sede ubicada en el predio (#43). */
+/** Una instalación de la sede ubicada en el predio (#43), con su leyenda (#45). */
 export type InstalacionUbicada = {
   instalacionId: string;
   /** Centro de la instalación, en metros desde el origen. */
   posicion: Punto;
   rotacion: number;
   medidas: Record<string, number>;
+  /** Texto corto que se ve en la leyenda; no son las notas internas. */
+  descripcion: string | null;
+  /** Lugar en la leyenda, o null si no entra (sin número). Ver leyenda.ts. */
+  ordenLeyenda: number | null;
 };
 
 /** Las cuatro esquinas de la huella, en metros desde el origen. */

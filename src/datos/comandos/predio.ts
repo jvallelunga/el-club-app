@@ -14,7 +14,8 @@ import type { ResultadoSimple } from "./sedes";
 
 /**
  * Guarda el origen, el área y las instalaciones ubicadas del predio de una
- * sede, todo junto. Solo el Super Admin.
+ * sede, con su descripción y su lugar en la leyenda, todo junto. Solo el
+ * Super Admin.
  */
 export async function guardarPredio(
   clubId: string,
@@ -63,6 +64,8 @@ export async function guardarPredio(
       norte: i.posicion[1],
       rotacion: i.rotacion,
       medidas: i.medidas,
+      descripcion: i.descripcion,
+      orden_leyenda: i.ordenLeyenda,
     })),
   });
   if (error) {

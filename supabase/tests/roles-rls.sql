@@ -953,6 +953,110 @@ end;
 $$;
 select pg_temp.salir();
 
+-- La leyenda (#45): descripción y orden se guardan con el predio.
+select pg_temp.entrar('super');
+do $$
+declare
+  v_sede uuid := (select id from _t where clave = 'sede_a');
+  v_cancha uuid := (select id from _t where clave = 'inst_cancha');
+  v_pileta uuid := (select id from _t where clave = 'inst_pileta');
+  v_area jsonb := '[[0, 0], [200, 0], [200, 150], [0, 150]]'::jsonb;
+  v_cancha_medidas jsonb := '{"largo": 100, "ancho": 68, "ingoal": 10}'::jsonb;
+  v_pileta_medidas jsonb := '{"largo": 25, "ancho": 12}'::jsonb;
+  v_orden int;
+  v_en boolean;
+  v_descripcion text;
+begin
+  perform public.guardar_predio(
+    v_sede, -37.336, -59.08, v_area,
+    jsonb_build_array(
+      jsonb_build_object('instalacion_id', v_cancha, 'este', 80.5, 'norte', 50, 'rotacion', 47.5,
+        'medidas', v_cancha_medidas, 'descripcion', 'La cancha principal.', 'orden_leyenda', 1),
+      jsonb_build_object('instalacion_id', v_pileta, 'este', 20, 'norte', 120, 'rotacion', 90,
+        'medidas', v_pileta_medidas, 'descripcion', null, 'orden_leyenda', 2)
+    )
+  );
+  select descripcion, orden_leyenda, en_leyenda into v_descripcion, v_orden, v_en
+  from public.elemento_predio where instalacion_id = v_cancha;
+  if v_descripcion is distinct from 'La cancha principal.' or v_orden <> 1 or not v_en then
+    raise exception 'La cancha debería ser la 1 de la leyenda, con su descripción';
+  end if;
+
+  -- Reordenar intercambia los lugares en un solo guardado.
+  perform public.guardar_predio(
+    v_sede, -37.336, -59.08, v_area,
+    jsonb_build_array(
+      jsonb_build_object('instalacion_id', v_cancha, 'este', 80.5, 'norte', 50, 'rotacion', 47.5,
+        'medidas', v_cancha_medidas, 'descripcion', 'La cancha principal.', 'orden_leyenda', 2),
+      jsonb_build_object('instalacion_id', v_pileta, 'este', 20, 'norte', 120, 'rotacion', 90,
+        'medidas', v_pileta_medidas, 'descripcion', null, 'orden_leyenda', 1)
+    )
+  );
+  select orden_leyenda into v_orden from public.elemento_predio where instalacion_id = v_pileta;
+  if v_orden <> 1 then
+    raise exception 'La pileta debería haber pasado al lugar 1 de la leyenda, está en %', v_orden;
+  end if;
+
+  -- Sacar de la leyenda: sin orden, en_leyenda es falso.
+  perform public.guardar_predio(
+    v_sede, -37.336, -59.08, v_area,
+    jsonb_build_array(
+      jsonb_build_object('instalacion_id', v_cancha, 'este', 80.5, 'norte', 50, 'rotacion', 47.5,
+        'medidas', v_cancha_medidas, 'descripcion', 'La cancha principal.', 'orden_leyenda', 1),
+      jsonb_build_object('instalacion_id', v_pileta, 'este', 20, 'norte', 120, 'rotacion', 90,
+        'medidas', v_pileta_medidas, 'descripcion', null, 'orden_leyenda', null)
+    )
+  );
+  select en_leyenda into v_en from public.elemento_predio where instalacion_id = v_pileta;
+  if v_en then
+    raise exception 'La pileta debería haber salido de la leyenda';
+  end if;
+
+  -- La descripción tiene un tope de 280 caracteres.
+  begin
+    update public.elemento_predio set descripcion = repeat('a', 281) where instalacion_id = v_cancha;
+    raise exception 'Una descripción de 281 caracteres no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+
+  -- El orden va de 1 en adelante.
+  begin
+    update public.elemento_predio set orden_leyenda = 0 where instalacion_id = v_cancha;
+    raise exception 'El lugar 0 en la leyenda no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+
+  -- en_leyenda sale del orden: no se escribe a mano.
+  begin
+    update public.elemento_predio set en_leyenda = false where instalacion_id = v_cancha;
+    raise exception 'en_leyenda no debería poder escribirse';
+  exception
+    when generated_always then null;
+  end;
+end;
+$$;
+select pg_temp.salir();
+
+-- Dos elementos del mismo predio no comparten lugar en la leyenda (se
+-- controla al terminar la transacción, así que se prueba con set constraints).
+select pg_temp.entrar('super');
+do $$
+begin
+  set constraints elemento_predio_orden_leyenda_key immediate;
+  begin
+    update public.elemento_predio set orden_leyenda = 1
+    where instalacion_id = (select id from _t where clave = 'inst_pileta');
+    raise exception 'Dos elementos no deberían compartir el lugar 1 de la leyenda';
+  exception
+    when unique_violation then null;
+  end;
+  set constraints elemento_predio_orden_leyenda_key deferred;
+end;
+$$;
+select pg_temp.salir();
+
 -- Admin A ve las instalaciones ubicadas, pero no las mueve ni las quita.
 select pg_temp.entrar('admin_a');
 do $$
@@ -963,6 +1067,20 @@ begin
   where instalacion_id = (select id from _t where clave = 'inst_cancha');
   if v_n <> 1 then
     raise exception 'Admin A debería ver la cancha ubicada, ve %', v_n;
+  end if;
+
+  select count(*) into v_n from public.elemento_predio
+  where instalacion_id = (select id from _t where clave = 'inst_cancha')
+    and descripcion = 'La cancha principal.' and orden_leyenda = 1;
+  if v_n <> 1 then
+    raise exception 'Admin A debería ver la descripción y el lugar en la leyenda de la cancha';
+  end if;
+
+  update public.elemento_predio set descripcion = 'Otra cosa.'
+  where instalacion_id = (select id from _t where clave = 'inst_cancha');
+  get diagnostics v_n = row_count;
+  if v_n <> 0 then
+    raise exception 'Admin A no debería poder cambiar la descripción';
   end if;
 
   update public.elemento_predio set este = 0

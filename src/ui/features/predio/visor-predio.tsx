@@ -6,11 +6,15 @@
  * Piso de pasto estilizado (sin foto satelital) y cada instalación ubicada
  * armada con las piezas de su tipo (src/dominio/predio-3d.ts). Se orbita y se
  * hace zoom. Dibuja solo cuando algo cambia: no hay un bucle de animación.
+ *
+ * Lo que entra en la leyenda lleva su número encima (#45). Solo eso se puede
+ * tocar: el número o la instalación. Lo demás es decorado.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { CSS2DObject, CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
 import type { Punto } from "@/dominio/predio";
 import { piezasDeInstalacion, type Pieza, type PredioEnVisor } from "@/dominio/predio-3d";
 
@@ -20,6 +24,11 @@ const PASTO_CLARO = "#a3d173";
 const PASTO_OSCURO = "#93c463";
 /** Cada franja del corte de pasto, en metros. */
 const FRANJA = 8;
+
+/** Altura del número sobre lo más alto de la instalación, en metros. */
+const ALTURA_NUMERO = 4;
+/** Cuánto se puede mover el puntero entre bajar y soltar para que sea un toque. */
+const TOLERANCIA_TOQUE = 4;
 
 /** Metros [este, norte] → escena (x, z): el norte va hacia −z. */
 const enEscena = ([este, norte]: Punto, y = 0) => new THREE.Vector3(este, y, -norte);
@@ -62,8 +71,33 @@ function mallaDePieza(pieza: Pieza, material: THREE.Material): THREE.Mesh {
   return malla;
 }
 
-/** Arma la escena. Devuelve lo que hay que liberar al desmontar. */
-function armarEscena(predio: PredioEnVisor) {
+/** El número de la leyenda sobre una instalación: un botón que se puede tocar. */
+function botonNumero(
+  id: string,
+  numero: number,
+  nombre: string,
+  onTocar: () => void,
+): HTMLButtonElement {
+  const boton = document.createElement("button");
+  boton.type = "button";
+  boton.dataset.numeroDe = id;
+  boton.textContent = String(numero);
+  boton.title = nombre;
+  boton.setAttribute("aria-label", `${numero}. ${nombre}`);
+  boton.className =
+    "pointer-events-auto flex size-7 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-neutral-900 text-[13px] font-bold text-white shadow-md data-[elegido=true]:bg-[#ffd23f] data-[elegido=true]:text-neutral-900";
+  boton.addEventListener("click", (evento) => {
+    evento.stopPropagation();
+    onTocar();
+  });
+  return boton;
+}
+
+/**
+ * Arma la escena. Devuelve lo que hay que liberar al desmontar y los grupos
+ * que se pueden tocar (con su id en userData).
+ */
+function armarEscena(predio: PredioEnVisor, onTocar: (id: string) => void) {
   const escena = new THREE.Scene();
   escena.background = new THREE.Color(CIELO);
 
@@ -122,6 +156,7 @@ function armarEscena(predio: PredioEnVisor) {
   );
   escena.add(borde);
 
+  const tocables: THREE.Object3D[] = [];
   for (const instalacion of predio.instalaciones) {
     const grupo = new THREE.Group();
     for (const pieza of piezasDeInstalacion(instalacion.tipo, instalacion.medidas)) {
@@ -133,23 +168,69 @@ function armarEscena(predio: PredioEnVisor) {
     grupo.rotation.y = -THREE.MathUtils.degToRad(instalacion.rotacion);
     grupo.name = instalacion.nombre;
     escena.add(grupo);
+
+    if (instalacion.numero === null) continue;
+    grupo.userData.id = instalacion.id;
+    tocables.push(grupo);
+    const marca = new CSS2DObject(
+      botonNumero(instalacion.id, instalacion.numero, instalacion.nombre, () =>
+        onTocar(instalacion.id),
+      ),
+    );
+    const caja3 = new THREE.Box3().setFromObject(grupo);
+    const arriba = caja3.getCenter(new THREE.Vector3());
+    marca.position.set(arriba.x, caja3.max.y + ALTURA_NUMERO, arriba.z);
+    escena.add(marca);
   }
 
-  return { escena, centro, tamano };
+  return { escena, centro, tamano, tocables };
+}
+
+/** El id de lo que tiene número bajo el puntero, o null. */
+function idTocado(
+  evento: PointerEvent,
+  lienzo: HTMLCanvasElement,
+  camara: THREE.Camera,
+  tocables: THREE.Object3D[],
+): string | null {
+  const r = lienzo.getBoundingClientRect();
+  const puntero = new THREE.Vector2(
+    ((evento.clientX - r.left) / r.width) * 2 - 1,
+    -((evento.clientY - r.top) / r.height) * 2 + 1,
+  );
+  const rayo = new THREE.Raycaster();
+  rayo.setFromCamera(puntero, camara);
+  for (const choque of rayo.intersectObjects(tocables, true)) {
+    let objeto: THREE.Object3D | null = choque.object;
+    while (objeto && objeto.userData.id === undefined) objeto = objeto.parent;
+    if (objeto) return objeto.userData.id as string;
+  }
+  return null;
 }
 
 export function VisorPredio({
   predio,
   etiqueta,
+  seleccion = null,
+  onElegir,
   className = "",
 }: {
   predio: PredioEnVisor;
   /** Para lectores de pantalla, por ejemplo «Predio 3D de la sede Los Cardos». */
   etiqueta: string;
+  /** La instalación con número elegida, que se marca en amarillo. */
+  seleccion?: string | null;
+  /** Al tocar algo con número (su id) o el resto del predio (null). */
+  onElegir?: (id: string | null) => void;
   className?: string;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
   const [sinWebGL, setSinWebGL] = useState(false);
+  // La escena se arma con el predio; el aviso al elegir puede cambiar sin rearmarla.
+  const elegir = useRef(onElegir);
+  useLayoutEffect(() => {
+    elegir.current = onElegir;
+  });
 
   useEffect(() => {
     const cont = contenedor.current;
@@ -169,7 +250,14 @@ export function VisorPredio({
     render.domElement.style.display = "block";
     cont.appendChild(render.domElement);
 
-    const { escena, centro, tamano } = armarEscena(predio);
+    const etiquetas = new CSS2DRenderer();
+    etiquetas.setSize(cont.clientWidth, cont.clientHeight);
+    Object.assign(etiquetas.domElement.style, { position: "absolute", inset: "0", pointerEvents: "none" });
+    cont.appendChild(etiquetas.domElement);
+
+    const { escena, centro, tamano, tocables } = armarEscena(predio, (id) =>
+      elegir.current?.(id),
+    );
     const camara = new THREE.PerspectiveCamera(
       45,
       cont.clientWidth / Math.max(cont.clientHeight, 1),
@@ -192,8 +280,26 @@ export function VisorPredio({
     controles.maxDistance = tamano * 2.5;
     controles.update();
 
-    const dibujar = () => render.render(escena, camara);
+    const dibujar = () => {
+      render.render(escena, camara);
+      etiquetas.render(escena, camara);
+    };
     controles.addEventListener("change", dibujar);
+
+    // Un toque (no un arrastre para orbitar) elige lo que tiene número.
+    let abajo: [number, number] | null = null;
+    const alBajar = (evento: PointerEvent) => {
+      abajo = [evento.clientX, evento.clientY];
+    };
+    const alSoltar = (evento: PointerEvent) => {
+      if (!abajo) return;
+      const movido = Math.hypot(evento.clientX - abajo[0], evento.clientY - abajo[1]);
+      abajo = null;
+      if (movido > TOLERANCIA_TOQUE) return;
+      elegir.current?.(idTocado(evento, render.domElement, camara, tocables));
+    };
+    render.domElement.addEventListener("pointerdown", alBajar);
+    render.domElement.addEventListener("pointerup", alSoltar);
 
     const observador = new ResizeObserver(() => {
       const ancho = cont.clientWidth;
@@ -202,12 +308,15 @@ export function VisorPredio({
       camara.aspect = ancho / alto;
       camara.updateProjectionMatrix();
       render.setSize(ancho, alto);
+      etiquetas.setSize(ancho, alto);
       dibujar();
     });
     observador.observe(cont);
     dibujar();
 
     return () => {
+      render.domElement.removeEventListener("pointerdown", alBajar);
+      render.domElement.removeEventListener("pointerup", alSoltar);
       observador.disconnect();
       controles.removeEventListener("change", dibujar);
       controles.dispose();
@@ -222,8 +331,17 @@ export function VisorPredio({
       });
       render.dispose();
       cont.removeChild(render.domElement);
+      cont.removeChild(etiquetas.domElement);
     };
   }, [predio]);
+
+  // El número elegido se marca sin rearmar la escena.
+  useEffect(() => {
+    const botones = contenedor.current?.querySelectorAll<HTMLElement>("[data-numero-de]") ?? [];
+    for (const boton of botones) {
+      boton.setAttribute("data-elegido", String(boton.dataset.numeroDe === seleccion));
+    }
+  }, [seleccion, predio]);
 
   return (
     <div

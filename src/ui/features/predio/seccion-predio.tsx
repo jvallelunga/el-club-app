@@ -24,7 +24,7 @@ import {
 } from "@/ui/nativos/dialog";
 import type { DatosPredio, InstalacionDeLaSede, OrigenInicial } from "@/dominio/predio";
 import type { PredioEnVisor } from "@/dominio/predio-3d";
-import { AYUDA_VISOR, MarcoVisorPredio } from "./bloque-predio";
+import { ayudaVisor, MarcoVisorPredio } from "./bloque-predio";
 import type { ResultadoGuardarPredio } from "./editor-predio";
 
 const EditorPredio = dynamic(() => import("./editor-predio").then((m) => m.EditorPredio), {
@@ -158,7 +158,7 @@ export function SeccionPredio({
         <div>
           <h2 className="text-lg font-medium tracking-tight">Predio</h2>
           <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground lg:hidden">
-            {AYUDA_VISOR} El predio se edita desde una computadora.
+            {ayudaVisor(visor)} El predio se edita desde una computadora.
           </p>
           <div className="hidden lg:block">
             <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">
