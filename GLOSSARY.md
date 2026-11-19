@@ -25,7 +25,7 @@ El polígono, marcado sobre el mapa satelital, que delimita el predio.
 El punto (latitud y longitud) desde el que se ubica todo el predio. Arranca en la ubicación de la sede, pero es propio del predio.
 
 **Elemento del predio**:
-Cualquier cosa ubicada en el predio: una instalación de la sede o un elemento de referencia. Tiene posición en metros desde el origen del predio, rotación y medidas según su tipo.
+Cualquier cosa ubicada en el predio: una instalación de la sede o un elemento de referencia. Tiene posición en metros desde el origen del predio, rotación y medidas según su tipo; un camino o una valla, en vez de posición y rotación, tiene sus puntos.
 
 **Instalación sin ubicar**:
 Una instalación de la sede que todavía no está en el predio. Al quitarla del predio vuelve a estar sin ubicar, pero sigue en la sede.
@@ -39,6 +39,13 @@ Elemento de referencia: escalones descubiertos, con largo, ancho y alto. La cant
 
 **Tribuna**:
 Elemento de referencia: gradas con techo, con las mismas medidas. No es una instalación.
+
+**Camino**:
+Elemento de referencia que se dibuja punto a punto: una franja sobre el pasto, con su ancho. Guarda sus puntos en metros desde el origen del predio, en vez de posición y rotación.
+
+**Valla**:
+Elemento de referencia que se dibuja punto a punto, como el camino: un cerco con su alto.
+_Avoid_: cerco, alambrado
 
 **Leyenda**:
 La lista numerada que acompaña el predio 3D y explica qué es cada número. Un elemento del predio entra o no en la leyenda; lo que entra lleva un número según el orden de la leyenda, y lo demás es decorado.
