@@ -44,13 +44,21 @@ const FORMATO_FECHA = new Intl.DateTimeFormat("es-AR", {
   year: "numeric",
 });
 
+/** «Lo usa 1 club», «Lo usan 3 clubes». */
+function textoUso(cantidad: number): string {
+  return `${cantidad === 1 ? "Lo usa" : "Lo usan"} ${textoClubes(cantidad)}.`;
+}
+
 export function CatalogoDeportes({
   deportes,
+  clubesPorDeporte,
   crear,
   editar,
   borrar,
 }: {
   deportes: Deporte[];
+  /** Cuántos clubes eligieron cada deporte (por id); sin entrada, ninguno. */
+  clubesPorDeporte: Record<string, number>;
   crear: (formData: FormData) => Promise<ResultadoConId>;
   editar: (deporteId: string, formData: FormData) => Promise<ResultadoSimple>;
   borrar: (deporteId: string) => Promise<ResultadoSimple>;
@@ -151,7 +159,7 @@ export function CatalogoDeportes({
                 </span>
               </button>
               <span className="hidden w-20 text-xs text-muted-foreground sm:block">
-                {textoClubes(0)}
+                {textoClubes(clubesPorDeporte[deporte.id] ?? 0)}
               </span>
               <Button
                 type="button"
@@ -231,10 +239,10 @@ export function CatalogoDeportes({
         error={errorBorrar}
         onConfirmar={confirmarBorrado}
       >
-        <p>Lo usan {textoClubes(0)}.</p>
+        <p>{textoUso(aBorrar ? (clubesPorDeporte[aBorrar.id] ?? 0) : 0)}</p>
         <p>
-          Los clubes ya no lo van a poder elegir. Queda en «Ver borrados» y ya no se puede
-          editar.
+          Los clubes ya no lo van a poder elegir, y los que lo tienen lo ven marcado como
+          borrado. Queda en «Ver borrados» y ya no se puede editar.
         </p>
       </DialogoConfirmar>
     </div>

@@ -6,6 +6,7 @@ import {
   deporteParaGuardar,
   esClaveIconoDeporte,
   ICONO_DEPORTE_POR_DEFECTO,
+  deportesDelClub,
   ICONOS_DEPORTE,
   separarBorrados,
   textoClubes,
@@ -131,5 +132,49 @@ describe("separarBorrados", () => {
     ]);
     expect(activos.map((d) => d.nombre)).toEqual(["Atletismo", "rugby", "Vóley"]);
     expect(borrados.map((d) => d.nombre)).toEqual(["Básquet", "Hockey"]);
+  });
+});
+
+describe("deportesDelClub", () => {
+  const deporte = (nombre: string, borradoEn: string | null = null): Deporte => ({
+    id: nombre,
+    nombre,
+    icono: "trofeo",
+    descripcion: "",
+    condicion: CONDICION_VACIA,
+    borradoEn,
+  });
+
+  it("ofrece todo el catálogo activo, marcando los que el club ya tiene", () => {
+    const lista = deportesDelClub(
+      [deporte("Rugby"), deporte("Hockey"), deporte("Atletismo")],
+      ["Hockey"],
+    );
+    expect(lista.map((d) => [d.nombre, d.enClub])).toEqual([
+      ["Atletismo", false],
+      ["Hockey", true],
+      ["Rugby", false],
+    ]);
+  });
+
+  it("deja al final los borrados que el club tenía y descarta los que no tenía", () => {
+    const lista = deportesDelClub(
+      [
+        deporte("Vóley", "2026-11-19T12:00:00Z"),
+        deporte("Rugby"),
+        deporte("Básquet", "2026-11-18T12:00:00Z"),
+      ],
+      ["Vóley"],
+    );
+    expect(lista.map((d) => [d.nombre, d.enClub, d.borradoEn !== null])).toEqual([
+      ["Rugby", false, false],
+      ["Vóley", true, true],
+    ]);
+  });
+
+  it("ignora ids del club que no están en el catálogo", () => {
+    expect(deportesDelClub([deporte("Rugby")], ["Fantasma"]).map((d) => d.nombre)).toEqual([
+      "Rugby",
+    ]);
   });
 });

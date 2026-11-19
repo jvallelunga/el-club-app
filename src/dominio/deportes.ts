@@ -126,3 +126,25 @@ export function separarBorrados(deportes: Deporte[]): {
     borrados: porNombre.filter((deporte) => deporte.borradoEn !== null),
   };
 }
+
+/** Un deporte como lo ve un club: `enClub` dice si el club lo eligió. */
+export type DeporteDelClub = Deporte & { enClub: boolean };
+
+/**
+ * La lista de deportes de la pantalla del club: todo el catálogo activo, con
+ * los que el club ya eligió marcados, y al final los borrados que el club
+ * tenía. Un borrado que el club no tenía no aparece: ya no se puede elegir.
+ */
+export function deportesDelClub(
+  catalogo: Deporte[],
+  idsDelClub: readonly string[],
+): DeporteDelClub[] {
+  const delClub = new Set(idsDelClub);
+  const { activos, borrados } = separarBorrados(catalogo);
+  return [
+    ...activos.map((deporte) => ({ ...deporte, enClub: delClub.has(deporte.id) })),
+    ...borrados
+      .filter((deporte) => delClub.has(deporte.id))
+      .map((deporte) => ({ ...deporte, enClub: true })),
+  ];
+}

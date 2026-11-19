@@ -14,6 +14,7 @@ export type ActivoShell =
   | "inicio"
   | "club"
   | "sedes"
+  | "deportes-club"
   | "admins";
 
 export type RutasShell = {
@@ -23,6 +24,7 @@ export type RutasShell = {
   elegirClub: string;
   club: (slug: string) => string;
   sedes: (slug: string) => string;
+  deportesClub: (slug: string) => string;
   admins: (slug: string) => string;
 };
 
@@ -33,6 +35,7 @@ export const RUTAS_SHELL_APP: RutasShell = {
   elegirClub: "/elegir-club",
   club: (slug) => `/c/${slug}/admin/club`,
   sedes: (slug) => `/c/${slug}/admin/sedes`,
+  deportesClub: (slug) => `/c/${slug}/admin/deportes`,
   admins: (slug) => `/c/${slug}/admin/admins`,
 };
 
@@ -102,6 +105,12 @@ export function itemsNav({
       etiqueta: "Sedes",
       href: `${rutas.sedes(club.slug)}${queryClub}`,
       activo: activo === "sedes",
+    });
+    // El Super Admin ya tiene «Deportes» (el catálogo) más arriba.
+    items.push({
+      etiqueta: rol === "super-admin" ? "Deportes del club" : "Deportes",
+      href: `${rutas.deportesClub(club.slug)}${queryClub}`,
+      activo: activo === "deportes-club",
     });
     items.push({
       etiqueta: "Admins",
