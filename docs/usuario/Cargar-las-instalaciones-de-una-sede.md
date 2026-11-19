@@ -15,7 +15,7 @@ Las instalaciones son lo que tu club usa en una sede: canchas, house, pileta, ve
 
 1. En la pantalla de la sede, buscá la instalación en **Instalaciones**.
 2. Tocá **Editar** para cambiar el tipo, el nombre o las notas, y después **Guardar instalación**.
-3. Tocá **Eliminar** para borrarla. Te pide confirmar antes.
+3. Tocá **Eliminar** para borrarla. Te pide confirmar antes. Si estaba en el [predio 3D](Ver-el-predio-3D), también sale de ahí.
 
 ## Notas
 
