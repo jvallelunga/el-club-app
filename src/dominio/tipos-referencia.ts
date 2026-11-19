@@ -19,6 +19,8 @@ export type TipoReferencia = {
   nombre: string;
   /** Redonda (árbol, piedra) o rectangular, para la huella en el mapa. */
   planta: "redonda" | "rectangular";
+  /** Si tiene un frente que hay que orientar (gradas y tribuna). */
+  conFrente: boolean;
   medidas: readonly MedidaReferencia[];
 };
 
@@ -34,18 +36,21 @@ export const TIPOS_REFERENCIA = [
     clave: "arbol",
     nombre: "Árbol",
     planta: "redonda",
+    conFrente: false,
     medidas: [medida("alto", "Altura", 10), medida("copa", "Diámetro de copa", 7)],
   },
   {
     clave: "piedra",
     nombre: "Piedra",
     planta: "redonda",
+    conFrente: false,
     medidas: [medida("diametro", "Diámetro", 1.5), medida("alto", "Alto", 1)],
   },
   {
     clave: "bebedero",
     nombre: "Bebedero",
     planta: "rectangular",
+    conFrente: false,
     medidas: [medida("largo", "Largo", 1), medida("ancho", "Ancho", 0.5), medida("alto", "Alto", 1)],
   },
   {
@@ -53,6 +58,7 @@ export const TIPOS_REFERENCIA = [
     clave: "gradas",
     nombre: "Gradas",
     planta: "rectangular",
+    conFrente: true,
     medidas: [medida("largo", "Largo", 20), medida("ancho", "Ancho (fondo)", 4), medida("alto", "Alto", 2)],
   },
   {
@@ -60,6 +66,7 @@ export const TIPOS_REFERENCIA = [
     clave: "tribuna",
     nombre: "Tribuna",
     planta: "rectangular",
+    conFrente: true,
     medidas: [medida("largo", "Largo", 30), medida("ancho", "Ancho (fondo)", 6), medida("alto", "Alto", 3)],
   },
 ] as const satisfies readonly TipoReferencia[];

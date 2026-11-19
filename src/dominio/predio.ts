@@ -1,7 +1,9 @@
 import {
   descripcionLimpia,
   errorDeDescripcion,
+  largoDeTexto,
   numerosDeLeyenda,
+  textoEnUnaLinea,
   type EnLeyenda,
 } from "./leyenda";
 import { sonCoordenadasValidas, type Coordenadas } from "./maps";
@@ -522,15 +524,12 @@ export type ReferenciaUbicada = Ubicado & {
 export const NOMBRE_MAXIMO = 60;
 
 /** El nombre como se guarda: en una línea y sin espacios de más; vacío es null. */
-export function nombreLimpio(texto: string | null): string | null {
-  const limpio = (texto ?? "").replace(/\s+/g, " ").trim();
-  return limpio === "" ? null : limpio;
-}
+export const nombreLimpio = textoEnUnaLinea;
 
 function errorDeNombre(nombre: unknown): string | null {
   if (nombre === null) return null;
   if (typeof nombre !== "string") return "El nombre de un elemento de referencia no es válido.";
-  if (Array.from(nombreLimpio(nombre) ?? "").length > NOMBRE_MAXIMO) {
+  if (largoDeTexto(nombreLimpio(nombre) ?? "") > NOMBRE_MAXIMO) {
     return `El nombre de un elemento de referencia tiene más de ${NOMBRE_MAXIMO} caracteres.`;
   }
   return null;

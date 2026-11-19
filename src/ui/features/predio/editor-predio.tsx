@@ -167,7 +167,7 @@ function geojsonElementos(
           geometry: { type: "Point", coordinates: [u.centro.lng, u.centro.lat] },
         });
       }
-      if (u.referencia?.tipo === "gradas" || u.referencia?.tipo === "tribuna") {
+      if (u.referencia && tipoReferencia(u.referencia.tipo).conFrente) {
         features.push({
           type: "Feature",
           properties: { ...properties, frente: 1 },
@@ -189,7 +189,6 @@ function nombreEnMapa(u: EnMapa, nombres: ReadonlyMap<string, string>): string {
 function datosDelPanel(u: EnMapa, instalacion: InstalacionDeLaSede | undefined): DatosPanel | null {
   if (u.referencia) {
     const tipo = tipoReferencia(u.referencia.tipo);
-    const esGradas = u.referencia.tipo === "gradas" || u.referencia.tipo === "tribuna";
     return {
       id: u.id,
       titulo: `Elemento de referencia · ${tipo.nombre}`,
@@ -197,7 +196,7 @@ function datosDelPanel(u: EnMapa, instalacion: InstalacionDeLaSede | undefined):
       medidasDelTipo: tipo.medidas,
       quitar: "Borrar",
       ayudaQuitar: "Se borra del predio.",
-      ayudaRotacion: esGradas
+      ayudaRotacion: tipo.conFrente
         ? "La línea blanca es el frente (el escalón más bajo): girala para que mire a la cancha. Con 0°, mira al sur."
         : undefined,
     };

@@ -73,16 +73,19 @@ export function moverEnLeyenda<T extends EnLeyenda>(
 export const DESCRIPCION_MAXIMA = 280;
 
 /**
- * La descripción como se guarda: texto sin formato, en una sola línea y sin
- * espacios de más. Vacía es no tener descripción (null).
+ * Un texto corto como se guarda: sin formato, en una sola línea y sin
+ * espacios de más. Vacío es no tener texto (null).
  */
-export function descripcionLimpia(texto: string | null): string | null {
-  const limpia = (texto ?? "").replace(/\s+/g, " ").trim();
-  return limpia === "" ? null : limpia;
+export function textoEnUnaLinea(texto: string | null): string | null {
+  const limpio = (texto ?? "").replace(/\s+/g, " ").trim();
+  return limpio === "" ? null : limpio;
 }
 
+/** La descripción como se guarda (ver textoEnUnaLinea). */
+export const descripcionLimpia = textoEnUnaLinea;
+
 /** Caracteres de un texto, contados como la base (un emoji es uno). */
-function largoDeTexto(texto: string): number {
+export function largoDeTexto(texto: string): number {
   return Array.from(texto).length;
 }
 
