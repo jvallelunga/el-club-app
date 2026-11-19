@@ -30,16 +30,20 @@ import {
   type Deporte,
 } from "./datos";
 import { Confirmar, IconoSet, SET_ICONOS, SelectorCampo, ValorChequeo, claseInput } from "./comunes";
-
-export function VarianteA({ pantalla }: { pantalla: string }) {
+export function VarianteA({ pantalla, columnaCondicion = false }: { pantalla: string; columnaCondicion?: boolean }) {
   if (pantalla === "club") return <ClubA />;
   if (pantalla === "jugadores") return <JugadoresA />;
-  return <CatalogoA />;
+  return <CatalogoA columnaCondicion={columnaCondicion} />;
+}
+
+/** Variante D, la aprobada (19/11/2026): A con la columna «Condición» del catálogo de C. */
+export function VarianteD({ pantalla }: { pantalla: string }) {
+  return <VarianteA pantalla={pantalla} columnaCondicion />;
 }
 
 // ---------- catálogo (Super Admin) ----------
 
-function CatalogoA() {
+function CatalogoA({ columnaCondicion }: { columnaCondicion: boolean }) {
   const [deportes, setDeportes] = useState(CATALOGO);
   const [editando, setEditando] = useState<Deporte | null>(null);
   const [aBorrar, setABorrar] = useState<Deporte | null>(null);
@@ -79,16 +83,37 @@ function CatalogoA() {
       </div>
 
       <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+        {columnaCondicion ? (
+          <li className="hidden items-center gap-3 bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground sm:flex" aria-hidden>
+            <span className="w-10 shrink-0" />
+            <span className="grid flex-1 grid-cols-2 gap-4">
+              <span>Deporte</span>
+              <span>Condición</span>
+            </span>
+            <span className="w-[7.5rem]">Uso</span>
+            <span className="w-8" />
+          </li>
+        ) : null}
         {activos.map((d) => (
           <li key={d.id} className="flex items-center gap-3 px-4 py-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
               <IconoSet clave={d.icono} className="size-5" />
             </span>
-            <button type="button" onClick={() => setEditando(d)} className="min-w-0 flex-1 text-left">
-              <p className="font-medium">{d.nombre}</p>
-              <p className="truncate text-xs text-muted-foreground">{describir(d.condicion)}</p>
-            </button>
-            <span className="hidden text-xs text-muted-foreground sm:block">
+            {columnaCondicion ? (
+              <button type="button" onClick={() => setEditando(d)} className="grid min-w-0 flex-1 gap-1 text-left sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:gap-4">
+                <span className="min-w-0">
+                  <span className="block font-medium">{d.nombre}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{d.descripcion}</span>
+                </span>
+                <span className="text-sm">{describir(d.condicion)}</span>
+              </button>
+            ) : (
+              <button type="button" onClick={() => setEditando(d)} className="min-w-0 flex-1 text-left">
+                <p className="font-medium">{d.nombre}</p>
+                <p className="truncate text-xs text-muted-foreground">{describir(d.condicion)}</p>
+              </button>
+            )}
+            <span className={cn("hidden text-xs text-muted-foreground sm:block", columnaCondicion && "w-[7.5rem]")}>
               {d.clubes} {d.clubes === 1 ? "club" : "clubes"} · {d.jugadores} jugadores
             </span>
             <Button variant="ghost" size="icon" aria-label={`Borrar ${d.nombre}`} onClick={() => setABorrar(d)}>

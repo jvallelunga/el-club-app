@@ -1,6 +1,7 @@
 /**
  * PROTOTIPO (#54): mocks de «Deportes del club».
- * Tres variantes (?variant=A|B|C), cada una con tres pantallas
+ * Aprobada (19/11/2026): D = A con la columna «Condición» del catálogo de C.
+ * Variantes ?variant=D|A|B|C, cada una con tres pantallas
  * (?pantalla=catalogo|club|jugadores). Datos de ejemplo, nada se guarda.
  * Se tira cuando se aprueben los mocks.
  */
@@ -8,11 +9,12 @@
 import { notFound } from "next/navigation";
 import { ShellAdmin } from "@/ui/compartidos/shell-admin";
 import { SelectorPrototipo } from "@/ui/features/deportes-prototipo/comunes";
-import { VarianteA } from "@/ui/features/deportes-prototipo/variante-a";
+import { VarianteA, VarianteD } from "@/ui/features/deportes-prototipo/variante-a";
 import { VarianteB } from "@/ui/features/deportes-prototipo/variante-b";
 import { VarianteC } from "@/ui/features/deportes-prototipo/variante-c";
 
 const VARIANTES = [
+  { clave: "D", nombre: "Aprobada: A con columna Condición", C: VarianteD },
   { clave: "A", nombre: "Lista y panel lateral", C: VarianteA },
   { clave: "B", nombre: "Mosaico y página completa", C: VarianteB },
   { clave: "C", nombre: "Tabla y asistente", C: VarianteC },
