@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // next dev no genera AGENTS.md: las instrucciones para agentes viven en CLAUDE.md.
+  agentRules: false,
   turbopack: {
     // clsx (lo trae class-variance-authority) se resuelve con cn, así la app
     // usa una sola implementación para combinar clases.

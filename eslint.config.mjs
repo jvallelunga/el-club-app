@@ -19,6 +19,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Archivos copiados de librerías (el worker de MapLibre, minificado).
+    "public/**",
   ]),
   {
     files: ["src/dominio/**/*.{ts,tsx}"],
