@@ -15,7 +15,7 @@ The Super Admin is **not** a reader: leave Super Admin-only screens out. When a 
 
 ## Steps
 
-1. **Find what changed for readers.** Read the issue's acceptance criteria and the branch diff against `desarrollo`. List every change a reader can see or do. Done when each criterion is on the list or marked as not reader-facing (Super Admin only, internal, no visible effect). If nothing is reader-facing, say so and stop.
+1. **Find what changed for readers.** Read the issue's acceptance criteria and the branch diff against its target branch (`desarrollo`, or the parent branch for a ticket). List every change a reader can see or do. Done when each criterion is on the list or marked as not reader-facing (Super Admin only, internal, no visible effect). If nothing is reader-facing, say so and stop.
 2. **Write the pages.** Update the page that already covers that screen or task; create one only for a new screen or task. Done when every item on the list is covered.
 3. **Update the index.** `Home.md` and `_Sidebar.md` link every page, grouped by reader.
 

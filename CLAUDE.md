@@ -8,7 +8,7 @@ Start every piece of issue work with the `next-issue` skill: in a refinement ses
 
 ### Pull requests
 
-Merge your own PR into `desarrollo` as soon as it is ready, without asking: the bar is in the README («Cómo se trabaja»), the merge call in `docs/agents/issue-tracker.md`. Production (`main`) only with Jerónimo's OK.
+Merge your own PR into its target branch (`desarrollo`, or the parent's issue branch for a ticket) as soon as it is ready, without asking: the bar is in the README («Cómo se trabaja»), branches and the merge call in `docs/agents/issue-tracker.md`. Production (`main`) only with Jerónimo's OK.
 
 ### User docs
 
