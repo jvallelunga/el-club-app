@@ -31,7 +31,7 @@ import {
 } from "./datos";
 import { Confirmar, IconoSet, SET_ICONOS, SelectorCampo, ValorChequeo, claseInput } from "./comunes";
 export function VarianteA({ pantalla, columnaCondicion = false }: { pantalla: string; columnaCondicion?: boolean }) {
-  if (pantalla === "club") return <ClubA />;
+  if (pantalla === "club") return <ClubA conCondicionClub={columnaCondicion} />;
   if (pantalla === "jugadores") return <JugadoresA />;
   return <CatalogoA columnaCondicion={columnaCondicion} />;
 }
@@ -290,27 +290,117 @@ function FilaChequeo({ ch, onChange, onQuitar }: { ch: Parameters<typeof ValorCh
 
 // ---------- deportes del club (Admin) ----------
 
-function ClubA() {
+/** Condiciones que sumó Los Cardos (ejemplo): rugby infantil desde los 6. */
+const CONDICIONES_CLUB: Record<string, Condicion> = {
+  "rugby-inf": { conector: "Y", items: [{ tipo: "chequeo", id: "cc1", campo: "edad", desde: 6 }] },
+};
+
+function textoCondicionClub(d: Deporte, club?: Condicion) {
+  if (!club || club.items.length === 0) return describir(d.condicion);
+  const base = d.condicion.items.length ? describir(d.condicion) : "Cualquier socio";
+  return `${base} · Club: ${describir(club).toLowerCase()}`;
+}
+
+function PanelCondicionClub({
+  deporte,
+  inicial,
+  onGuardar,
+  onCancelar,
+}: {
+  deporte: Deporte;
+  inicial: Condicion;
+  onGuardar: (c: Condicion) => void;
+  onCancelar: () => void;
+}) {
+  const [c, setC] = useState(inicial);
+  return (
+    <>
+      <SheetHeader>
+        <SheetTitle className="flex items-center gap-2">
+          <IconoSet clave={deporte.icono} className="size-5" /> {deporte.nombre}
+        </SheetTitle>
+        <SheetDescription>{deporte.descripcion}</SheetDescription>
+      </SheetHeader>
+      <div className="flex flex-col gap-5 px-4 pb-4">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">Condición del deporte</span>
+          <p className="rounded-md border border-border px-3 py-2 text-sm">{describir(deporte.condicion)}</p>
+          <p className="text-xs text-muted-foreground">La define el Super Admin para todos los clubes. No se puede cambiar.</p>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">Condición del club</span>
+          <p className="text-xs text-muted-foreground">Requisitos que suma Los Cardos. Se suman a los del deporte: hay que cumplir los dos.</p>
+          <EditorBloques condicion={c} onChange={setC} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">Pueden anotarse</span>
+          <p className="rounded-md bg-muted px-3 py-2 text-sm">
+            {c.items.length === 0
+              ? describir(deporte.condicion)
+              : deporte.condicion.items.length === 0
+                ? describir(c)
+                : `${describir(deporte.condicion)}, y además ${describir(c).toLowerCase()}`}
+          </p>
+        </div>
+      </div>
+      <SheetFooter className="flex-row justify-end border-t border-border">
+        <Button variant="outline" onClick={onCancelar}>
+          Cancelar
+        </Button>
+        <Button onClick={() => onGuardar(c)}>Guardar</Button>
+      </SheetFooter>
+    </>
+  );
+}
+
+function ClubA({ conCondicionClub = false }: { conCondicionClub?: boolean }) {
   const [delClub, setDelClub] = useState(DEL_CLUB);
   const [aQuitar, setAQuitar] = useState<Deporte | null>(null);
+  const [condClub, setCondClub] = useState(CONDICIONES_CLUB);
+  const [editando, setEditando] = useState<Deporte | null>(null);
   const disponibles = CATALOGO.filter((d) => !d.borrado);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 pb-28">
       <div>
         <h2 className="text-xl font-medium tracking-tight">Deportes del club</h2>
-        <p className="text-sm text-muted-foreground">Elegí del catálogo los deportes que se practican en Los Cardos.</p>
+        <p className="text-sm text-muted-foreground">
+          Elegí del catálogo los deportes que se practican en Los Cardos.
+          {conCondicionClub ? " Tocá un deporte del club para sumarle requisitos propios." : null}
+        </p>
       </div>
+      <Sheet open={!!editando} onOpenChange={(o) => !o && setEditando(null)}>
+        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+          {editando ? (
+            <PanelCondicionClub
+              deporte={editando}
+              inicial={condClub[editando.id] ?? condicionVacia()}
+              onCancelar={() => setEditando(null)}
+              onGuardar={(c) => {
+                setCondClub((x) => ({ ...x, [editando.id]: c }));
+                setEditando(null);
+              }}
+            />
+          ) : null}
+        </SheetContent>
+      </Sheet>
       <ul className="divide-y divide-border rounded-xl border border-border bg-card">
         {disponibles.map((d) => {
           const activo = delClub.includes(d.id);
           return (
             <li key={d.id} className="flex items-center gap-3 px-4 py-3">
               <IconoSet clave={d.icono} className="size-5 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">{d.nombre}</p>
-                <p className="truncate text-xs text-muted-foreground">{describir(d.condicion)}</p>
-              </div>
+              {conCondicionClub && activo ? (
+                <button type="button" onClick={() => setEditando(d)} className="min-w-0 flex-1 text-left">
+                  <p className="font-medium">{d.nombre}</p>
+                  <p className="text-xs text-muted-foreground">{textoCondicionClub(d, condClub[d.id])}</p>
+                </button>
+              ) : (
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{d.nombre}</p>
+                  <p className="truncate text-xs text-muted-foreground">{describir(d.condicion)}</p>
+                </div>
+              )}
               <button
                 type="button"
                 role="switch"
@@ -334,6 +424,7 @@ function ClubA() {
       >
         <span>
           Se cortan los vínculos de <strong>22 jugadores</strong> con este deporte. Siguen siendo socios.
+          {conCondicionClub && aQuitar && condClub[aQuitar.id]?.items.length ? " También se pierde la condición que sumó el club." : null}
         </span>
         <span>
           <strong>3</strong> dejan de ser jugadores porque no tienen otro deporte.
