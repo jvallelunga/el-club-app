@@ -7,6 +7,7 @@ import {
 } from "@/ui/compartidos/shell-admin";
 import { FormularioSede } from "@/ui/features/sedes/formulario-sede";
 import { BotonEliminarInstalacion } from "@/ui/features/sedes/boton-eliminar-instalacion";
+import { BloquePredio } from "@/ui/features/predio/bloque-predio";
 import { SeccionPredio } from "@/ui/features/predio/seccion-predio";
 import { actualizarSede, eliminarInstalacion } from "@/datos/comandos/sedes";
 import { guardarPredio } from "@/datos/comandos/predio";
@@ -15,11 +16,12 @@ import {
   sesionRequerida,
 } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
-import { predioParaEditor } from "@/datos/consultas/predio";
+import { predioEnVisorDeSede, predioParaEditor } from "@/datos/consultas/predio";
 import { sedePorId } from "@/datos/consultas/sedes";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
-import type { DatosPredio } from "@/dominio/predio";
+import { tiposPorInstalacion, type DatosPredio } from "@/dominio/predio";
+import { predioParaVisor } from "@/dominio/predio-3d";
 import { inicialesDesdeNombre } from "@/dominio/slug";
 
 export const dynamic = "force-dynamic";
@@ -55,15 +57,20 @@ export default async function PaginaSede({
     return guardarPredio(clubId, sedeId, datos);
   }
 
-  // El editor de predio es solo del Super Admin; el visor de los Admins viene en #44.
+  // El Super Admin edita el predio y además lo ve como los Admins; los
+  // Admins solo ven el visor 3D, si el predio está armado.
+  const instalaciones = sede.instalaciones.map(({ id, nombre, tipo }) => ({ id, nombre, tipo }));
   const predio = sesion.esSuperAdmin
     ? await predioParaEditor({
         sedeId,
-        tiposDeLaSede: new Map(sede.instalaciones.map((i) => [i.id, i.tipo])),
+        tiposDeLaSede: tiposPorInstalacion(instalaciones),
         mapsUrlSede: sede.maps_url,
         direccionClub: club.direccion,
       })
     : null;
+  const visor = predio
+    ? predioParaVisor(predio.guardado, instalaciones)
+    : await predioEnVisorDeSede({ id: sedeId, instalaciones });
 
   const clubShell = {
     slug: club.slug,
@@ -164,10 +171,17 @@ export default async function PaginaSede({
         {predio ? (
           <SeccionPredio
             sedeNombre={sede.nombre}
-            instalaciones={sede.instalaciones.map(({ id, nombre, tipo }) => ({ id, nombre, tipo }))}
+            instalaciones={instalaciones}
             guardado={predio.guardado}
+            visor={visor}
             origenInicial={predio.origen}
             guardar={guardarElPredio}
+          />
+        ) : visor ? (
+          <BloquePredio
+            predio={visor}
+            sedeNombre={sede.nombre}
+            className="border-t border-border pt-8"
           />
         ) : null}
       </div>

@@ -34,6 +34,7 @@ import {
   medidasDelTipo,
   type DatosPredio,
   type DesdeOrigen,
+  type InstalacionDeLaSede,
   type OrigenInicial,
 } from "@/dominio/predio";
 import { tipoInstalacion } from "@/dominio/tipos-instalacion";
@@ -41,7 +42,6 @@ import {
   BarraInstalaciones,
   COLOR_POR_FORMA,
   PanelInstalacion,
-  type InstalacionDeLaSede,
 } from "./instalaciones-editor";
 import {
   ATRIBUCION_ESRI,

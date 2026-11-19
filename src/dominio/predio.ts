@@ -276,6 +276,20 @@ function errorDeMedidas(tipo: ClaveTipoInstalacion, medidas: unknown): string | 
 // sentido horario; con 0°, el largo de la instalación va de oeste a este.
 // ---------------------------------------------------------------------------
 
+/** Una instalación de la sede, ubicada o no: lo que el predio sabe de ella. */
+export type InstalacionDeLaSede = {
+  id: string;
+  nombre: string;
+  tipo: ClaveTipoInstalacion;
+};
+
+/** El tipo de cada instalación de la sede, por id. */
+export function tiposPorInstalacion(
+  instalaciones: readonly InstalacionDeLaSede[],
+): ReadonlyMap<string, ClaveTipoInstalacion> {
+  return new Map(instalaciones.map((i) => [i.id, i.tipo]));
+}
+
 /** Una instalación de la sede ubicada en el predio (#43). */
 export type InstalacionUbicada = {
   instalacionId: string;

@@ -2,7 +2,8 @@
 
 /**
  * Bloque «Predio» de la pantalla de la sede para el Super Admin (#42).
- * «Editar predio» abre el editor a pantalla completa. Si hay cambios sin
+ * Muestra el predio 3D como lo ven los Admins (#44) y, en la computadora,
+ * «Editar predio», que abre el editor a pantalla completa. Si hay cambios sin
  * guardar, avisa antes de salir: al tocar «Cerrar», al volver atrás con el
  * navegador y al recargar o cerrar la pestaña.
  */
@@ -21,9 +22,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/nativos/dialog";
-import type { DatosPredio, OrigenInicial } from "@/dominio/predio";
+import type { DatosPredio, InstalacionDeLaSede, OrigenInicial } from "@/dominio/predio";
+import type { PredioEnVisor } from "@/dominio/predio-3d";
+import { AYUDA_VISOR, MarcoVisorPredio } from "./bloque-predio";
 import type { ResultadoGuardarPredio } from "./editor-predio";
-import type { InstalacionDeLaSede } from "./instalaciones-editor";
 
 const EditorPredio = dynamic(() => import("./editor-predio").then((m) => m.EditorPredio), {
   ssr: false,
@@ -43,12 +45,15 @@ export function SeccionPredio({
   sedeNombre,
   instalaciones,
   guardado,
+  visor,
   origenInicial,
   guardar,
 }: {
   sedeNombre: string;
   instalaciones: InstalacionDeLaSede[];
   guardado: DatosPredio | null;
+  /** Lo que muestra el visor 3D, o null si el predio no está armado. */
+  visor: PredioEnVisor | null;
   origenInicial: OrigenInicial;
   guardar: (datos: DatosPredio) => Promise<ResultadoGuardarPredio>;
 }) {
@@ -145,29 +150,41 @@ export function SeccionPredio({
   const sinUbicar = instalaciones.filter((i) => !ubicadas.has(i.id));
 
   return (
-    <section className="hidden flex-col gap-4 border-t border-border pt-8 lg:flex">
+    // En el celular solo se ve el visor: sin predio armado, no hay bloque.
+    <section
+      className={`flex-col gap-4 border-t border-border pt-8 ${visor ? "flex" : "hidden lg:flex"}`}
+    >
       <div className="flex items-end justify-between gap-4">
         <div>
           <h2 className="text-lg font-medium tracking-tight">Predio</h2>
-          <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">
-            {tieneArea
-              ? "El área del predio ya está dibujada. Podés seguir editándola cuando quieras."
-              : "Dibujá el área del predio sobre el mapa satelital. Lo que guardes queda y se puede seguir editando."}
+          <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground lg:hidden">
+            {AYUDA_VISOR} El predio se edita desde una computadora.
           </p>
-          {sinUbicar.length > 0 ? (
+          <div className="hidden lg:block">
             <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">
-              {sinUbicar.length === 1
-                ? "1 instalación sin ubicar: "
-                : `${sinUbicar.length} instalaciones sin ubicar: `}
-              {sinUbicar.map((i) => i.nombre).join(", ")}.
+              {visor
+                ? "Así lo ven los Admins del club. Para editarlo se abre el mapa a pantalla completa."
+                : tieneArea
+                  ? "El área del predio ya está dibujada. Ubicá al menos una instalación para que los Admins vean el predio 3D."
+                  : "Dibujá el área del predio sobre el mapa satelital. Lo que guardes queda y se puede seguir editando."}
             </p>
-          ) : null}
+            {sinUbicar.length > 0 ? (
+              <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                {sinUbicar.length === 1
+                  ? "1 instalación sin ubicar: "
+                  : `${sinUbicar.length} instalaciones sin ubicar: `}
+                {sinUbicar.map((i) => i.nombre).join(", ")}.
+              </p>
+            ) : null}
+          </div>
         </div>
-        <Button className="h-11 shrink-0 rounded-xl px-4" onClick={abrir}>
+        <Button className="hidden h-11 shrink-0 rounded-xl px-4 lg:inline-flex" onClick={abrir}>
           <Expand className="size-4" />
           Editar predio
         </Button>
       </div>
+
+      {visor ? <MarcoVisorPredio predio={visor} sedeNombre={sedeNombre} /> : null}
 
       {abierto
         ? createPortal(

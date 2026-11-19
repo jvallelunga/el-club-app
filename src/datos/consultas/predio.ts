@@ -5,13 +5,17 @@ import {
   errorDelArea,
   medidasDelTipo,
   origenInicial,
+  tiposPorInstalacion,
   type DatosPredio,
+  type InstalacionDeLaSede,
   type InstalacionUbicada,
   type OrigenInicial,
   type Punto,
 } from "@/dominio/predio";
+import { predioParaVisor, type PredioEnVisor } from "@/dominio/predio-3d";
 import type { ClaveTipoInstalacion } from "@/dominio/tipos-instalacion";
 import { coordenadasDeDireccion } from "../geocodificar";
+import { listarSedes, sedePorId } from "./sedes";
 import { supabaseServidor } from "../supabase-servidor";
 
 export type PredioParaEditor = {
@@ -90,4 +94,31 @@ export async function predioParaEditor(params: {
       ciudad: coordenadasClub,
     }),
   };
+}
+
+/**
+ * Lo que muestra el visor 3D de una sede, o null si el predio no está armado
+ * (#44). RLS deja leer a los Admins del club.
+ */
+export async function predioEnVisorDeSede(sede: {
+  id: string;
+  instalaciones: readonly InstalacionDeLaSede[];
+}): Promise<PredioEnVisor | null> {
+  const guardado = await predioDeSede(sede.id, tiposPorInstalacion(sede.instalaciones));
+  return predioParaVisor(guardado, sede.instalaciones);
+}
+
+/**
+ * Si el club tiene una sola sede y su predio está armado, su predio para la
+ * Inicio (#44). Con más de una sede, null.
+ */
+export async function predioDeLaUnicaSede(
+  clubId: string,
+): Promise<{ sede: { id: string; nombre: string }; predio: PredioEnVisor } | null> {
+  const sedes = await listarSedes(clubId);
+  if (sedes.length !== 1) return null;
+  const sede = await sedePorId(clubId, sedes[0].id);
+  if (!sede) return null;
+  const predio = await predioEnVisorDeSede(sede);
+  return predio ? { sede: { id: sede.id, nombre: sede.nombre }, predio } : null;
 }

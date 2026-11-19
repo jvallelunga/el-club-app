@@ -9,19 +9,12 @@
 import { useState } from "react";
 import { Check, Circle, RotateCcw, RotateCw, Trash2, X } from "lucide-react";
 import { Button } from "@/ui/nativos/button";
-import { MEDIDA_MAXIMA, MEDIDA_MINIMA } from "@/dominio/predio";
+import { MEDIDA_MAXIMA, MEDIDA_MINIMA, type InstalacionDeLaSede } from "@/dominio/predio";
 import {
   tipoInstalacion,
-  type ClaveTipoInstalacion,
   type FormaInstalacion,
 } from "@/dominio/tipos-instalacion";
 
-/** Una instalación de la sede, tal como la lista el editor. */
-export type InstalacionDeLaSede = {
-  id: string;
-  nombre: string;
-  tipo: ClaveTipoInstalacion;
-};
 
 /** Color de la huella en el mapa, según la forma del tipo. */
 export const COLOR_POR_FORMA: Record<FormaInstalacion, string> = {

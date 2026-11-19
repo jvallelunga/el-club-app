@@ -11,6 +11,8 @@ import {
   sesionRequerida,
 } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
+import { predioDeLaUnicaSede } from "@/datos/consultas/predio";
+import { BloquePredio } from "@/ui/features/predio/bloque-predio";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +27,8 @@ export default async function PaginaAdminClub({
   const club = await clubPorSlug(slug);
   if (!club) notFound();
   await adminDelClubRequerido(club.id, `/c/${slug}/admin`);
+
+  const predioDeLaSede = await predioDeLaUnicaSede(club.id);
 
   const clubShell = {
     slug: club.slug,
@@ -97,7 +101,17 @@ export default async function PaginaAdminClub({
             Administrar Admins
           </Link>
         </p>
+
+        {predioDeLaSede ? (
+          <BloquePredio
+            predio={predioDeLaSede.predio}
+            sedeNombre={predioDeLaSede.sede.nombre}
+            hrefSede={`/c/${club.slug}/admin/sedes/${predioDeLaSede.sede.id}`}
+            className="border-t border-border pt-6"
+          />
+        ) : null}
       </div>
     </ShellAdmin>
   );
 }
+
