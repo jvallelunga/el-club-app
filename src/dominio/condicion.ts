@@ -46,10 +46,20 @@ export const CAMPOS: { campo: Campo; etiqueta: string }[] = [
   { campo: "anio", etiqueta: "Año de nacimiento" },
 ];
 
-/** Los límites de cada rango. La base usa los mismos (interno.es_condicion_valida). */
-export const LIMITES: Record<ChequeoRango["campo"], { min: number; max: number }> = {
-  edad: { min: 0, max: 120 },
-  anio: { min: 1900, max: 2100 },
+export type Rango = {
+  /** Para los mensajes y las etiquetas: «La edad desde». */
+  nombre: string;
+  /** Lo que se lee después de «hasta» en el editor. */
+  unidad: string;
+  placeholder: string;
+  /** Límites, enteros e incluidos. La base usa los mismos (interno.es_chequeo_valido). */
+  min: number;
+  max: number;
+};
+
+export const RANGOS: Record<ChequeoRango["campo"], Rango> = {
+  edad: { nombre: "Edad", unidad: "años", placeholder: "—", min: 0, max: 120 },
+  anio: { nombre: "Año de nacimiento", unidad: "", placeholder: "año", min: 1900, max: 2100 },
 };
 
 export function esSubgrupo(item: Chequeo | Subgrupo): item is Subgrupo {
@@ -58,6 +68,11 @@ export function esSubgrupo(item: Chequeo | Subgrupo): item is Subgrupo {
 
 export function tieneSubgrupo(condicion: Condicion): boolean {
   return condicion.items.some(esSubgrupo);
+}
+
+/** Antes de validarlo: un objeto con `items` se lee como subgrupo. */
+function pareceSubgrupo(valor: unknown): valor is Record<string, unknown> {
+  return esObjeto(valor) && "items" in valor;
 }
 
 // ---------------------------------------------------------------------------
@@ -87,7 +102,7 @@ function soloClaves(objeto: Record<string, unknown>, permitidas: string[]) {
 
 function leerConector(valor: unknown): Conector {
   if (valor !== "Y" && valor !== "O") {
-    throw new FormaInvalida("Cada bloque tiene que ser «Todas (Y)» o «Alguna (O)».");
+    throw new FormaInvalida("Cada grupo tiene que ser «Todas (Y)» o «Alguna (O)».");
   }
   return valor;
 }
@@ -104,8 +119,7 @@ function leerChequeo(valor: unknown): Chequeo {
   if (valor.campo === "edad" || valor.campo === "anio") {
     const campo = valor.campo;
     soloClaves(valor, ["campo", "desde", "hasta"]);
-    const { min, max } = LIMITES[campo];
-    const nombre = campo === "edad" ? "La edad" : "El año de nacimiento";
+    const { min, max, nombre } = RANGOS[campo];
     const extremo = (dato: unknown): number | undefined => {
       if (dato === undefined) return undefined;
       if (typeof dato !== "number" || !Number.isInteger(dato) || dato < min || dato > max) {
@@ -130,29 +144,38 @@ function leerChequeo(valor: unknown): Chequeo {
   throw new FormaInvalida("Hay un chequeo que no se reconoce.");
 }
 
-function leerSubgrupo(valor: Record<string, unknown>): Subgrupo {
+/** El conector y la lista de items de la condición o de un subgrupo, sin leer los items. */
+function leerBloque(valor: unknown): { conector: Conector; items: unknown[] } {
+  if (!esObjeto(valor) || !Array.isArray(valor.items)) {
+    throw new FormaInvalida("La condición no se reconoce.");
+  }
   soloClaves(valor, ["conector", "items"]);
-  const conector = leerConector(valor.conector);
-  if (!Array.isArray(valor.items)) throw new FormaInvalida("Hay un grupo que no se reconoce.");
-  if (valor.items.length === 0) throw new FormaInvalida("Un grupo necesita al menos un chequeo.");
-  const items = valor.items.map((item) => {
-    if (esObjeto(item) && "items" in item) {
-      throw new FormaInvalida("Un grupo no puede tener otro grupo adentro: hay un solo subnivel.");
-    }
-    return leerChequeo(item);
-  });
-  return { conector, items };
+  return { conector: leerConector(valor.conector), items: valor.items };
+}
+
+function leerSubgrupo(valor: unknown): Subgrupo {
+  const { conector, items } = leerBloque(valor);
+  if (items.length === 0) throw new FormaInvalida("Un grupo necesita al menos un chequeo.");
+  return {
+    conector,
+    items: items.map((item) => {
+      if (pareceSubgrupo(item)) {
+        throw new FormaInvalida("Un grupo no puede tener otro grupo adentro: hay un solo subnivel.");
+      }
+      return leerChequeo(item);
+    }),
+  };
 }
 
 /** Lee una condición de un dato cualquiera (un JSON del form o de la base). */
 export function validarCondicion(valor: unknown): ResultadoCondicion {
   try {
-    if (!esObjeto(valor)) throw new FormaInvalida("La condición no se reconoce.");
-    soloClaves(valor, ["conector", "items"]);
-    const conector = leerConector(valor.conector);
-    if (!Array.isArray(valor.items)) throw new FormaInvalida("La condición no se reconoce.");
-    const items = valor.items.map((item) =>
-      esObjeto(item) && "items" in item ? leerSubgrupo(item) : leerChequeo(item),
+    const { conector, items: crudos } = leerBloque(valor);
+    if (crudos.filter(pareceSubgrupo).length > 1) {
+      throw new FormaInvalida("Puede haber un solo grupo.");
+    }
+    const items = crudos.map((item) =>
+      pareceSubgrupo(item) ? leerSubgrupo(item) : leerChequeo(item),
     );
     return { ok: true, condicion: { conector, items } };
   } catch (error) {
@@ -219,18 +242,15 @@ export function cumpleCondicion(
 
 function describirRango(chequeo: ChequeoRango): string {
   const { desde, hasta } = chequeo;
+  // Una condición válida tiene desde, hasta o los dos (validarCondicion).
   if (chequeo.campo === "edad") {
     if (desde !== undefined && hasta !== undefined) return `de ${desde} a ${hasta} años`;
-    if (desde !== undefined) return `${desde} años o más`;
-    if (hasta !== undefined) return `hasta ${hasta} años`;
-    return "cualquier edad";
+    return desde !== undefined ? `${desde} años o más` : `hasta ${hasta} años`;
   }
   if (desde !== undefined && hasta !== undefined) {
     return desde === hasta ? `nacidos en ${desde}` : `nacidos de ${desde} a ${hasta}`;
   }
-  if (desde !== undefined) return `nacidos en ${desde} o después`;
-  if (hasta !== undefined) return `nacidos en ${hasta} o antes`;
-  return "cualquier año";
+  return desde !== undefined ? `nacidos en ${desde} o después` : `nacidos en ${hasta} o antes`;
 }
 
 function describirChequeo(chequeo: Chequeo): string {
@@ -277,12 +297,15 @@ export function agregarChequeo(condicion: Condicion, grupo?: number): Condicion 
   };
 }
 
-/** Suma el subnivel, con el conector contrario al de arriba. Si ya hay uno, no cambia nada. */
+/**
+ * Suma el único grupo, con el conector contrario al de arriba y un chequeo
+ * para empezar. Si ya hay uno, no cambia nada.
+ */
 export function agregarSubgrupo(condicion: Condicion): Condicion {
   if (tieneSubgrupo(condicion)) return condicion;
   const subgrupo: Subgrupo = {
     conector: condicion.conector === "Y" ? "O" : "Y",
-    items: [chequeoNuevo("sexo"), chequeoNuevo("edad")],
+    items: [chequeoNuevo("sexo")],
   };
   return { ...condicion, items: [...condicion.items, subgrupo] };
 }
@@ -341,7 +364,7 @@ export function cambiarCampo(condicion: Condicion, ubicacion: Ubicacion, campo: 
 }
 
 /** Quita un chequeo, o el subgrupo entero con `[i]`. Un subgrupo que queda vacío se va. */
-export function quitar(condicion: Condicion, ubicacion: Ubicacion): Condicion {
+export function quitarItem(condicion: Condicion, ubicacion: Ubicacion): Condicion {
   const [i, j] = ubicacion;
   const item = condicion.items[i];
   if (item && esSubgrupo(item) && j === undefined) {

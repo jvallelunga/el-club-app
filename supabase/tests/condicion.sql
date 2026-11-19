@@ -22,6 +22,8 @@ declare
     '{"conector": "Y", "items": [], "extra": 1}',
     -- Más de un subnivel.
     '{"conector": "Y", "items": [{"conector": "O", "items": [{"conector": "Y", "items": [{"campo": "sexo", "valor": "M"}]}]}]}',
+    -- Dos grupos.
+    '{"conector": "Y", "items": [{"conector": "O", "items": [{"campo": "sexo", "valor": "M"}]}, {"conector": "O", "items": [{"campo": "sexo", "valor": "F"}]}]}',
     -- Grupo vacío.
     '{"conector": "Y", "items": [{"conector": "O", "items": []}]}',
     '{"conector": "Y", "items": [{"campo": "sexo", "valor": "X"}]}',
@@ -32,7 +34,9 @@ declare
     '{"conector": "Y", "items": [{"campo": "edad", "desde": 20, "hasta": 10}]}',
     '{"conector": "Y", "items": [{"campo": "edad", "desde": -1}]}',
     '{"conector": "Y", "items": [{"campo": "anio", "desde": 1800}]}',
-    '{"conector": "Y", "items": [{"campo": "edad", "desde": 1, "extra": true}]}'
+    '{"conector": "Y", "items": [{"campo": "edad", "desde": 1, "extra": true}]}',
+    '{"conector": "Y", "items": [{"campo": "edad", "desde": null}]}',
+    '{"conector": "Y", "items": [{"conector": "O", "items": [{"campo": "sexo", "valor": "M"}], "x": 1}]}'
   ]::jsonb[];
   v jsonb;
 begin

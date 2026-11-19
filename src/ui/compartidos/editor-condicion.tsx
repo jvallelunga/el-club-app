@@ -10,14 +10,15 @@ import {
   cambiarConector,
   describirCondicion,
   esSubgrupo,
-  LIMITES,
-  quitar,
+  quitarItem,
+  RANGOS,
   tieneSubgrupo,
   validarCondicion,
   type Campo,
   type Chequeo,
   type Condicion,
   type Conector,
+  type Rango,
   type Ubicacion,
 } from "@/dominio/condicion";
 import { Button } from "@/ui/nativos/button";
@@ -46,6 +47,11 @@ export function EditorCondicion({
 }) {
   const conGrupo = tieneSubgrupo(condicion);
   const validacion = validarCondicion(condicion);
+  const edicionDe = (ubicacion: Ubicacion) => ({
+    onCampo: (campo: Campo) => onChange(cambiarCampo(condicion, ubicacion, campo)),
+    onChequeo: (chequeo: Chequeo) => onChange(cambiarChequeo(condicion, ubicacion, chequeo)),
+    onQuitar: () => onChange(quitarItem(condicion, ubicacion)),
+  });
 
   return (
     <div className="flex flex-col gap-2" role="group" aria-label={etiqueta}>
@@ -84,19 +90,13 @@ export function EditorCondicion({
                   variant="ghost"
                   size="icon-sm"
                   aria-label="Quitar grupo"
-                  onClick={() => onChange(quitar(condicion, [i]))}
+                  onClick={() => onChange(quitarItem(condicion, [i]))}
                 >
                   <X className="size-4" />
                 </Button>
               </div>
               {item.items.map((chequeo, j) => (
-                <FilaChequeo
-                  key={j}
-                  chequeo={chequeo}
-                  ubicacion={[i, j]}
-                  condicion={condicion}
-                  onChange={onChange}
-                />
+                <FilaChequeo key={j} chequeo={chequeo} {...edicionDe([i, j])} />
               ))}
               <Button
                 type="button"
@@ -109,13 +109,7 @@ export function EditorCondicion({
               </Button>
             </div>
           ) : (
-            <FilaChequeo
-              key={i}
-              chequeo={item}
-              ubicacion={[i]}
-              condicion={condicion}
-              onChange={onChange}
-            />
+            <FilaChequeo key={i} chequeo={item} {...edicionDe([i])} />
           ),
         )}
 
@@ -189,14 +183,14 @@ function InterruptorConector({
 
 function FilaChequeo({
   chequeo,
-  ubicacion,
-  condicion,
-  onChange,
+  onCampo,
+  onChequeo,
+  onQuitar,
 }: {
   chequeo: Chequeo;
-  ubicacion: Ubicacion;
-  condicion: Condicion;
-  onChange: (condicion: Condicion) => void;
+  onCampo: (campo: Campo) => void;
+  onChequeo: (chequeo: Chequeo) => void;
+  onQuitar: () => void;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5 rounded-lg bg-background p-1.5 ring-1 ring-border">
@@ -204,7 +198,7 @@ function FilaChequeo({
         aria-label="Qué se chequea"
         className={claseCampo}
         value={chequeo.campo}
-        onChange={(e) => onChange(cambiarCampo(condicion, ubicacion, e.target.value as Campo))}
+        onChange={(e) => onCampo(e.target.value as Campo)}
       >
         {CAMPOS.map((opcion) => (
           <option key={opcion.campo} value={opcion.campo}>
@@ -212,27 +206,19 @@ function FilaChequeo({
           </option>
         ))}
       </select>
-      <ValorChequeo
-        chequeo={chequeo}
-        onChange={(nuevo) => onChange(cambiarChequeo(condicion, ubicacion, nuevo))}
-      />
+      <ValorChequeo chequeo={chequeo} onChange={onChequeo} />
       <Button
         type="button"
         variant="ghost"
         size="icon-sm"
         className="ml-auto"
         aria-label="Quitar chequeo"
-        onClick={() => onChange(quitar(condicion, ubicacion))}
+        onClick={onQuitar}
       >
         <X className="size-4" />
       </Button>
     </div>
   );
-}
-
-/** Vacío es «sin límite»; lo que no es un entero válido lo marca `validarCondicion`. */
-function numero(texto: string): number | undefined {
-  return texto.trim() === "" ? undefined : Number(texto);
 }
 
 function ValorChequeo({
@@ -255,38 +241,52 @@ function ValorChequeo({
       </select>
     );
   }
-  const { min, max } = LIMITES[chequeo.campo];
-  const nombre = chequeo.campo === "edad" ? "Edad" : "Año de nacimiento";
-  const placeholder = chequeo.campo === "edad" ? "—" : "año";
+  const rango = RANGOS[chequeo.campo];
   return (
     <span className="inline-flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
       desde
-      <input
-        type="number"
-        inputMode="numeric"
-        min={min}
-        max={max}
-        step={1}
-        aria-label={`${nombre} desde`}
-        className={cn(claseCampo, "w-16")}
-        placeholder={placeholder}
-        value={chequeo.desde ?? ""}
-        onChange={(e) => onChange({ ...chequeo, desde: numero(e.target.value) })}
+      <CampoExtremo
+        rango={rango}
+        etiqueta={`${rango.nombre} desde`}
+        valor={chequeo.desde}
+        onChange={(desde) => onChange({ ...chequeo, desde })}
       />
       hasta
-      <input
-        type="number"
-        inputMode="numeric"
-        min={min}
-        max={max}
-        step={1}
-        aria-label={`${nombre} hasta`}
-        className={cn(claseCampo, "w-16")}
-        placeholder={placeholder}
-        value={chequeo.hasta ?? ""}
-        onChange={(e) => onChange({ ...chequeo, hasta: numero(e.target.value) })}
+      <CampoExtremo
+        rango={rango}
+        etiqueta={`${rango.nombre} hasta`}
+        valor={chequeo.hasta}
+        onChange={(hasta) => onChange({ ...chequeo, hasta })}
       />
-      {chequeo.campo === "edad" ? "años" : null}
+      {rango.unidad}
     </span>
+  );
+}
+
+/** Un extremo de un rango. Vacío es «sin límite»; lo que no es un entero válido lo marca `validarCondicion`. */
+function CampoExtremo({
+  rango,
+  etiqueta,
+  valor,
+  onChange,
+}: {
+  rango: Rango;
+  etiqueta: string;
+  valor: number | undefined;
+  onChange: (valor: number | undefined) => void;
+}) {
+  return (
+    <input
+      type="number"
+      inputMode="numeric"
+      min={rango.min}
+      max={rango.max}
+      step={1}
+      aria-label={etiqueta}
+      className={cn(claseCampo, "w-16")}
+      placeholder={rango.placeholder}
+      value={valor ?? ""}
+      onChange={(e) => onChange(e.target.value.trim() === "" ? undefined : Number(e.target.value))}
+    />
   );
 }

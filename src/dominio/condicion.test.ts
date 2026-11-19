@@ -9,7 +9,7 @@ import {
   cumpleCondicion,
   describirCondicion,
   edadEnElAnio,
-  quitar,
+  quitarItem,
   TEXTO_SIN_CONDICION,
   validarCondicion,
   type Condicion,
@@ -61,6 +61,15 @@ describe("validarCondicion", () => {
       ],
     });
     expect(resultado.ok).toBe(false);
+  });
+
+  it("no acepta más de un grupo", () => {
+    const grupo = { conector: "O", items: [{ campo: "sexo", valor: "M" }] };
+    expect(validarCondicion({ conector: "Y", items: [grupo, grupo] }).ok).toBe(false);
+  });
+
+  it("un grupo nuevo ya se puede guardar", () => {
+    expect(validarCondicion(agregarSubgrupo(masculino16)).ok).toBe(true);
   });
 
   it("no acepta un grupo vacío", () => {
@@ -184,7 +193,7 @@ describe("edición", () => {
     expect(condicion.items).toHaveLength(2);
     condicion = agregarChequeo(condicion, 1);
     const grupo = condicion.items[1];
-    expect("items" in grupo && grupo.items).toHaveLength(3);
+    expect("items" in grupo && grupo.items).toHaveLength(2);
   });
 
   it("el subgrupo nuevo arranca con el conector contrario y no se suma un segundo", () => {
@@ -209,17 +218,18 @@ describe("edición", () => {
   });
 
   it("al quitar el último chequeo de un grupo, se va el grupo", () => {
-    let condicion = agregarSubgrupo(masculino16);
-    condicion = quitar(condicion, [2, 0]);
-    condicion = quitar(condicion, [2, 0]);
+    let condicion = agregarChequeo(agregarSubgrupo(masculino16), 2);
+    condicion = quitarItem(condicion, [2, 0]);
+    expect(condicion.items).toHaveLength(3);
+    condicion = quitarItem(condicion, [2, 0]);
     expect(condicion).toEqual(masculino16);
-    expect(quitar(masculino16, [0]).items).toEqual([{ campo: "edad", desde: 16 }]);
+    expect(quitarItem(masculino16, [0]).items).toEqual([{ campo: "edad", desde: 16 }]);
   });
 
   it("no cambia la condición original", () => {
     const copia = structuredClone(masculino16);
     agregarChequeo(masculino16);
-    quitar(masculino16, [0]);
+    quitarItem(masculino16, [0]);
     cambiarConector(masculino16, "O");
     expect(masculino16).toEqual(copia);
   });
