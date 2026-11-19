@@ -1,36 +1,53 @@
 ---
 name: next-issue
-description: Start work on an issue: take the next `ready` issue (or a given `#n`), route it to the right Matt Pocock skill, and begin once the user confirms. Use when the user asks to start working, for the next issue or task, or to take a specific issue.
-argument-hint: "Optional issue number to take instead of the next one"
+description: Start work on an issue. In a parent's refinement session, implement its next open ticket through a subagent; in a new session, offer a menu (refine an issue in `refinement`, a ticket of a parent in progress, or a standalone `ready` issue). Use when the user asks to start working, for the next issue or task, or to take a specific issue.
+argument-hint: "Optional issue number to take instead of choosing from the menu"
 ---
 
-Pick the next issue to work on, **route** it to the right skill, and start it after the user says OK.
+Find out what this session is for, pick the issue, **route** it to the right skill, and start it after the user says OK.
 
-`docs/agents/issue-tracker.md` is the source of truth for labels and how to take an issue. `docs/agents/triage-labels.md` maps `ready-for-agent` to this repo's label. Read both before step 1.
+`docs/agents/issue-tracker.md` is the source of truth for labels, parents and tickets, and how to take an issue. Read it before step 1, **Parent issues and their tickets** included.
 
 Talk to the user in Spanish.
 
 ## Tools
 
-- **GitHub**: use the GitHub MCP tools when the session has them (`list_issues` with `labels` and `state: OPEN`, `issue_read` with `get` / `get_comments`, `add_issue_comment`, `issue_write` for labels). Otherwise use the `gh api` calls in `docs/agents/issue-tracker.md`; plain `gh issue` fails in cloud sessions. To count open blockers, follow **Count open blockers** in `docs/agents/issue-tracker.md` (native links plus the body's `Blocked by`).
-- **Skills**: the Skill tool can call only model-invocable skills. These are user-invoked only (`disable-model-invocation: true`): `grill-with-docs`, `to-spec`, `to-tickets`, `implement`, `triage`, `wayfinder`. Step 6 says what to do with them.
-- **Branch**: a cloud session is assigned one `claude/…` branch and may push only there. Locally, use the repo prefixes in step 5.
+- **GitHub**: use the GitHub MCP tools when the session has them (`list_issues` with `labels` and `state: OPEN`, `issue_read` with `get` / `get_comments` / `get_sub_issues` / `get_parent`, `add_issue_comment`, `issue_write` for labels). Otherwise use the `gh api` calls in `docs/agents/issue-tracker.md`; plain `gh issue` fails in cloud sessions. To count open blockers, follow **Count open blockers** in `docs/agents/issue-tracker.md`.
+- **Session**: `get_session` (no id) gives this session's id; its link is `https://claude.ai/code/<id>`. `set_session_title` renames it. Without these tools, ask the user for the link and tell them the title to set by hand.
+- **Skills**: the Skill tool can call only model-invocable skills. These are user-invoked only (`disable-model-invocation: true`): `grill-with-docs`, `to-spec`, `to-tickets`, `implement`, `triage`, `wayfinder`. When the route needs one, ask the user to type it and wait.
 
-## 1. Check the work in progress
+## 1. Find out what this session is
 
-The repo works **one thing at a time**. List open issues labelled `in progress`, leaving out parents (issues with sub-issues): a parent stays `in progress` while its tickets are worked. If one is left, stop: show it to the user and ask whether to continue it instead (then route it from step 3). Done when no ticket is `in progress`, or the user explicitly says to take another one anyway.
+List the open parents in `in progress` and the open issues in `refinement`, and read the «Sesión de refinamiento: <link>» comment on each. Compare each link with this session's.
 
-## 2. Pick the issue
+- **This session is a parent's refinement session** → **ticket mode**, step 2A.
+- **This session is refining an issue still in `refinement`** → refinement isn't finished. Tell the user to go on with `/grill-with-docs #<n>`; once settled, `/to-tickets #<n>` if it needs several sessions, or move it to `ready` if it fits one. Stop.
+- **Neither** → **menu mode**, step 2B.
 
-With an argument, take that issue and confirm it is open and labelled `ready`; otherwise tell the user its real state and stop.
+With an argument `#<n>`, skip the menu and treat `#<n>` as the user's choice in step 2B (or as the ticket in 2A, if it belongs to this session's parent).
 
-Without one, list open issues labelled `ready`, oldest first, pull requests filtered out. Drop any with an assignee or an open blocker. The first one left is the issue. None left: tell the user and stop.
+## 2A. Ticket mode: the next ticket of this session's parent
 
-If the issue has a parent, read **Parent issues and their tickets** in `docs/agents/issue-tracker.md` now. The ticket is worked from the parent's refinement session (the comment «Sesión de refinamiento» on the parent). Compare that link with this session's id (`get_session` with no id). If this is another session, stop and tell the user to run `/next-issue` there.
+List the parent's open sub-issues. If one is `in progress`, show it and ask whether to wait for it or take another one anyway: the repo works **one ticket at a time**. Otherwise the ticket is the first sub-issue, in the parent's order, labelled `ready` with no assignee and no open blocker. None left: tell the user (all closed, or the rest blocked by what) and stop. Go on to step 3.
+
+## 2B. Menu mode: ask what to work on
+
+Build three lists:
+
+- **Para refinar**: open issues labelled `refinement`. Mark the ones that already have a refinement session.
+- **Tickets de issues en curso**: for each parent in `in progress`, its next ticket as in 2A, with the parent's refinement session.
+- **Sueltos listos**: open issues labelled `ready` with no parent, no assignee and no open blocker, oldest first.
+
+Also show any ticket or standalone issue already `in progress`: the repo works one at a time, so say it before the user picks. Ask with `AskUserQuestion` (or a numbered list if there are more options than it fits). Done when the user has chosen; then by choice:
+
+- **An issue to refine with no session**: this session becomes its refinement session. Comment «Sesión de refinamiento: <link>» on the issue, rename the session to `#<n> <issue title>`, and ask the user to type `/grill-with-docs #<n>`. Stop.
+- **An issue to refine that already has a session**: give the user that session's link to go on there. Stop.
+- **A ticket**: give the user the parent's refinement session link and tell them to run `/next-issue` there. Stop.
+- **A standalone issue**: go on to step 3.
 
 ## 3. Read it whole
 
-Read the issue body and **every** comment (frames, decisions with date ART, answered questions live there), plus any feature doc, ADR or `GLOSSARY.md` entry it touches (see `docs/agents/domain.md`), and the code and migrations it changes. Done when you can state the goal, the acceptance criteria, and what is still open.
+Read the issue body and **every** comment (frames, decisions with date ART, answered questions live there); for a ticket, the parent's too. Add any feature doc, ADR or `GLOSSARY.md` entry it touches (see `docs/agents/domain.md`), and the code and migrations it changes. Done when you can state the goal, the acceptance criteria, and what is still open.
 
 ## 4. Route it
 
@@ -57,7 +74,7 @@ Show the user:
 - the issue (`#n`, title, link) and its goal in one or two lines,
 - the route: detours in order, then the main skill, each with the quoted evidence; say which steps they will have to type themselves,
 - the near-miss skills and why not,
-- the branch: in a cloud session, the session's `claude/…` branch; locally, `feature/`, `fix/`, `enhancement/` or `task/` plus a short kebab-case name. Either way, off the latest `desarrollo`.
+- the branch: a new `claude/<slug>` branch off the latest `desarrollo` (locally, `feature/`, `fix/`, `enhancement/` or `task/` plus a short kebab-case name); for a ticket, the subagent creates it.
 
 Then wait. The user may confirm, change the skill, or pick another issue.
 
@@ -65,9 +82,9 @@ Then wait. The user may confirm, change the skill, or pick another issue.
 
 On OK:
 
-1. Put the branch on the latest `desarrollo`. In a cloud session, `git fetch origin desarrollo` and move the session branch onto it with `git checkout -B <branch> origin/desarrollo`, only if the branch holds no commits that `desarrollo` lacks; if it does, ask the user. Locally, create the new branch from `origin/desarrollo`.
-2. Take the issue as `docs/agents/issue-tracker.md` says: `ready` → `in progress`, with the comment «Tomado. Rama: <rama>».
-3. Rename the session to `#<n> <issue title>` (e.g. `#26 Editor de predios 3D por sede`), so the session list shows which issue it holds. In a cloud session, call `get_session` from the `claude-code-remote` tools with no id to get this session's id, then `set_session_title` with it. Without those tools, tell the user the name to set by hand.
-4. Start the first skill of the route, passing the issue number and link. The issue and its comments are the spec. For a ticket of a parent, this session does none of 1–4: it hands the ticket to a fresh subagent as **Parent issues and their tickets** says, and waits for its report. The subagent creates its branch, takes the issue (sub-step 2) and runs the route; the session keeps the parent's title.
-   - Model-invocable skill: call it with the Skill tool.
-   - User-invoked skill: ask the user to type it (e.g. `/grill-with-docs #26`) and wait. Don't run the skills it wraps in its place.
+- **A ticket (2A)**: hand it to a fresh subagent as **Parent issues and their tickets** in `docs/agents/issue-tracker.md` says, passing the issue number and link, the route and the parent. Wait for its report and show the user the PR link. The session keeps the parent's title.
+- **A standalone issue (2B)**:
+  1. Create the branch from `origin/desarrollo` after `git fetch origin desarrollo`.
+  2. Take the issue as `docs/agents/issue-tracker.md` says: `ready` → `in progress`, with the comment «Tomado. Rama: <rama>».
+  3. Rename the session to `#<n> <issue title>`.
+  4. Start the first skill of the route, passing the issue number and link; the issue and its comments are the spec. A model-invocable skill: call it with the Skill tool. A user-invoked one: ask the user to type it (e.g. `/implement #45`) and wait.

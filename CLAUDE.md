@@ -4,7 +4,7 @@ Matt Pocock's skills are local copies in `.claude/skills/` (from `mattpocock/ski
 
 ### Starting work
 
-Start every piece of issue work with the `next-issue` skill: it takes the next `ready` issue (or the `#n` the user names), routes it to the right skill, and waits for the user's OK before touching anything.
+Start every piece of issue work with the `next-issue` skill: in a refinement session it takes the parent's next ticket; in a new session it offers what to refine or implement. It routes the work to the right skill and waits for the user's OK before touching anything.
 
 ### Pull requests
 
