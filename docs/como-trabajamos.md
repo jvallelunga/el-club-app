@@ -23,7 +23,7 @@ Un ticket está en `done` cuando su PR entra en la rama del padre; el padre, cua
 
 Depende de dónde lo escribas:
 
-- **En la sesión de refinamiento de un padre:** el padre tiene su rama `issue/<n>-…`. Toma el siguiente ticket libre y lo arranca como **sesión hija**: aparece colgada de la sesión del padre en la barra lateral, así se ve en árbol qué tickets se hicieron. La hija lo implementa en una rama salida de la del padre, lo revisa (`/matt-code-review`) y abre el PR hacia ella. La sesión del padre controla el PR, le pide los arreglos a la hija, lo mergea a la rama del padre y lo pasa a `done`. De a un ticket, en orden de bloqueos; para seguir, otra vez `/next-issue`. Con todos los tickets en `done`, la rama del padre va por PR a `desarrollo` y el padre pasa a `done`.
+- **En la sesión de refinamiento de un padre:** el padre tiene su rama `issue/<n>-…`. Toma el siguiente ticket libre y lo arranca como **sesión hija**: aparece colgada de la sesión del padre en la barra lateral, así se ve en árbol qué tickets se hicieron. La hija lo implementa en una rama salida de la del padre, lo revisa (`/matt-code-review`) y abre el PR hacia ella. La sesión del padre controla el PR, le pide los arreglos a la hija, lo mergea a la rama del padre y lo pasa a `done`. De a un ticket, en orden de bloqueos; para seguir, otra vez `/next-issue`. Con todos los tickets en `done`, la sesión del padre escribe las docs de usuario de todo el feature (`/user-docs`), la rama del padre va por PR a `desarrollo` y el padre pasa a `done`. Los tickets no escriben docs de usuario.
 - **En una sesión nueva:** te muestra un menú con:
   - los issues en `refinement`, para refinar;
   - el siguiente ticket de cada padre en curso: te da el link de su sesión de refinamiento para seguir ahí;

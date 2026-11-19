@@ -12,7 +12,7 @@ Merge your own PR into its target branch (`desarrollo`, or the parent's issue br
 
 ### User docs
 
-Before moving an issue to `done`, update the end-user docs in `docs/usuario/` with the `user-docs` skill, in the same PR. The folder is published to the GitHub wiki on every push to `main`.
+Before moving an issue to `done`, update the end-user docs in `docs/usuario/` with the `user-docs` skill, in the same PR. The folder is published to the GitHub wiki on every push to `main`. A parent split into tickets is the exception: its tickets don't touch `docs/usuario/`, and the parent documents the whole feature on its branch before its PR into `desarrollo`.
 
 ### Issue tracker
 

@@ -41,7 +41,8 @@ A **parent** is an issue split into tickets (GitHub sub-issues), like #26 and #4
   2. follows `.claude/skills/implement/SKILL.md` in full, including its `matt-code-review` step (a session can dispatch the reviewers);
   3. opens the PR into the **parent branch** (`Part of #<ticket>`), waits for CI green, and reports the PR link and the review findings **without merging** and without changing the ticket's label.
 - **Merge by the orchestrator:** when the child session reports, the orchestrator checks the PR (diff against the parent branch, CI, acceptance criteria, how each review finding was settled). Fixes go back to the same child session (`SendMessage` to its `local_…` id). Once the PR is green and settled, the orchestrator merges it into the parent branch and moves the ticket to `done`.
-- **Closing the parent:** when every ticket is `done`, the orchestrator updates the parent branch from `desarrollo`, opens its PR into `desarrollo` (`Part of #<parent>`), merges it once `clean`, and moves the parent to `done`.
+- **End-user docs belong to the parent:** tickets don't write `docs/usuario/` and carry no acceptance criterion for it; the whole feature is documented once, when it's complete.
+- **Closing the parent:** when every ticket is `done`, the orchestrator updates the parent branch from `desarrollo`, writes the end-user docs for the whole feature on the parent branch with the `user-docs` skill, opens its PR into `desarrollo` (`Part of #<parent>`), merges it once `clean`, and moves the parent to `done`.
 
 ## Apply migrations to development
 

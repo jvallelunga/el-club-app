@@ -86,7 +86,7 @@ On OK:
   1. Make sure the parent branch exists and is pushed; create it off `origin/desarrollo` if missing.
   2. Start the ticket as a **child session** (`start_session`, `initiation: "user_asked"`, `context: "fresh"`, own worktree with `source_branch` = the parent branch, title `#<ticket> <ticket title>`), never as an Agent-tool subagent: the user follows the tickets as a tree of child sessions in the sidebar. Brief it with the issue number and link, the route, the parent and the parent branch. It runs `/implement` in full, review included, and stops at a green PR into the parent branch.
   3. When it reports, check the PR and how the review findings were settled; send fixes back to the same child session (`SendMessage`). Then merge into the parent branch and move the ticket to `done`. Show the user the PR link. The session keeps the parent's title.
-- **Closing a parent** (every ticket `done`): update the parent branch from `desarrollo`, open its PR into `desarrollo`, merge it once `clean`, move the parent to `done`, and check «Migraciones en desarrollo» if it brought migrations.
+- **Closing a parent** (every ticket `done`): update the parent branch from `desarrollo`, write the end-user docs for the whole feature on it with the `user-docs` skill, open its PR into `desarrollo`, merge it once `clean`, move the parent to `done`, and check «Migraciones en desarrollo» if it brought migrations.
 - **A standalone issue (2B)**:
   1. Create the issue branch `issue/<n>-<slug>` from `origin/desarrollo` after `git fetch origin desarrollo`, and push it.
   2. Take the issue as `docs/agents/issue-tracker.md` says: `ready` → `in progress`, with the comment «Tomado. Rama: <rama>».

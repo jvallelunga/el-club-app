@@ -1,9 +1,11 @@
 ---
 name: user-docs
-description: Write or update the end-user docs in `docs/usuario/`, published to the GitHub wiki. Use before moving an issue to `done`, or when the user asks to document a feature for the app's users.
+description: Write or update the end-user docs in `docs/usuario/`, published to the GitHub wiki. Use before moving a standalone issue to `done`, when closing a parent split into tickets (never for one of its tickets), or when the user asks to document a feature for the app's users.
 ---
 
 Keep `docs/usuario/` describing what the app does **today** for the people who use it. A GitHub Action copies the folder to the repo wiki on every push to `main`, so these files are the wiki: edit them here, in the same PR as the feature.
+
+For a parent split into tickets, the feature is documented once, on the parent branch, when every ticket is `done` and before the parent's PR into `desarrollo`. Read the parent and all its tickets, then document the whole feature. A ticket's PR doesn't touch `docs/usuario/`.
 
 ## Readers
 
