@@ -312,6 +312,57 @@ export type Database = {
           },
         ];
       };
+      elemento_predio: {
+        Row: {
+          id: string;
+          predio_id: string;
+          instalacion_id: string | null;
+          este: number;
+          norte: number;
+          rotacion: number;
+          medidas: Json;
+          creado_en: string;
+          actualizado_en: string;
+        };
+        Insert: {
+          id?: string;
+          predio_id: string;
+          instalacion_id?: string | null;
+          este: number;
+          norte: number;
+          rotacion?: number;
+          medidas?: Json;
+          creado_en?: string;
+          actualizado_en?: string;
+        };
+        Update: {
+          id?: string;
+          predio_id?: string;
+          instalacion_id?: string | null;
+          este?: number;
+          norte?: number;
+          rotacion?: number;
+          medidas?: Json;
+          creado_en?: string;
+          actualizado_en?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "elemento_predio_predio_id_fkey";
+            columns: ["predio_id"];
+            isOneToOne: false;
+            referencedRelation: "predio";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "elemento_predio_instalacion_id_fkey";
+            columns: ["instalacion_id"];
+            isOneToOne: true;
+            referencedRelation: "instalacion";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       instalacion: {
         Row: {
           id: string;
@@ -354,6 +405,16 @@ export type Database = {
     Functions: {
       aplicar_invitaciones_al_entrar: {
         Args: Record<string, never>;
+        Returns: undefined;
+      };
+      guardar_predio: {
+        Args: {
+          p_sede_id: string;
+          p_origen_lat: number;
+          p_origen_lng: number;
+          p_area: Json;
+          p_instalaciones: Json;
+        };
         Returns: undefined;
       };
       guardar_contacto_club: {

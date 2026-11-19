@@ -1,4 +1,5 @@
 import { sonCoordenadasValidas, type Coordenadas } from "./maps";
+import { tipoInstalacion, type ClaveTipoInstalacion } from "./tipos-instalacion";
 
 /** Metros desde el origen del predio: [este, norte]. */
 export type Punto = [number, number];
@@ -111,10 +112,45 @@ export function origenInicial(params: {
   return { coordenadas: ORIGEN_POR_DEFECTO, desde: "por-defecto" };
 }
 
-export type DatosPredio = { origen: Coordenadas; area: Punto[] };
+export type DatosPredio = {
+  origen: Coordenadas;
+  area: Punto[];
+  instalaciones: InstalacionUbicada[];
+};
 
 /** Un centímetro: por debajo de eso, una diferencia es ruido del mapa. */
 const TOLERANCIA_METROS = 0.01;
+/** Una décima de grado. */
+const TOLERANCIA_GRADOS = 0.1;
+
+/** Diferencia entre dos ángulos, entre 0 y 180 (359° y 1° están a 2°). */
+function diferenciaDeAngulos(a: number, b: number): number {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+function hayCambiosEnInstalacion(antes: InstalacionUbicada, ahora: InstalacionUbicada) {
+  const claves = new Set([...Object.keys(antes.medidas), ...Object.keys(ahora.medidas)]);
+  return (
+    Math.hypot(antes.posicion[0] - ahora.posicion[0], antes.posicion[1] - ahora.posicion[1]) >
+      TOLERANCIA_METROS ||
+    diferenciaDeAngulos(antes.rotacion, ahora.rotacion) > TOLERANCIA_GRADOS ||
+    [...claves].some(
+      (clave) =>
+        !(Math.abs((antes.medidas[clave] ?? NaN) - (ahora.medidas[clave] ?? NaN)) <=
+          TOLERANCIA_METROS),
+    )
+  );
+}
+
+function hayCambiosEnInstalaciones(antes: InstalacionUbicada[], ahora: InstalacionUbicada[]) {
+  if (antes.length !== ahora.length) return true;
+  const porId = new Map(antes.map((i) => [i.instalacionId, i]));
+  return ahora.some((i) => {
+    const previa = porId.get(i.instalacionId);
+    return !previa || hayCambiosEnInstalacion(previa, i);
+  });
+}
 
 /** Si lo que está en el editor difiere de lo guardado (null = sin predio). */
 export function hayCambiosEnPredio(
@@ -124,6 +160,7 @@ export function hayCambiosEnPredio(
   if (!guardado) return true;
   const [deltaEste, deltaNorte] = aMetros(guardado.origen, actual.origen);
   if (Math.hypot(deltaEste, deltaNorte) > TOLERANCIA_METROS) return true;
+  if (hayCambiosEnInstalaciones(guardado.instalaciones, actual.instalaciones)) return true;
   if (guardado.area.length !== actual.area.length) return true;
   return guardado.area.some(
     ([e, n], i) =>
@@ -131,13 +168,31 @@ export function hayCambiosEnPredio(
   );
 }
 
-/** Redondea para guardar: el área al centímetro y el origen a 7 decimales (~1 cm). */
+/** Normaliza un ángulo a [0°, 360°) y lo redondea a la décima. */
+function rotacionParaGuardar(grados: number): number {
+  const decimas = Math.round(grados * 10);
+  return (((decimas % 3600) + 3600) % 3600) / 10;
+}
+
+/**
+ * Redondea para guardar: el área, las posiciones y las medidas al centímetro,
+ * la rotación a la décima de grado y el origen a 7 decimales (~1 cm).
+ */
 export function predioParaGuardar(datos: DatosPredio): DatosPredio {
-  const cm = (n: number) => Math.round(n * 100) / 100;
+  // «+ 0» evita guardar -0.
+  const cm = (n: number) => Math.round(n * 100) / 100 + 0;
   const grados = (n: number) => Math.round(n * 1e7) / 1e7;
   return {
     origen: { lat: grados(datos.origen.lat), lng: grados(datos.origen.lng) },
     area: datos.area.map(([e, n]) => [cm(e), cm(n)]),
+    instalaciones: datos.instalaciones.map((i) => ({
+      instalacionId: i.instalacionId,
+      posicion: [cm(i.posicion[0]), cm(i.posicion[1])],
+      rotacion: rotacionParaGuardar(i.rotacion),
+      medidas: Object.fromEntries(
+        Object.entries(i.medidas).map(([clave, valor]) => [clave, cm(valor)]),
+      ),
+    })),
   };
 }
 
@@ -158,10 +213,128 @@ function esCoordenadas(valor: unknown): valor is Coordenadas {
   return typeof lat === "number" && typeof lng === "number" && sonCoordenadasValidas(lat, lng);
 }
 
-/** Mensaje si lo que llega para guardar no es un predio válido, o null. */
-export function errorDelPredio(datos: unknown): string | null {
+/**
+ * Mensaje si lo que llega para guardar no es un predio válido, o null.
+ * `tiposDeLaSede` da el tipo de cada instalación de la sede, por id.
+ */
+export function errorDelPredio(
+  datos: unknown,
+  tiposDeLaSede: ReadonlyMap<string, ClaveTipoInstalacion>,
+): string | null {
   if (!datos || typeof datos !== "object") return "El predio no es válido.";
-  const { origen, area } = datos as Record<string, unknown>;
+  const { origen, area, instalaciones } = datos as Record<string, unknown>;
   if (!esCoordenadas(origen)) return "El origen del predio no es válido.";
-  return errorDelArea(area);
+  return errorDelArea(area) ?? errorDeInstalaciones(instalaciones, tiposDeLaSede);
+}
+
+function errorDeInstalaciones(
+  instalaciones: unknown,
+  tiposDeLaSede: ReadonlyMap<string, ClaveTipoInstalacion>,
+): string | null {
+  if (!Array.isArray(instalaciones)) return "Las instalaciones del predio no son válidas.";
+  const vistas = new Set<string>();
+  for (const instalacion of instalaciones) {
+    if (!instalacion || typeof instalacion !== "object") {
+      return "Una instalación del predio no es válida.";
+    }
+    const { instalacionId, posicion, rotacion, medidas } = instalacion as Record<string, unknown>;
+    const tipo = typeof instalacionId === "string" ? tiposDeLaSede.get(instalacionId) : undefined;
+    if (!tipo) return "Una de las instalaciones no es de esta sede.";
+    if (vistas.has(instalacionId as string)) return "Una instalación está ubicada dos veces.";
+    vistas.add(instalacionId as string);
+
+    if (!esPunto(posicion)) return "La posición de una instalación no es válida.";
+    if (Math.hypot(...posicion) > DISTANCIA_MAXIMA_AL_ORIGEN) {
+      return "Una instalación está demasiado lejos del origen.";
+    }
+    if (typeof rotacion !== "number" || !Number.isFinite(rotacion)) {
+      return "La rotación de una instalación no es válida.";
+    }
+    const error = errorDeMedidas(tipo, medidas);
+    if (error) return error;
+  }
+  return null;
+}
+
+function errorDeMedidas(tipo: ClaveTipoInstalacion, medidas: unknown): string | null {
+  const esperadas = tipoInstalacion(tipo).medidas.map((m) => m.clave);
+  if (!medidas || typeof medidas !== "object") {
+    return "Las medidas de una instalación no son válidas.";
+  }
+  const claves = Object.keys(medidas);
+  if (claves.length !== esperadas.length || !esperadas.every((c) => claves.includes(c))) {
+    return "Las medidas de una instalación no son las de su tipo.";
+  }
+  if (!Object.values(medidas).every(esMedidaValida)) {
+    return "Cada medida de una instalación tiene que estar entre 0,5 y 300 m.";
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Instalaciones ubicadas en el predio (#43). La rotación va en grados, en
+// sentido horario; con 0°, el largo de la instalación va de oeste a este.
+// ---------------------------------------------------------------------------
+
+/** Una instalación de la sede ubicada en el predio (#43). */
+export type InstalacionUbicada = {
+  instalacionId: string;
+  /** Centro de la instalación, en metros desde el origen. */
+  posicion: Punto;
+  rotacion: number;
+  medidas: Record<string, number>;
+};
+
+/** Las cuatro esquinas de la huella, en metros desde el origen. */
+export function huellaDeInstalacion(
+  instalacion: Pick<InstalacionUbicada, "posicion" | "rotacion" | "medidas">,
+): Punto[] {
+  const { posicion, rotacion, medidas } = instalacion;
+  // El in-goal (rugby) se suma en cada punta del largo.
+  const medioLargo = medidas.largo / 2 + (medidas.ingoal ?? 0);
+  const medioAncho = medidas.ancho / 2;
+  const angulo = (rotacion * Math.PI) / 180;
+  const cos = Math.cos(angulo);
+  const sin = Math.sin(angulo);
+  const esquinas: Punto[] = [
+    [-medioLargo, -medioAncho],
+    [medioLargo, -medioAncho],
+    [medioLargo, medioAncho],
+    [-medioLargo, medioAncho],
+  ];
+  // Giro horario: (x, y) → (x·cos + y·sin, −x·sin + y·cos).
+  return esquinas.map(([x, y]) => [
+    posicion[0] + x * cos + y * sin,
+    posicion[1] - x * sin + y * cos,
+  ]);
+}
+
+/** Una medida, en metros: de medio metro a 300 m. */
+export const MEDIDA_MINIMA = 0.5;
+export const MEDIDA_MAXIMA = 300;
+
+function esMedidaValida(valor: unknown): valor is number {
+  return (
+    typeof valor === "number" &&
+    Number.isFinite(valor) &&
+    valor >= MEDIDA_MINIMA &&
+    valor <= MEDIDA_MAXIMA
+  );
+}
+
+/**
+ * Las medidas del tipo, tomando las guardadas que sirvan. Si la instalación
+ * cambió de tipo, lo que no es del tipo nuevo se descarta y lo que falta va
+ * con su valor por defecto.
+ */
+export function medidasDelTipo(
+  tipo: ClaveTipoInstalacion,
+  guardadas: Record<string, unknown> | null,
+): Record<string, number> {
+  return Object.fromEntries(
+    tipoInstalacion(tipo).medidas.map((medida) => {
+      const guardada = guardadas?.[medida.clave];
+      return [medida.clave, esMedidaValida(guardada) ? guardada : medida.porDefecto];
+    }),
+  );
 }

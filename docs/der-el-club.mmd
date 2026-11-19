@@ -1,7 +1,7 @@
 %% El Club — modelo aplicado.
 %% Tablas migradas: club (con dominio_base, escudo_ruta y paleta), usuario, super_admin,
 %% super_admin_invitacion, club_miembro, club_invitacion, club_red_social,
-%% sede, instalacion y predio.
+%% sede, instalacion, predio y elemento_predio.
 %% usuario.id coincide con el usuario de Supabase Auth.
 %% rol_club es un enum que por ahora solo tiene el valor admin.
 %%
@@ -31,6 +31,12 @@
 %% origen del predio y area, el área del predio como lista jsonb de puntos
 %% [este, norte] en metros desde el origen. Escribe solo el Super Admin;
 %% leen los Admins del club.
+%% elemento_predio (#43) es lo ubicado en el predio: por ahora, instalaciones
+%% de la sede, a lo sumo una vez cada una (instalacion_id único; si se borra
+%% la instalación, sale del predio). este/norte es el centro en metros desde
+%% el origen, rotacion en grados (sentido horario, 0 a 360) y medidas, un
+%% jsonb con las medidas del tipo. Mismo RLS que predio. Se guarda junto con
+%% el área con public.guardar_predio().
 %% El email del Super Admin no se guarda en el repo: el alta se hace
 %% directo en la base (ver scripts/sembrar-super-admin.sql).
 erDiagram
@@ -84,6 +90,17 @@ erDiagram
         timestamptz creado_en
         timestamptz actualizado_en
     }
+    ELEMENTO_PREDIO {
+        uuid id PK
+        uuid predio_id FK
+        uuid instalacion_id FK,UK
+        float este
+        float norte
+        float rotacion
+        jsonb medidas
+        timestamptz creado_en
+        timestamptz actualizado_en
+    }
     USUARIO {
         uuid id PK
         string nombre
@@ -122,3 +139,5 @@ erDiagram
     CLUB ||--o{ SEDE : tiene
     SEDE ||--o{ INSTALACION : tiene
     SEDE ||--o| PREDIO : tiene
+    PREDIO ||--o{ ELEMENTO_PREDIO : ubica
+    INSTALACION ||--o| ELEMENTO_PREDIO : "se ubica en"

@@ -789,6 +789,229 @@ end;
 $$;
 select pg_temp.salir();
 
+-- Instalaciones en el predio (#43): mismo RLS que predio. Guardar va por
+-- guardar_predio, que guarda el área y las instalaciones juntas.
+select pg_temp.entrar('super');
+do $$
+declare
+  v_inst uuid;
+  v_sede2 uuid;
+begin
+  insert into public.instalacion (sede_id, tipo, nombre)
+  values ((select id from _t where clave = 'sede_a'), 'cancha_rugby', 'Cancha 1')
+  returning id into v_inst;
+  insert into _t (clave, id) values ('inst_cancha', v_inst);
+
+  insert into public.instalacion (sede_id, tipo, nombre)
+  values ((select id from _t where clave = 'sede_a'), 'pileta', 'Pileta')
+  returning id into v_inst;
+  insert into _t (clave, id) values ('inst_pileta', v_inst);
+
+  insert into public.sede (club_id, nombre)
+  values ((select id from _t where clave = 'club_a'), 'Otra sede de A')
+  returning id into v_sede2;
+  insert into public.instalacion (sede_id, tipo, nombre)
+  values (v_sede2, 'gym', 'Gym de la otra sede')
+  returning id into v_inst;
+  insert into _t (clave, id) values ('inst_otra_sede', v_inst);
+end;
+$$;
+select pg_temp.salir();
+
+-- Un Admin no ubica instalaciones, ni directo ni con guardar_predio.
+select pg_temp.entrar('admin_a');
+do $$
+begin
+  begin
+    insert into public.elemento_predio (predio_id, instalacion_id, este, norte, rotacion, medidas)
+    values (
+      (select id from _t where clave = 'predio_a'),
+      (select id from _t where clave = 'inst_cancha'),
+      0, 0, 0, '{"largo": 100, "ancho": 70, "ingoal": 10}'
+    );
+    raise exception 'Admin A no debería poder ubicar una instalación';
+  exception
+    when insufficient_privilege then null;
+  end;
+
+  begin
+    perform public.guardar_predio(
+      (select id from _t where clave = 'sede_a'), -37.336, -59.08, '[]'::jsonb,
+      jsonb_build_array(jsonb_build_object(
+        'instalacion_id', (select id from _t where clave = 'inst_cancha'),
+        'este', 0, 'norte', 0, 'rotacion', 0,
+        'medidas', '{"largo": 100, "ancho": 70, "ingoal": 10}'::jsonb))
+    );
+    raise exception 'Admin A no debería poder guardar el predio';
+  exception
+    when insufficient_privilege then null;
+  end;
+end;
+$$;
+select pg_temp.salir();
+
+-- El Super Admin ubica, mueve, rota y quita instalaciones.
+select pg_temp.entrar('super');
+do $$
+declare
+  v_sede uuid := (select id from _t where clave = 'sede_a');
+  v_cancha uuid := (select id from _t where clave = 'inst_cancha');
+  v_pileta uuid := (select id from _t where clave = 'inst_pileta');
+  v_n int;
+  v_este double precision;
+  v_area jsonb;
+begin
+  -- Ubica las dos; la de otra sede se ignora.
+  perform public.guardar_predio(
+    v_sede, -37.336, -59.08, '[[0, 0], [200, 0], [200, 150], [0, 150]]'::jsonb,
+    jsonb_build_array(
+      jsonb_build_object('instalacion_id', v_cancha, 'este', 70, 'norte', 50, 'rotacion', 0,
+        'medidas', '{"largo": 100, "ancho": 70, "ingoal": 10}'::jsonb),
+      jsonb_build_object('instalacion_id', v_pileta, 'este', 20, 'norte', 120, 'rotacion', 90,
+        'medidas', '{"largo": 25, "ancho": 12}'::jsonb),
+      jsonb_build_object('instalacion_id', (select id from _t where clave = 'inst_otra_sede'),
+        'este', 0, 'norte', 0, 'rotacion', 0, 'medidas', '{"largo": 20, "ancho": 12, "alto": 5}'::jsonb)
+    )
+  );
+  select count(*) into v_n from public.elemento_predio
+  where predio_id = (select id from _t where clave = 'predio_a');
+  if v_n <> 2 then
+    raise exception 'Deberían quedar ubicadas 2 instalaciones, hay %', v_n;
+  end if;
+
+  -- Mueve y rota la cancha, y quita la pileta del predio.
+  perform public.guardar_predio(
+    v_sede, -37.336, -59.08, '[[0, 0], [200, 0], [200, 150], [0, 150]]'::jsonb,
+    jsonb_build_array(
+      jsonb_build_object('instalacion_id', v_cancha, 'este', 80.5, 'norte', 50, 'rotacion', 47.5,
+        'medidas', '{"largo": 100, "ancho": 68, "ingoal": 10}'::jsonb)
+    )
+  );
+  select este into v_este from public.elemento_predio where instalacion_id = v_cancha;
+  if v_este is distinct from 80.5 then
+    raise exception 'La cancha debería estar en 80.5 m al este, está en %', v_este;
+  end if;
+  if exists (select 1 from public.elemento_predio where instalacion_id = v_pileta) then
+    raise exception 'La pileta debería haber salido del predio';
+  end if;
+  if not exists (select 1 from public.instalacion where id = v_pileta) then
+    raise exception 'Quitar la pileta del predio no debería borrarla de la sede';
+  end if;
+
+  -- Guardar es todo o nada: con una medida inválida no cambia ni el área.
+  begin
+    perform public.guardar_predio(
+      v_sede, -37.336, -59.08, '[[0, 0], [10, 0], [10, 10]]'::jsonb,
+      jsonb_build_array(
+        jsonb_build_object('instalacion_id', v_cancha, 'este', 0, 'norte', 0, 'rotacion', 0,
+          'medidas', '{"largo": -1, "ancho": 68, "ingoal": 10}'::jsonb)
+      )
+    );
+    raise exception 'Una medida negativa no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+  select area into v_area from public.predio where id = (select id from _t where clave = 'predio_a');
+  if jsonb_array_length(v_area) <> 4 then
+    raise exception 'Si guardar falla, el área no debería cambiar';
+  end if;
+
+  -- Una instalación se ubica a lo sumo una vez.
+  begin
+    insert into public.elemento_predio (predio_id, instalacion_id, este, norte, rotacion, medidas)
+    values ((select id from _t where clave = 'predio_a'), v_cancha, 0, 0, 0,
+      '{"largo": 100, "ancho": 70, "ingoal": 10}');
+    raise exception 'Una instalación no debería ubicarse dos veces';
+  exception
+    when unique_violation then null;
+  end;
+
+  -- Solo instalaciones de la sede del predio.
+  begin
+    insert into public.elemento_predio (predio_id, instalacion_id, este, norte, rotacion, medidas)
+    values ((select id from _t where clave = 'predio_a'),
+      (select id from _t where clave = 'inst_otra_sede'), 0, 0, 0, '{"largo": 20, "ancho": 12, "alto": 5}');
+    raise exception 'No debería ubicarse una instalación de otra sede';
+  exception
+    when check_violation then null;
+  end;
+
+  -- La rotación va de 0 a 360 y la posición, a no más de 5 km del origen.
+  begin
+    update public.elemento_predio set rotacion = 360 where instalacion_id = v_cancha;
+    raise exception 'Una rotación de 360° no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+  begin
+    update public.elemento_predio set este = 6000 where instalacion_id = v_cancha;
+    raise exception 'Una instalación a 6 km del origen no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+end;
+$$;
+select pg_temp.salir();
+
+-- Admin A ve las instalaciones ubicadas, pero no las mueve ni las quita.
+select pg_temp.entrar('admin_a');
+do $$
+declare
+  v_n int;
+begin
+  select count(*) into v_n from public.elemento_predio
+  where instalacion_id = (select id from _t where clave = 'inst_cancha');
+  if v_n <> 1 then
+    raise exception 'Admin A debería ver la cancha ubicada, ve %', v_n;
+  end if;
+
+  update public.elemento_predio set este = 0
+  where instalacion_id = (select id from _t where clave = 'inst_cancha');
+  get diagnostics v_n = row_count;
+  if v_n <> 0 then
+    raise exception 'Admin A no debería poder mover una instalación del predio';
+  end if;
+
+  delete from public.elemento_predio
+  where instalacion_id = (select id from _t where clave = 'inst_cancha');
+  get diagnostics v_n = row_count;
+  if v_n <> 0 then
+    raise exception 'Admin A no debería poder quitar una instalación del predio';
+  end if;
+end;
+$$;
+select pg_temp.salir();
+
+-- Admin B no ve las instalaciones ubicadas del club A.
+select pg_temp.entrar('admin_b');
+do $$
+declare
+  v_n int;
+begin
+  select count(*) into v_n from public.elemento_predio
+  where instalacion_id = (select id from _t where clave = 'inst_cancha');
+  if v_n <> 0 then
+    raise exception 'Admin B no debería ver el predio del club A';
+  end if;
+end;
+$$;
+select pg_temp.salir();
+
+-- Borrar la instalación la saca del predio.
+select pg_temp.entrar('super');
+do $$
+begin
+  delete from public.instalacion where id = (select id from _t where clave = 'inst_cancha');
+  if exists (
+    select 1 from public.elemento_predio
+    where instalacion_id = (select id from _t where clave = 'inst_cancha')
+  ) then
+    raise exception 'Borrar la instalación debería sacarla del predio';
+  end if;
+end;
+$$;
+select pg_temp.salir();
+
 select 'Pruebas de RLS: ok' as resultado;
 
 rollback;

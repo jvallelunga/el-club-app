@@ -23,6 +23,7 @@ import {
 } from "@/ui/nativos/dialog";
 import type { DatosPredio, OrigenInicial } from "@/dominio/predio";
 import type { ResultadoGuardarPredio } from "./editor-predio";
+import type { InstalacionDeLaSede } from "./instalaciones-editor";
 
 const EditorPredio = dynamic(() => import("./editor-predio").then((m) => m.EditorPredio), {
   ssr: false,
@@ -40,11 +41,13 @@ function urlSinParametro(): string {
 
 export function SeccionPredio({
   sedeNombre,
+  instalaciones,
   guardado,
   origenInicial,
   guardar,
 }: {
   sedeNombre: string;
+  instalaciones: InstalacionDeLaSede[];
   guardado: DatosPredio | null;
   origenInicial: OrigenInicial;
   guardar: (datos: DatosPredio) => Promise<ResultadoGuardarPredio>;
@@ -138,6 +141,8 @@ export function SeccionPredio({
   }, [abierto, cerrar]);
 
   const tieneArea = (guardado?.area.length ?? 0) > 0;
+  const ubicadas = new Set(guardado?.instalaciones.map((i) => i.instalacionId));
+  const sinUbicar = instalaciones.filter((i) => !ubicadas.has(i.id));
 
   return (
     <section className="hidden flex-col gap-4 border-t border-border pt-8 lg:flex">
@@ -149,6 +154,14 @@ export function SeccionPredio({
               ? "El área del predio ya está dibujada. Podés seguir editándola cuando quieras."
               : "Dibujá el área del predio sobre el mapa satelital. Lo que guardes queda y se puede seguir editando."}
           </p>
+          {sinUbicar.length > 0 ? (
+            <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">
+              {sinUbicar.length === 1
+                ? "1 instalación sin ubicar: "
+                : `${sinUbicar.length} instalaciones sin ubicar: `}
+              {sinUbicar.map((i) => i.nombre).join(", ")}.
+            </p>
+          ) : null}
         </div>
         <Button className="h-11 shrink-0 rounded-xl px-4" onClick={abrir}>
           <Expand className="size-4" />
@@ -162,6 +175,7 @@ export function SeccionPredio({
             <div className="hidden lg:block">
               <EditorPredio
                 sedeNombre={sedeNombre}
+                instalaciones={instalaciones}
                 guardado={guardado}
                 origenInicial={origenInicial}
                 guardar={guardar}

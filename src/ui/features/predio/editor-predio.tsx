@@ -1,15 +1,18 @@
 "use client";
 
 /**
- * Editor de predio a pantalla completa (variante B del mock, #42).
+ * Editor de predio a pantalla completa (variante B del mock, #42 y #43).
  *
- * El área se dibuja con Terra Draw sobre el mapa satelital (MapLibre). El
- * editor la tiene en lat/lng y la pasa a metros desde el origen recién al
- * comparar y al guardar: así, mover el origen no corre el área del mapa.
+ * El área se dibuja con Terra Draw sobre el mapa satelital (MapLibre). Las
+ * instalaciones de la sede se ubican, se arrastran y se giran sobre el mapa;
+ * su huella sale de las medidas del tipo. El editor tiene el área y los
+ * centros de las instalaciones en lat/lng, y los pasa a metros desde el origen
+ * recién al comparar y al guardar: así, mover el origen no corre nada del mapa.
  */
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import * as maplibregl from "maplibre-gl";
+import type { GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
   TerraDraw,
@@ -25,12 +28,21 @@ import type { Coordenadas } from "@/dominio/maps";
 import {
   aCoordenadas,
   aMetros,
-  errorDelArea,
+  errorDelPredio,
   hayCambiosEnPredio,
+  huellaDeInstalacion,
+  medidasDelTipo,
   type DatosPredio,
   type DesdeOrigen,
   type OrigenInicial,
 } from "@/dominio/predio";
+import { tipoInstalacion } from "@/dominio/tipos-instalacion";
+import {
+  BarraInstalaciones,
+  COLOR_POR_FORMA,
+  PanelInstalacion,
+  type InstalacionDeLaSede,
+} from "./instalaciones-editor";
 import {
   ATRIBUCION_ESRI,
   esRechazoDeGoogle,
@@ -55,6 +67,16 @@ export type ResultadoGuardarPredio = { ok: true } | { ok: false; error: string }
 
 type Herramienta = "mover" | "area";
 
+/** Una instalación ubicada, como la tiene el editor: el centro en lat/lng. */
+type EnMapa = {
+  instalacionId: string;
+  centro: Coordenadas;
+  rotacion: number;
+  medidas: Record<string, number>;
+};
+
+const CAPA_INSTALACIONES = "instalaciones-relleno";
+
 const AVISO_ORIGEN: Partial<Record<DesdeOrigen, string>> = {
   ciudad:
     "La sede no tiene ubicación: el mapa arranca en la dirección del club. Buscá el predio y traé el origen.",
@@ -75,8 +97,39 @@ function anilloDelArea(features: GeoJSONStoreFeatures[]): LngLat[] | null {
   return anillo.slice(0, -1);
 }
 
+/** Las huellas de las instalaciones ubicadas, para la capa del mapa. */
+function geojsonInstalaciones(
+  ubicadas: EnMapa[],
+  instalaciones: InstalacionDeLaSede[],
+  seleccion: string | null,
+): GeoJSON.FeatureCollection {
+  const porId = new Map(instalaciones.map((i) => [i.id, i]));
+  return {
+    type: "FeatureCollection",
+    features: ubicadas.flatMap((u) => {
+      const instalacion = porId.get(u.instalacionId);
+      if (!instalacion) return [];
+      const anillo = huellaDeInstalacion({ posicion: [0, 0], rotacion: u.rotacion, medidas: u.medidas })
+        .map((p) => aCoordenadas(u.centro, p))
+        .map(({ lat, lng }) => [lng, lat]);
+      return [
+        {
+          type: "Feature" as const,
+          properties: {
+            id: u.instalacionId,
+            color: COLOR_POR_FORMA[tipoInstalacion(instalacion.tipo).forma],
+            elegida: u.instalacionId === seleccion ? 1 : 0,
+          },
+          geometry: { type: "Polygon" as const, coordinates: [[...anillo, anillo[0]]] },
+        },
+      ];
+    }),
+  };
+}
+
 export function EditorPredio({
   sedeNombre,
+  instalaciones,
   guardado: guardadoInicial,
   origenInicial,
   guardar,
@@ -84,6 +137,8 @@ export function EditorPredio({
   onCerrar,
 }: {
   sedeNombre: string;
+  /** Las instalaciones de la sede, ubicadas o no. */
+  instalaciones: InstalacionDeLaSede[];
   guardado: DatosPredio | null;
   origenInicial: OrigenInicial;
   guardar: (datos: DatosPredio) => Promise<ResultadoGuardarPredio>;
@@ -109,6 +164,17 @@ export function EditorPredio({
       : null,
   );
   const anilloInicial = useRef(anillo);
+  const [ubicadas, setUbicadas] = useState<EnMapa[]>(() =>
+    (guardadoInicial?.instalaciones ?? []).map((i) => ({
+      instalacionId: i.instalacionId,
+      centro: aCoordenadas(guardadoInicial!.origen, i.posicion),
+      rotacion: i.rotacion,
+      medidas: i.medidas,
+    })),
+  );
+  const [seleccion, setSeleccion] = useState<string | null>(null);
+  const [mapaListo, setMapaListo] = useState(false);
+  const etiquetasRef = useRef<maplibregl.Marker[]>([]);
   const [herramienta, setHerramienta] = useState<Herramienta>("mover");
   const [fuente, setFuente] = useState<FuenteSatelital | null>(null);
   const [copyright, setCopyright] = useState("");
@@ -118,11 +184,30 @@ export function EditorPredio({
   const [guardando, startGuardar] = useTransition();
 
   const actual = useMemo<DatosPredio>(
-    () => ({ origen, area: areaEnMetros(anillo, origen) }),
-    [origen, anillo],
+    () => ({
+      origen,
+      area: areaEnMetros(anillo, origen),
+      instalaciones: ubicadas.map((u) => ({
+        instalacionId: u.instalacionId,
+        posicion: aMetros(origen, u.centro),
+        rotacion: u.rotacion,
+        medidas: u.medidas,
+      })),
+    }),
+    [origen, anillo, ubicadas],
   );
-  // Sin predio guardado, la base es el origen con el que abrió y sin área.
-  const base = guardado ?? { origen: origenInicial.coordenadas, area: [] };
+  const tiposDeLaSede = useMemo(
+    () => new Map(instalaciones.map((i) => [i.id, i.tipo])),
+    [instalaciones],
+  );
+  // Sin predio guardado, la base es el origen con el que abrió, sin nada encima.
+  const base = guardado ?? { origen: origenInicial.coordenadas, area: [], instalaciones: [] };
+
+  // Lo que leen los manejadores del mapa, que se registran una sola vez.
+  const vivo = useRef({ herramienta: "mover" as Herramienta, ubicadas });
+  useLayoutEffect(() => {
+    vivo.current = { herramienta, ubicadas };
+  });
   const hayCambios = hayCambiosEnPredio(base, actual);
 
   useEffect(() => {
@@ -186,6 +271,74 @@ export function EditorPredio({
         mapa.on("error", alFallarTile);
       }
 
+      // Las instalaciones van debajo del dibujo del área.
+      mapa.addSource("instalaciones", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      mapa.addLayer({
+        id: CAPA_INSTALACIONES,
+        type: "fill",
+        source: "instalaciones",
+        paint: {
+          "fill-color": ["get", "color"],
+          "fill-opacity": ["case", ["==", ["get", "elegida"], 1], 0.8, 0.55],
+        },
+      });
+      mapa.addLayer({
+        id: "instalaciones-borde",
+        type: "line",
+        source: "instalaciones",
+        paint: {
+          "line-color": ["case", ["==", ["get", "elegida"], 1], "#ffffff", "#1d1d1d"],
+          "line-width": ["case", ["==", ["get", "elegida"], 1], 3, 1],
+        },
+      });
+
+      // Arrastrar una instalación la mueve (solo con «Mover y elegir»).
+      let arrastrando: { id: string; desfase: [number, number] } | null = null;
+      mapa.on("mousedown", CAPA_INSTALACIONES, (evento) => {
+        if (vivo.current.herramienta !== "mover") return;
+        // Lo que empieza sobre el pin del origen mueve el origen, no la instalación.
+        if (evento.originalEvent.target !== mapa.getCanvas()) return;
+        const id = evento.features?.[0]?.properties?.id as string | undefined;
+        const ubicada = vivo.current.ubicadas.find((u) => u.instalacionId === id);
+        if (!id || !ubicada) return;
+        evento.preventDefault();
+        setSeleccion(id);
+        const [este, norte] = aMetros(ubicada.centro, {
+          lat: evento.lngLat.lat,
+          lng: evento.lngLat.lng,
+        });
+        arrastrando = { id, desfase: [-este, -norte] };
+        mapa.dragPan.disable();
+      });
+      mapa.on("mousemove", (evento) => {
+        if (!arrastrando) return;
+        const { id, desfase } = arrastrando;
+        const centro = aCoordenadas({ lat: evento.lngLat.lat, lng: evento.lngLat.lng }, desfase);
+        setUbicadas((lista) =>
+          lista.map((u) => (u.instalacionId === id ? { ...u, centro } : u)),
+        );
+      });
+      mapa.on("mouseup", () => {
+        if (!arrastrando) return;
+        arrastrando = null;
+        mapa.dragPan.enable();
+      });
+      mapa.on("click", (evento) => {
+        if (vivo.current.herramienta !== "mover") return;
+        const tocadas = mapa.queryRenderedFeatures(evento.point, { layers: [CAPA_INSTALACIONES] });
+        if (tocadas.length === 0) setSeleccion(null);
+      });
+      mapa.on("mouseenter", CAPA_INSTALACIONES, () => {
+        if (vivo.current.herramienta === "mover") mapa.getCanvas().style.cursor = "move";
+      });
+      mapa.on("mouseleave", CAPA_INSTALACIONES, () => {
+        mapa.getCanvas().style.cursor = "";
+      });
+      setMapaListo(true);
+
       const estiloArea = {
         fillColor: AMARILLO,
         fillOpacity: 0.12,
@@ -220,7 +373,8 @@ export function EditorPredio({
         ],
       });
       dibujo.start();
-      dibujo.setMode("select");
+      // Con «Mover y elegir», el área queda quieta y se arrastran las instalaciones.
+      dibujo.setMode("static");
       dibujoRef.current = dibujo;
 
       const previo = anilloInicial.current;
@@ -251,6 +405,8 @@ export function EditorPredio({
       cancelado = true;
       dibujoRef.current?.stop();
       dibujoRef.current = null;
+      for (const etiqueta of etiquetasRef.current) etiqueta.remove();
+      etiquetasRef.current = [];
       marcador.remove();
       mapa.remove();
       mapaRef.current = null;
@@ -286,10 +442,72 @@ export function EditorPredio({
     };
   }, [fuente]);
 
+  // Las huellas y los nombres de las instalaciones siguen al estado.
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    if (!mapa || !mapaListo) return;
+    (mapa.getSource("instalaciones") as GeoJSONSource | undefined)?.setData(
+      geojsonInstalaciones(ubicadas, instalaciones, seleccion),
+    );
+    for (const etiqueta of etiquetasRef.current) etiqueta.remove();
+    const nombres = new Map(instalaciones.map((i) => [i.id, i.nombre]));
+    etiquetasRef.current = ubicadas.map((u) => {
+      const elemento = document.createElement("span");
+      elemento.className =
+        "pointer-events-none rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-semibold text-white";
+      elemento.textContent = nombres.get(u.instalacionId) ?? "";
+      return new maplibregl.Marker({ element: elemento })
+        .setLngLat([u.centro.lng, u.centro.lat])
+        .addTo(mapa);
+    });
+  }, [mapaListo, ubicadas, instalaciones, seleccion]);
+
+  function ubicar(instalacionId: string) {
+    const mapa = mapaRef.current;
+    const instalacion = instalaciones.find((i) => i.id === instalacionId);
+    if (!mapa || !instalacion) return;
+    const { lat, lng } = mapa.getCenter();
+    setUbicadas((lista) => [
+      ...lista,
+      {
+        instalacionId,
+        centro: { lat, lng },
+        rotacion: 0,
+        medidas: medidasDelTipo(instalacion.tipo, null),
+      },
+    ]);
+    elegirHerramienta("mover");
+    setSeleccion(instalacionId);
+  }
+
+  function elegirInstalacion(instalacionId: string) {
+    const mapa = mapaRef.current;
+    const ubicada = ubicadas.find((u) => u.instalacionId === instalacionId);
+    if (mapa && ubicada) mapa.easeTo({ center: [ubicada.centro.lng, ubicada.centro.lat] });
+    elegirHerramienta("mover");
+    setSeleccion(instalacionId);
+  }
+
+  function cambiarUbicada(instalacionId: string, cambio: Partial<EnMapa>) {
+    setUbicadas((lista) =>
+      lista.map((u) => (u.instalacionId === instalacionId ? { ...u, ...cambio } : u)),
+    );
+  }
+
+  function quitarDelPredio(instalacionId: string) {
+    setUbicadas((lista) => lista.filter((u) => u.instalacionId !== instalacionId));
+    setSeleccion(null);
+  }
+
   function elegirHerramienta(nueva: Herramienta) {
     setHerramienta(nueva);
+    if (nueva !== "mover") setSeleccion(null);
     const dibujo = dibujoRef.current;
     if (!dibujo) return;
+    if (nueva === "mover") {
+      dibujo.setMode("static");
+      return;
+    }
     if (nueva === "area" && !anilloDelArea(dibujo.getSnapshot())) {
       dibujo.setMode("polygon");
       return;
@@ -316,7 +534,7 @@ export function EditorPredio({
   }
 
   function guardarCambios() {
-    const invalido = errorDelArea(actual.area);
+    const invalido = errorDelPredio(actual, tiposDeLaSede);
     if (invalido) {
       setError(invalido);
       return;
@@ -339,6 +557,8 @@ export function EditorPredio({
   ];
   const avisoOrigen = guardado ? undefined : AVISO_ORIGEN[origenInicial.desde];
   const dibujandoArea = herramienta === "area" && !anillo;
+  const elegida = ubicadas.find((u) => u.instalacionId === seleccion);
+  const instalacionElegida = instalaciones.find((i) => i.id === seleccion);
 
   return (
     <div
@@ -416,6 +636,10 @@ export function EditorPredio({
           <>
             <p className="font-medium">Origen del predio</p>
             <p className="text-muted-foreground">
+              Arrastrá una instalación para moverla, o tocala para girarla y cambiar sus
+              medidas. Las que faltan ubicar están abajo.
+            </p>
+            <p className="text-muted-foreground">
               <MapPin className="mr-1 inline size-4 text-amber-500" />
               El pin amarillo es el punto desde el que se ubica todo el predio. Arrastralo, o
               traelo al centro del mapa.
@@ -444,6 +668,30 @@ export function EditorPredio({
             <p className="rounded-lg bg-background/95 px-3 py-2 text-sm shadow">{avisoOrigen}</p>
           ) : null}
         </div>
+      ) : null}
+
+      <BarraInstalaciones
+        instalaciones={instalaciones}
+        ubicadas={new Set(ubicadas.map((u) => u.instalacionId))}
+        seleccion={seleccion}
+        onElegir={elegirInstalacion}
+        onUbicar={ubicar}
+      />
+
+      {elegida && instalacionElegida ? (
+        <PanelInstalacion
+          instalacion={instalacionElegida}
+          rotacion={elegida.rotacion}
+          medidas={elegida.medidas}
+          onRotar={(rotacion) => cambiarUbicada(elegida.instalacionId, { rotacion })}
+          onMedida={(clave, valor) =>
+            cambiarUbicada(elegida.instalacionId, {
+              medidas: { ...elegida.medidas, [clave]: valor },
+            })
+          }
+          onQuitar={() => quitarDelPredio(elegida.instalacionId)}
+          onCerrar={() => setSeleccion(null)}
+        />
       ) : null}
 
       {/* Atribución: abajo y sin nada encima (términos de la Map Tiles API). */}

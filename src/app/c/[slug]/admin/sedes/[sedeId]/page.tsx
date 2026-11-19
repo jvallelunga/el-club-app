@@ -59,6 +59,7 @@ export default async function PaginaSede({
   const predio = sesion.esSuperAdmin
     ? await predioParaEditor({
         sedeId,
+        tiposDeLaSede: new Map(sede.instalaciones.map((i) => [i.id, i.tipo])),
         mapsUrlSede: sede.maps_url,
         direccionClub: club.direccion,
       })
@@ -163,6 +164,7 @@ export default async function PaginaSede({
         {predio ? (
           <SeccionPredio
             sedeNombre={sede.nombre}
+            instalaciones={sede.instalaciones.map(({ id, nombre, tipo }) => ({ id, nombre, tipo }))}
             guardado={predio.guardado}
             origenInicial={predio.origen}
             guardar={guardarElPredio}
