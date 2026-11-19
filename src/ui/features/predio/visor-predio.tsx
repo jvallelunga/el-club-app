@@ -4,7 +4,8 @@
  * Visor 3D del predio, de solo lectura (#44, variante D del mock).
  *
  * Piso de pasto estilizado (sin foto satelital) y cada instalación ubicada y
- * cada elemento de referencia (#46) armados con las piezas de su tipo
+ * cada elemento de referencia (#46), caminos y vallas incluidos (#47: siguen
+ * sus puntos), armados con las piezas de su tipo
  * (src/dominio/predio-3d.ts). Se orbita y se hace zoom. Dibuja solo cuando
  * algo cambia: no hay un bucle de animación.
  *
@@ -16,9 +17,10 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DObject, CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
-import type { Punto } from "@/dominio/predio";
+import { puntoMedioDeLinea, type Punto } from "@/dominio/predio";
 import {
   piezasDeInstalacion,
+  piezasDeLinea,
   piezasDeReferencia,
   type Pieza,
   type PredioEnVisor,
@@ -84,6 +86,7 @@ function mallaDePieza(pieza: Pieza, material: THREE.Material): THREE.Mesh {
   const [largo, alto, ancho] = pieza.tamano;
   malla.scale.set(largo, alto, ancho);
   malla.position.set(...pieza.centro);
+  malla.rotation.y = pieza.giro ?? 0;
   malla.castShadow = alto > 0.5;
   malla.receiveShadow = true;
   return malla;
@@ -175,9 +178,26 @@ function armarEscena(predio: PredioEnVisor, onTocar: (id: string) => void) {
   escena.add(borde);
 
   const tocables: THREE.Object3D[] = [];
-  const elementos = [
+  const elementos: {
+    id: string;
+    nombre: string;
+    numero: number | null;
+    posicion: Punto;
+    rotacion: number;
+    piezas: Pieza[];
+    /** Dónde va el número, si no es sobre el centro (un camino en L). */
+    ancla?: Punto;
+  }[] = [
     ...predio.instalaciones.map((i) => ({ ...i, piezas: piezasDeInstalacion(i.tipo, i.medidas) })),
     ...predio.referencias.map((r) => ({ ...r, piezas: piezasDeReferencia(r.tipo, r.medidas) })),
+    // Los caminos y las vallas ya traen sus piezas en la escena (#47).
+    ...predio.lineas.map((l) => ({
+      ...l,
+      posicion: [0, 0] as Punto,
+      rotacion: 0,
+      piezas: piezasDeLinea(l.tipo, l.puntos, l.medidas),
+      ancla: puntoMedioDeLinea(l.puntos),
+    })),
   ];
   for (const elemento of elementos) {
     const grupo = new THREE.Group();
@@ -198,7 +218,7 @@ function armarEscena(predio: PredioEnVisor, onTocar: (id: string) => void) {
       botonNumero(elemento.id, elemento.numero, elemento.nombre, () => onTocar(elemento.id)),
     );
     const caja3 = new THREE.Box3().setFromObject(grupo);
-    const arriba = caja3.getCenter(new THREE.Vector3());
+    const arriba = elemento.ancla ? enEscena(elemento.ancla) : caja3.getCenter(new THREE.Vector3());
     marca.position.set(arriba.x, caja3.max.y + ALTURA_NUMERO, arriba.z);
     escena.add(marca);
   }

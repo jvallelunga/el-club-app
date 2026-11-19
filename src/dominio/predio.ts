@@ -9,9 +9,12 @@ import {
 import { sonCoordenadasValidas, type Coordenadas } from "./maps";
 import { tipoInstalacion, type ClaveTipoInstalacion, type MedidaInstalacion } from "./tipos-instalacion";
 import {
+  esClaveTipoLinea,
   esClaveTipoReferencia,
   plantaDeReferencia,
+  tipoLinea,
   tipoReferencia,
+  type ClaveTipoLinea,
   type ClaveTipoReferencia,
 } from "./tipos-referencia";
 
@@ -43,6 +46,46 @@ export function aCoordenadas(origen: Coordenadas, [este, norte]: Punto): Coorden
     lat: origen.lat + norte / METROS_POR_GRADO,
     lng: origen.lng + este / metrosPorGradoDeLongitud(origen.lat),
   };
+}
+
+/**
+ * Los puntos de un camino o una valla (#47), del mapa a metros desde el
+ * origen, en el mismo orden.
+ */
+export function lineaEnMetros(origen: Coordenadas, puntos: readonly Coordenadas[]): Punto[] {
+  return puntos.map((punto) => aMetros(origen, punto));
+}
+
+/** Inversa de lineaEnMetros. */
+export function lineaEnCoordenadas(origen: Coordenadas, puntos: readonly Punto[]): Coordenadas[] {
+  return puntos.map((punto) => aCoordenadas(origen, punto));
+}
+
+/** El largo de una línea: la suma de sus tramos, en metros. */
+export function largoDeLinea(puntos: readonly Punto[]): number {
+  let largo = 0;
+  for (let i = 1; i < puntos.length; i++) {
+    largo += Math.hypot(puntos[i][0] - puntos[i - 1][0], puntos[i][1] - puntos[i - 1][1]);
+  }
+  return largo;
+}
+
+/**
+ * El punto que está a mitad del largo, sobre la línea: ahí van su etiqueta en
+ * el mapa y su número en el 3D.
+ */
+export function puntoMedioDeLinea(puntos: readonly Punto[]): Punto {
+  let falta = largoDeLinea(puntos) / 2;
+  for (let i = 1; i < puntos.length; i++) {
+    const [a, b] = [puntos[i - 1], puntos[i]];
+    const tramo = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (tramo > 0 && falta <= tramo) {
+      const t = falta / tramo;
+      return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+    }
+    falta -= tramo;
+  }
+  return puntos[0];
 }
 
 /** Distancia máxima de un punto del predio al origen, en metros. */
@@ -130,8 +173,10 @@ export type DatosPredio = {
   origen: Coordenadas;
   area: Punto[];
   instalaciones: InstalacionUbicada[];
-  /** Los elementos de referencia (#46). */
+  /** Los elementos de referencia que se ubican en un punto (#46). */
   referencias: ReferenciaUbicada[];
+  /** Los caminos y las vallas, que se dibujan punto a punto (#47). */
+  lineas: LineaUbicada[];
 };
 
 /** Un centímetro: por debajo de eso, una diferencia es ruido del mapa. */
@@ -148,18 +193,28 @@ function diferenciaDeAngulos(a: number, b: number): number {
 /** Lo que tienen en común una instalación ubicada y un elemento de referencia. */
 type Ubicado = Pick<InstalacionUbicada, "posicion" | "rotacion" | "medidas" | "descripcion">;
 
+function hayCambiosEnMedidas(antes: Record<string, number>, ahora: Record<string, number>) {
+  const claves = new Set([...Object.keys(antes), ...Object.keys(ahora)]);
+  return [...claves].some(
+    (clave) => !(Math.abs((antes[clave] ?? NaN) - (ahora[clave] ?? NaN)) <= TOLERANCIA_METROS),
+  );
+}
+
+/** Si cambió algún punto, o cuántos son, o su orden. */
+function hayCambiosEnPuntos(antes: readonly Punto[], ahora: readonly Punto[]) {
+  return (
+    antes.length !== ahora.length ||
+    antes.some(([e, n], i) => Math.hypot(e - ahora[i][0], n - ahora[i][1]) > TOLERANCIA_METROS)
+  );
+}
+
 function hayCambiosEnUbicado(antes: Ubicado, ahora: Ubicado) {
-  const claves = new Set([...Object.keys(antes.medidas), ...Object.keys(ahora.medidas)]);
   return (
     descripcionLimpia(antes.descripcion) !== descripcionLimpia(ahora.descripcion) ||
     Math.hypot(antes.posicion[0] - ahora.posicion[0], antes.posicion[1] - ahora.posicion[1]) >
       TOLERANCIA_METROS ||
     diferenciaDeAngulos(antes.rotacion, ahora.rotacion) > TOLERANCIA_GRADOS ||
-    [...claves].some(
-      (clave) =>
-        !(Math.abs((antes.medidas[clave] ?? NaN) - (ahora.medidas[clave] ?? NaN)) <=
-          TOLERANCIA_METROS),
-    )
+    hayCambiosEnMedidas(antes.medidas, ahora.medidas)
   );
 }
 
@@ -169,11 +224,12 @@ function hayCambiosEnUbicado(antes: Ubicado, ahora: Ubicado) {
  * su id de instalación; un elemento de referencia, con el suyo.
  */
 export function elementosEnLeyenda(
-  datos: Pick<DatosPredio, "instalaciones" | "referencias">,
+  datos: Pick<DatosPredio, "instalaciones" | "referencias" | "lineas">,
 ): EnLeyenda[] {
   return [
     ...datos.instalaciones.map((i) => ({ id: i.instalacionId, ordenLeyenda: i.ordenLeyenda })),
     ...datos.referencias.map((r) => ({ id: r.id, ordenLeyenda: r.ordenLeyenda })),
+    ...datos.lineas.map((l) => ({ id: l.id, ordenLeyenda: l.ordenLeyenda })),
   ];
 }
 
@@ -210,6 +266,22 @@ function hayCambiosEnReferencias(antes: ReferenciaUbicada[], ahora: ReferenciaUb
   });
 }
 
+function hayCambiosEnLineas(antes: LineaUbicada[], ahora: LineaUbicada[]) {
+  if (antes.length !== ahora.length) return true;
+  const porId = new Map(antes.map((l) => [l.id, l]));
+  return ahora.some((l) => {
+    const previa = porId.get(l.id);
+    return (
+      !previa ||
+      previa.tipo !== l.tipo ||
+      nombreLimpio(previa.nombre) !== nombreLimpio(l.nombre) ||
+      descripcionLimpia(previa.descripcion) !== descripcionLimpia(l.descripcion) ||
+      hayCambiosEnMedidas(previa.medidas, l.medidas) ||
+      hayCambiosEnPuntos(previa.puntos, l.puntos)
+    );
+  });
+}
+
 /** Si lo que está en el editor difiere de lo guardado (null = sin predio). */
 export function hayCambiosEnPredio(
   guardado: DatosPredio | null,
@@ -221,11 +293,8 @@ export function hayCambiosEnPredio(
   if (hayCambiosEnLeyenda(guardado, actual)) return true;
   if (hayCambiosEnInstalaciones(guardado.instalaciones, actual.instalaciones)) return true;
   if (hayCambiosEnReferencias(guardado.referencias, actual.referencias)) return true;
-  if (guardado.area.length !== actual.area.length) return true;
-  return guardado.area.some(
-    ([e, n], i) =>
-      Math.hypot(e - actual.area[i][0], n - actual.area[i][1]) > TOLERANCIA_METROS,
-  );
+  if (hayCambiosEnLineas(guardado.lineas, actual.lineas)) return true;
+  return hayCambiosEnPuntos(guardado.area, actual.area);
 }
 
 /** Normaliza un ángulo a [0°, 360°) y lo redondea a la décima. */
@@ -245,12 +314,12 @@ export function predioParaGuardar(datos: DatosPredio): DatosPredio {
   const grados = (n: number) => Math.round(n * 1e7) / 1e7;
   // La leyenda es una sola: se numera todo junto.
   const numeros = numerosDeLeyenda(elementosEnLeyenda(datos));
+  const medidas = (m: Record<string, number>) =>
+    Object.fromEntries(Object.entries(m).map(([clave, valor]) => [clave, cm(valor)]));
   const ubicado = (u: Ubicado) => ({
     posicion: [cm(u.posicion[0]), cm(u.posicion[1])] as Punto,
     rotacion: rotacionParaGuardar(u.rotacion),
-    medidas: Object.fromEntries(
-      Object.entries(u.medidas).map(([clave, valor]) => [clave, cm(valor)]),
-    ),
+    medidas: medidas(u.medidas),
     descripcion: descripcionLimpia(u.descripcion),
   });
   return {
@@ -267,6 +336,15 @@ export function predioParaGuardar(datos: DatosPredio): DatosPredio {
       nombre: nombreLimpio(r.nombre),
       ...ubicado(r),
       ordenLeyenda: numeros.get(r.id) ?? null,
+    })),
+    lineas: datos.lineas.map((l) => ({
+      id: l.id,
+      tipo: l.tipo,
+      nombre: nombreLimpio(l.nombre),
+      puntos: l.puntos.map(([e, n]): Punto => [cm(e), cm(n)]),
+      medidas: medidas(l.medidas),
+      descripcion: descripcionLimpia(l.descripcion),
+      ordenLeyenda: numeros.get(l.id) ?? null,
     })),
   };
 }
@@ -297,13 +375,27 @@ export function errorDelPredio(
   tiposDeLaSede: ReadonlyMap<string, ClaveTipoInstalacion>,
 ): string | null {
   if (!datos || typeof datos !== "object") return "El predio no es válido.";
-  const { origen, area, instalaciones, referencias } = datos as Record<string, unknown>;
+  const { origen, area, instalaciones, referencias, lineas } = datos as Record<string, unknown>;
   if (!esCoordenadas(origen)) return "El origen del predio no es válido.";
+  // Un id es de un solo elemento de referencia, sea puntual o una línea.
+  const ids = new Set<string>();
   return (
     errorDelArea(area) ??
     errorDeInstalaciones(instalaciones, tiposDeLaSede) ??
-    errorDeReferencias(referencias)
+    errorDeReferencias(referencias, ids) ??
+    errorDeLineas(lineas, ids) ??
+    (ids.size > REFERENCIAS_MAXIMAS
+      ? `El predio tiene demasiados elementos de referencia (máximo ${REFERENCIAS_MAXIMAS}).`
+      : null)
   );
+}
+
+/** Mensaje si el lugar en la leyenda no sirve: null (sin número) o 1, 2, 3… */
+function errorDeOrdenLeyenda(ordenLeyenda: unknown, cual: string): string | null {
+  if (ordenLeyenda !== null && !(Number.isInteger(ordenLeyenda) && (ordenLeyenda as number) >= 1)) {
+    return `El lugar de ${cual} en la leyenda no es válido.`;
+  }
+  return null;
 }
 
 /** Mensaje si la posición, la rotación o el lugar en la leyenda no sirven. */
@@ -318,10 +410,7 @@ function errorDeUbicacion(
   if (typeof rotacion !== "number" || !Number.isFinite(rotacion)) {
     return `La rotación de ${cual} no es válida.`;
   }
-  if (ordenLeyenda !== null && !(Number.isInteger(ordenLeyenda) && (ordenLeyenda as number) >= 1)) {
-    return `El lugar de ${cual} en la leyenda no es válido.`;
-  }
-  return null;
+  return errorDeOrdenLeyenda(ordenLeyenda, cual);
 }
 
 function errorDeInstalaciones(
@@ -354,27 +443,73 @@ export const REFERENCIAS_MAXIMAS = 500;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function errorDeReferencias(referencias: unknown): string | null {
+/** Mensaje si el id de un elemento de referencia no sirve o ya está en `vistos`. */
+function errorDeId(id: unknown, vistos: Set<string>): string | null {
+  if (typeof id !== "string" || !UUID.test(id)) return "Un elemento de referencia no es válido.";
+  if (vistos.has(id)) return "Un elemento de referencia está dos veces.";
+  vistos.add(id);
+  return null;
+}
+
+function errorDeReferencias(referencias: unknown, vistos: Set<string>): string | null {
   if (!Array.isArray(referencias)) return "Los elementos de referencia del predio no son válidos.";
   if (referencias.length > REFERENCIAS_MAXIMAS) {
     return `El predio tiene demasiados elementos de referencia (máximo ${REFERENCIAS_MAXIMAS}).`;
   }
-  const vistos = new Set<string>();
   for (const referencia of referencias) {
     if (!referencia || typeof referencia !== "object") {
       return "Un elemento de referencia no es válido.";
     }
     const campos = referencia as Record<string, unknown>;
-    const { id, tipo, medidas, descripcion } = campos;
-    if (typeof id !== "string" || !UUID.test(id)) return "Un elemento de referencia no es válido.";
-    if (vistos.has(id)) return "Un elemento de referencia está dos veces.";
-    vistos.add(id);
+    const { tipo, medidas, descripcion } = campos;
+    const errorId = errorDeId(campos.id, vistos);
+    if (errorId) return errorId;
     if (!esClaveTipoReferencia(tipo)) return "Un elemento de referencia tiene un tipo que no existe.";
     const error =
       errorDeNombre(campos.nombre) ??
       errorDeUbicacion(campos, "un elemento de referencia") ??
       errorDeMedidas(tipoReferencia(tipo).medidas, medidas, "un elemento de referencia") ??
       errorDeDescripcion(descripcion);
+    if (error) return error;
+  }
+  return null;
+}
+
+/** Tope de puntos de un camino o una valla, como el del área. */
+const PUNTOS_MAXIMOS_DE_LINEA = PUNTOS_MAXIMOS_DEL_AREA;
+
+/** Mensaje si los puntos de un camino o una valla no sirven, o null. */
+function errorDePuntos(puntos: unknown): string | null {
+  if (!Array.isArray(puntos) || !puntos.every(esPunto)) {
+    return "Los puntos de un camino o una valla no son válidos.";
+  }
+  if (puntos.length < 2) return "Un camino o una valla necesita al menos dos puntos.";
+  if (puntos.length > PUNTOS_MAXIMOS_DE_LINEA) {
+    return `Un camino o una valla tiene demasiados puntos (máximo ${PUNTOS_MAXIMOS_DE_LINEA}).`;
+  }
+  if (puntos.some(([e, n]) => Math.hypot(e, n) > DISTANCIA_MAXIMA_AL_ORIGEN)) {
+    return "Un camino o una valla está demasiado lejos del origen.";
+  }
+  if (largoDeLinea(puntos) <= TOLERANCIA_METROS) {
+    return "Un camino o una valla necesita un largo: tiene todos sus puntos en el mismo lugar.";
+  }
+  return null;
+}
+
+function errorDeLineas(lineas: unknown, vistos: Set<string>): string | null {
+  if (!Array.isArray(lineas)) return "Los caminos y vallas del predio no son válidos.";
+  for (const linea of lineas) {
+    if (!linea || typeof linea !== "object") return "Un camino o una valla no es válido.";
+    const campos = linea as Record<string, unknown>;
+    const errorId = errorDeId(campos.id, vistos);
+    if (errorId) return errorId;
+    if (!esClaveTipoLinea(campos.tipo)) return "Un camino o una valla tiene un tipo que no existe.";
+    const error =
+      errorDeNombre(campos.nombre) ??
+      errorDePuntos(campos.puntos) ??
+      errorDeMedidas(tipoLinea(campos.tipo).medidas, campos.medidas, "un camino o una valla") ??
+      errorDeDescripcion(campos.descripcion) ??
+      errorDeOrdenLeyenda(campos.ordenLeyenda, "un camino o una valla");
     if (error) return error;
   }
   return null;
@@ -574,4 +709,40 @@ export function frenteDeGradas(
     [largo / 2, -ancho / 2],
   ]);
   return [a, b];
+}
+
+// ---------------------------------------------------------------------------
+// Caminos y vallas (#47): elementos de referencia que se dibujan punto a
+// punto. En vez de posición y rotación guardan sus puntos en metros desde el
+// origen (src/dominio/tipos-referencia.ts, TIPOS_LINEA).
+// ---------------------------------------------------------------------------
+
+/** Un camino o una valla en el predio. */
+export type LineaUbicada = {
+  /** Lo pone el editor al dibujarlo (un uuid). */
+  id: string;
+  tipo: ClaveTipoLinea;
+  /** Nombre propio opcional, por ejemplo «Camino de los pinos». */
+  nombre: string | null;
+  /** Los puntos, en metros desde el origen, en el orden en que se dibujaron. */
+  puntos: Punto[];
+  /** El ancho del camino o el alto de la valla. */
+  medidas: Record<string, number>;
+  /** Texto corto que se ve en la leyenda; no son notas internas. */
+  descripcion: string | null;
+  /** Lugar en la leyenda, o null si no entra (sin número). Ver leyenda.ts. */
+  ordenLeyenda: number | null;
+};
+
+/** Las medidas del tipo, tomando las guardadas que sirvan (como medidasDelTipo). */
+export function medidasDeLinea(
+  tipo: ClaveTipoLinea,
+  guardadas: Record<string, unknown> | null,
+): Record<string, number> {
+  return medidasSegun(tipoLinea(tipo).medidas, guardadas);
+}
+
+/** Los puntos guardados de un camino o una valla, o null si no sirven. */
+export function puntosDeLinea(puntos: unknown): Punto[] | null {
+  return errorDePuntos(puntos) ? null : (puntos as Punto[]);
 }

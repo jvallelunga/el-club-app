@@ -6,7 +6,7 @@
  *
  * Agregar o quitar un tipo también pide una migración: la base solo acepta
  * estas claves en `elemento_predio.tipo_referencia`. Caminos y vallas se
- * dibujan punto a punto y van aparte (#47).
+ * dibujan punto a punto y van aparte, en TIPOS_LINEA (#47).
  */
 
 import type { MedidaInstalacion } from "./tipos-instalacion";
@@ -87,6 +87,42 @@ export function tipoReferencia(clave: ClaveTipoReferencia): TipoReferencia {
 
 export function medidasPorDefectoDeReferencia(clave: ClaveTipoReferencia): Record<string, number> {
   return Object.fromEntries(tipoReferencia(clave).medidas.map((m) => [m.clave, m.porDefecto]));
+}
+
+// ---------------------------------------------------------------------------
+// Caminos y vallas (#47): elementos de referencia que se dibujan punto a punto.
+// En vez de posición y rotación guardan una lista de puntos; la medida da el
+// ancho del camino o el alto de la valla.
+// ---------------------------------------------------------------------------
+
+export type TipoLinea = {
+  clave: string;
+  nombre: string;
+  medidas: readonly MedidaReferencia[];
+};
+
+/** En el orden en que se ofrecen en el editor, después de los puntuales. */
+export const TIPOS_LINEA = [
+  { clave: "camino", nombre: "Camino", medidas: [medida("ancho", "Ancho", 4)] },
+  { clave: "valla", nombre: "Valla", medidas: [medida("alto", "Alto", 1.5)] },
+] as const satisfies readonly TipoLinea[];
+
+export type ClaveTipoLinea = (typeof TIPOS_LINEA)[number]["clave"];
+
+const TIPO_LINEA_POR_CLAVE = new Map<string, TipoLinea>(
+  TIPOS_LINEA.map((tipo) => [tipo.clave, tipo]),
+);
+
+export function esClaveTipoLinea(valor: unknown): valor is ClaveTipoLinea {
+  return typeof valor === "string" && TIPO_LINEA_POR_CLAVE.has(valor);
+}
+
+export function tipoLinea(clave: ClaveTipoLinea): TipoLinea {
+  return TIPO_LINEA_POR_CLAVE.get(clave)!;
+}
+
+export function medidasPorDefectoDeLinea(clave: ClaveTipoLinea): Record<string, number> {
+  return Object.fromEntries(tipoLinea(clave).medidas.map((m) => [m.clave, m.porDefecto]));
 }
 
 /** El largo y el ancho que ocupa en el piso (en la huella del mapa). */

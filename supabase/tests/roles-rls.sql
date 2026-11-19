@@ -1145,11 +1145,20 @@ begin
     raise exception 'La cancha no debería haberse convertido en elemento de referencia';
   end if;
 
-  -- Solo tipos en código: un camino no es (todavía) un elemento puntual.
+  -- Solo tipos en código.
+  begin
+    insert into public.elemento_predio (predio_id, tipo_referencia, este, norte, medidas)
+    values (v_predio, 'cantero', 0, 0, '{"largo": 4}');
+    raise exception 'Un tipo de elemento de referencia desconocido no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+
+  -- Un camino no es un elemento puntual: sin puntos, con posición, no va (#47).
   begin
     insert into public.elemento_predio (predio_id, tipo_referencia, este, norte, medidas)
     values (v_predio, 'camino', 0, 0, '{"ancho": 4}');
-    raise exception 'Un tipo de elemento de referencia desconocido no debería guardarse';
+    raise exception 'Un camino con posición y sin puntos no debería guardarse';
   exception
     when check_violation then null;
   end;
@@ -1182,6 +1191,150 @@ begin
   exception
     when check_violation then null;
   end;
+end;
+$$;
+select pg_temp.salir();
+
+-- Caminos y vallas (#47): elementos de referencia con puntos en vez de
+-- posición y rotación. Se guardan con el resto del predio.
+select pg_temp.entrar('super');
+do $$
+declare
+  v_sede uuid := (select id from _t where clave = 'sede_a');
+  v_predio uuid := (select id from _t where clave = 'predio_a');
+  v_area jsonb := '[[0, 0], [200, 0], [200, 150], [0, 150]]'::jsonb;
+  v_instalaciones jsonb := (
+    select coalesce(jsonb_agg(jsonb_build_object(
+      'instalacion_id', instalacion_id, 'este', este, 'norte', norte, 'rotacion', rotacion,
+      'medidas', medidas, 'descripcion', descripcion, 'orden_leyenda', orden_leyenda)), '[]'::jsonb)
+    from public.elemento_predio where predio_id = (select id from _t where clave = 'predio_a')
+      and instalacion_id is not null
+  );
+  -- Los elementos de referencia puntuales que ya están (el ombú) se mantienen.
+  v_puntuales jsonb := (
+    select coalesce(jsonb_agg(jsonb_build_object(
+      'id', id, 'tipo', tipo_referencia, 'nombre', nombre, 'este', este, 'norte', norte,
+      'rotacion', rotacion, 'medidas', medidas, 'descripcion', descripcion,
+      'orden_leyenda', orden_leyenda)), '[]'::jsonb)
+    from public.elemento_predio where predio_id = (select id from _t where clave = 'predio_a')
+      and tipo_referencia is not null
+  );
+  v_camino uuid := gen_random_uuid();
+  v_valla uuid := gen_random_uuid();
+  v_puntos jsonb;
+  v_este double precision;
+  v_rotacion double precision;
+  v_orden int;
+begin
+  perform public.guardar_predio(
+    v_sede, -37.336, -59.08, v_area, v_instalaciones,
+    v_puntuales || jsonb_build_array(
+      jsonb_build_object('id', v_camino, 'tipo', 'camino', 'nombre', 'Camino de los pinos',
+        'puntos', '[[-60, 30], [10, 30], [60, -20]]'::jsonb, 'medidas', '{"ancho": 4}'::jsonb,
+        'descripcion', 'Del estacionamiento a la cancha.', 'orden_leyenda', 3),
+      jsonb_build_object('id', v_valla, 'tipo', 'valla', 'nombre', null,
+        'puntos', '[[0, 0], [200, 0]]'::jsonb, 'medidas', '{"alto": 1.5}'::jsonb,
+        'descripcion', null, 'orden_leyenda', null)
+    )
+  );
+  select puntos, este, rotacion, orden_leyenda into v_puntos, v_este, v_rotacion, v_orden
+  from public.elemento_predio where id = v_camino;
+  if v_puntos is distinct from '[[-60, 30], [10, 30], [60, -20]]'::jsonb
+    or v_este is not null or v_rotacion is not null or v_orden is distinct from 3 then
+    raise exception 'El camino debería guardar sus puntos, sin posición ni rotación, y ser el 3 de la leyenda';
+  end if;
+
+  -- Mover un punto del camino y borrar la valla, en un solo guardado.
+  perform public.guardar_predio(
+    v_sede, -37.336, -59.08, v_area, v_instalaciones,
+    v_puntuales || jsonb_build_array(
+      jsonb_build_object('id', v_camino, 'tipo', 'camino', 'nombre', 'Camino de los pinos',
+        'puntos', '[[-60, 30], [10, 40], [60, -20]]'::jsonb, 'medidas', '{"ancho": 6}'::jsonb,
+        'descripcion', null, 'orden_leyenda', 3)
+    )
+  );
+  select puntos into v_puntos from public.elemento_predio where id = v_camino;
+  if v_puntos -> 1 is distinct from '[10, 40]'::jsonb then
+    raise exception 'El punto del medio del camino debería estar en [10, 40], está en %', v_puntos -> 1;
+  end if;
+  if exists (select 1 from public.elemento_predio where id = v_valla) then
+    raise exception 'La valla debería haberse borrado';
+  end if;
+
+  -- Un camino o una valla necesita de 2 a 500 puntos [este, norte].
+  begin
+    update public.elemento_predio set puntos = '[[0, 0]]' where id = v_camino;
+    raise exception 'Un camino de un solo punto no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+  begin
+    update public.elemento_predio set puntos = '[[0, 0], [1, "a"]]' where id = v_camino;
+    raise exception 'Un punto que no es un número no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+  begin
+    update public.elemento_predio set puntos = '{"este": 0}' where id = v_camino;
+    raise exception 'Unos puntos que no son una lista no deberían guardarse';
+  exception
+    when check_violation then null;
+  end;
+  begin
+    update public.elemento_predio
+    set puntos = (select jsonb_agg(jsonb_build_array(i, 0)) from generate_series(1, 501) as i)
+    where id = v_camino;
+    raise exception 'Un camino de 501 puntos no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+
+  -- Un camino no lleva posición; un árbol no lleva puntos.
+  begin
+    update public.elemento_predio set este = 0, norte = 0, rotacion = 0 where id = v_camino;
+    raise exception 'Un camino con posición no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+  begin
+    update public.elemento_predio set puntos = '[[0, 0], [1, 1]]' where tipo_referencia = 'arbol';
+    raise exception 'Un árbol con puntos no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+  begin
+    update public.elemento_predio set este = null where tipo_referencia = 'arbol';
+    raise exception 'Un árbol sin posición no debería guardarse';
+  exception
+    when check_violation then null;
+  end;
+end;
+$$;
+select pg_temp.salir();
+
+-- Admin A ve el camino, pero no lo cambia ni lo borra.
+select pg_temp.entrar('admin_a');
+do $$
+declare
+  v_n int;
+begin
+  select count(*) into v_n from public.elemento_predio
+  where tipo_referencia = 'camino' and jsonb_array_length(puntos) = 3;
+  if v_n <> 1 then
+    raise exception 'Admin A debería ver el camino, ve %', v_n;
+  end if;
+
+  update public.elemento_predio set puntos = '[[0, 0], [1, 1]]' where tipo_referencia = 'camino';
+  get diagnostics v_n = row_count;
+  if v_n <> 0 then
+    raise exception 'Admin A no debería poder cambiar un camino';
+  end if;
+
+  delete from public.elemento_predio where tipo_referencia = 'camino';
+  get diagnostics v_n = row_count;
+  if v_n <> 0 then
+    raise exception 'Admin A no debería poder borrar un camino';
+  end if;
 end;
 $$;
 select pg_temp.salir();

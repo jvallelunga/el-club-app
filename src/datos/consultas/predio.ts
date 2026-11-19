@@ -3,20 +3,23 @@ import "server-only";
 import { coordenadasDesdeLinkMaps } from "@/dominio/maps";
 import {
   errorDelArea,
+  medidasDeLinea,
   medidasDeReferencia,
   medidasDelTipo,
   origenInicial,
+  puntosDeLinea,
   tiposPorInstalacion,
   type DatosPredio,
   type InstalacionDeLaSede,
   type InstalacionUbicada,
+  type LineaUbicada,
   type OrigenInicial,
   type Punto,
   type ReferenciaUbicada,
 } from "@/dominio/predio";
 import { predioParaVisor, type PredioEnVisor } from "@/dominio/predio-3d";
 import type { ClaveTipoInstalacion } from "@/dominio/tipos-instalacion";
-import { esClaveTipoReferencia } from "@/dominio/tipos-referencia";
+import { esClaveTipoLinea, esClaveTipoReferencia } from "@/dominio/tipos-referencia";
 import { coordenadasDeDireccion } from "../geocodificar";
 import { listarSedes, sedePorId } from "./sedes";
 import { supabaseServidor } from "../supabase-servidor";
@@ -48,18 +51,36 @@ export async function predioDeSede(
   const { data: elementos, error: errorElementos } = await supabase
     .from("elemento_predio")
     .select(
-      "id, instalacion_id, tipo_referencia, nombre, este, norte, rotacion, medidas, descripcion, orden_leyenda",
+      "id, instalacion_id, tipo_referencia, nombre, este, norte, rotacion, puntos, medidas, descripcion, orden_leyenda",
     )
     .eq("predio_id", data.id);
   if (errorElementos) throw errorElementos;
 
   const instalaciones: InstalacionUbicada[] = [];
   const referencias: ReferenciaUbicada[] = [];
+  const lineas: LineaUbicada[] = [];
   for (const fila of elementos ?? []) {
     const medidas =
       fila.medidas && typeof fila.medidas === "object" && !Array.isArray(fila.medidas)
         ? (fila.medidas as Record<string, unknown>)
         : null;
+    // Un camino o una valla (#47): sus puntos en vez de posición y rotación.
+    if (esClaveTipoLinea(fila.tipo_referencia)) {
+      const puntos = puntosDeLinea(fila.puntos);
+      if (!puntos) continue;
+      lineas.push({
+        id: fila.id,
+        tipo: fila.tipo_referencia,
+        nombre: fila.nombre,
+        puntos,
+        medidas: medidasDeLinea(fila.tipo_referencia, medidas),
+        descripcion: fila.descripcion,
+        ordenLeyenda: fila.orden_leyenda,
+      });
+      continue;
+    }
+    // La base no deja guardar un elemento puntual sin posición ni rotación.
+    if (fila.este === null || fila.norte === null || fila.rotacion === null) continue;
     // Un tipo que el código ya no conoce no se muestra (la base no lo deja guardar).
     if (esClaveTipoReferencia(fila.tipo_referencia)) {
       referencias.push({
@@ -93,6 +114,7 @@ export async function predioDeSede(
     area,
     instalaciones,
     referencias,
+    lineas,
   };
 }
 

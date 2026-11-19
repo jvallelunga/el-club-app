@@ -1,6 +1,6 @@
 # Ver el predio 3D
 
-El predio es la sede en 3D: el área del predio con pasto, cada instalación con su forma y sus medidas, en su lugar, y los elementos de referencia: árboles, piedras, bebederos, gradas y tribunas. Abajo va la leyenda, que explica qué es cada número. Lo ven los Admins del club, en la computadora y en el celular.
+El predio es la sede en 3D: el área del predio con pasto, cada instalación con su forma y sus medidas, en su lugar, y los elementos de referencia: árboles, piedras, bebederos, gradas, tribunas, caminos y vallas. Abajo va la leyenda, que explica qué es cada número. Lo ven los Admins del club, en la computadora y en el celular.
 
 ## En la pantalla de la sede
 
@@ -19,7 +19,7 @@ Algunos elementos del predio llevan un número encima. Abajo del predio, la **le
 2. También podés tocar una línea de la leyenda: se abre la misma ficha y el número se marca en amarillo en el predio.
 3. Para cerrar la ficha, tocá la **X** o cualquier otra parte del predio.
 
-Lo que lleva número puede ser una instalación o un elemento de referencia. Un elemento de referencia puede tener nombre propio, como un árbol que sirve de punto de encuentro («El ombú») o unas gradas que llevan el nombre de alguien como homenaje. Si no tiene nombre, la leyenda lo muestra con el de su tipo, por ejemplo **Gradas**.
+Lo que lleva número puede ser una instalación o un elemento de referencia. Un elemento de referencia puede tener nombre propio, como un árbol que sirve de punto de encuentro («El ombú») o unas gradas que llevan el nombre de alguien como homenaje. Si no tiene nombre, la leyenda lo muestra con el de su tipo, por ejemplo **Gradas** o **Camino**. El número de un camino o una valla va sobre la mitad de su recorrido.
 
 Lo que no tiene número no se puede tocar: es parte del paisaje.
 
@@ -32,6 +32,7 @@ Si tu club tiene una sola sede, el predio también aparece en la **Inicio**, aba
 - El bloque **Predio** aparece solo cuando el predio está armado: tiene el área marcada y al menos una instalación ubicada. Si no, no se muestra.
 - El Admin del club ve el predio pero no lo edita: tampoco la leyenda, ni qué lleva número, ni su orden, ni las descripciones. Lo que cambia en el predio se ve enseguida.
 - Las gradas son escalones al aire libre; la tribuna son gradas con techo. Cada elemento de referencia se ve con el tamaño que le cargaron.
+- Un camino se ve como una franja clara sobre el pasto, con su ancho, y una valla como un cerco blanco de postes y travesaños, con su alto. Los dos siguen el recorrido que se dibujó.
 - La descripción de la leyenda no son las notas de la instalación: las notas que cargás en **Instalaciones** no aparecen en el predio.
 - Si no hay nada con número, el predio se ve sin leyenda.
 - Si eliminás una instalación de la sede, sale del predio. Una instalación nueva no aparece en el predio hasta que la ubican.
