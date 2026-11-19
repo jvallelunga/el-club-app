@@ -31,8 +31,14 @@ Cualquier cosa ubicada en el predio: una instalación de la sede o un elemento d
 Una instalación de la sede que todavía no está en el predio. Al quitarla del predio vuelve a estar sin ubicar, pero sigue en la sede.
 
 **Elemento de referencia**:
-Algo ubicado en el predio que no es una instalación: árbol, camino, valla, piedra, bebedero.
+Algo ubicado en el predio que no es una instalación: árbol, piedra, bebedero, gradas, tribuna, camino o valla. Su tipo vive en código y define su forma 3D y sus medidas. Puede tener un nombre propio opcional, que lo vuelve punto de referencia u homenaje («El ombú», «Gradas Tito»).
 _Avoid_: referencia (a secas)
+
+**Gradas**:
+Elemento de referencia: escalones descubiertos, con largo, ancho y alto. La cantidad de escalones sale del alto.
+
+**Tribuna**:
+Elemento de referencia: gradas con techo, con las mismas medidas. No es una instalación.
 
 **Leyenda**:
 La lista numerada que acompaña el predio 3D y explica qué es cada número. Un elemento del predio entra o no en la leyenda; lo que entra lleva un número según el orden de la leyenda, y lo demás es decorado.
