@@ -70,6 +70,10 @@ export async function guardarPredio(
   }
 
   const slug = (sede.club as { slug: string } | null)?.slug;
-  if (slug) revalidatePath(`/c/${slug}/admin/sedes/${sedeId}`);
+  if (slug) {
+    revalidatePath(`/c/${slug}/admin/sedes/${sedeId}`);
+    // La Inicio muestra el predio si el club tiene una sola sede (#44).
+    revalidatePath(`/c/${slug}/admin`);
+  }
   return { ok: true };
 }

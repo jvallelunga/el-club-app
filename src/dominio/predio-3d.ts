@@ -3,7 +3,7 @@
  * arma cada instalación con primitivas. Sin three.js, para poder probarlo.
  */
 
-import type { DatosPredio, InstalacionDeLaSede, Punto } from "./predio";
+import type { DatosPredio, InstalacionDeLaSede, InstalacionUbicada, Punto } from "./predio";
 import { tipoInstalacion, type ClaveTipoInstalacion } from "./tipos-instalacion";
 
 /**
@@ -15,13 +15,7 @@ export function predioArmado(predio: DatosPredio | null): boolean {
 }
 
 /** Una instalación ubicada, con lo que el visor necesita para dibujarla. */
-export type InstalacionEnVisor = InstalacionDeLaSede & {
-  /** Centro, en metros desde el origen: [este, norte]. */
-  posicion: Punto;
-  /** Grados en sentido horario; con 0°, el largo va de oeste a este. */
-  rotacion: number;
-  medidas: Record<string, number>;
-};
+export type InstalacionEnVisor = InstalacionDeLaSede & Omit<InstalacionUbicada, "instalacionId">;
 
 export type PredioEnVisor = { area: Punto[]; instalaciones: InstalacionEnVisor[] };
 
@@ -38,7 +32,7 @@ export function predioParaVisor(
   // Una instalación borrada mientras se miraba el predio no se dibuja.
   const vigente = {
     ...guardado,
-    instalaciones: guardado.instalaciones.filter((u) => porId.has(u.instalacionId)),
+    instalaciones: guardado.instalaciones.filter((ubicada) => porId.has(ubicada.instalacionId)),
   };
   if (!predioArmado(vigente)) return null;
   return {
@@ -77,26 +71,29 @@ const caja = (centro: Tripla, tamano: Tripla, color: string): Pieza => ({
 });
 
 /** Una caja apoyada en el piso, centrada en (x, z). */
-const apoyada = (x: number, z: number, tamano: Tripla, color: string) =>
+const apoyadaEnElPiso = (x: number, z: number, tamano: Tripla, color: string) =>
   caja([x, tamano[1] / 2, z], tamano, color);
 
+const COLOR_PARED = "#e9e4da";
 const COLOR_EDIFICIO: Partial<Record<ClaveTipoInstalacion, string>> = {
   house: "#f2ead8",
   gym: "#d9dde3",
-  vestuario: "#e9e4da",
+  vestuario: COLOR_PARED,
   quincho: "#d8b48a",
   salon: "#ece6dc",
 };
 const COLOR_TECHO = "#8b4a3c";
+const COLOR_BLOQUE = "#b8b8b8";
 
-function edificio(clave: ClaveTipoInstalacion, m: Record<string, number>): Pieza[] {
-  const alturaTecho = Math.min(2.5, m.ancho * 0.3);
+function edificio(clave: ClaveTipoInstalacion, medidas: Record<string, number>): Pieza[] {
+  const alturaTecho = Math.min(2.5, medidas.ancho * 0.3);
+  const pared = COLOR_EDIFICIO[clave] ?? COLOR_PARED;
   return [
-    apoyada(0, 0, [m.largo, m.alto, m.ancho], COLOR_EDIFICIO[clave] ?? "#e9e4da"),
+    apoyadaEnElPiso(0, 0, [medidas.largo, medidas.alto, medidas.ancho], pared),
     {
       forma: "techo",
-      centro: [0, m.alto + alturaTecho / 2, 0],
-      tamano: [m.largo, alturaTecho, m.ancho],
+      centro: [0, medidas.alto + alturaTecho / 2, 0],
+      tamano: [medidas.largo, alturaTecho, medidas.ancho],
       color: COLOR_TECHO,
     },
   ];
@@ -132,7 +129,7 @@ function lineasDeJuego(largo: number, ancho: number): Pieza[] {
 
 /** Un arco (o una hache, con travesaño bajo y palos altos) en la línea x. */
 function arco(x: number, separacion: number, altoPalos: number, altoTravesano: number) {
-  const palo = (z: number) => apoyada(x, z, [0.2, altoPalos, 0.2], BLANCO);
+  const palo = (z: number) => apoyadaEnElPiso(x, z, [0.2, altoPalos, 0.2], BLANCO);
   return [
     palo(-separacion / 2),
     palo(separacion / 2),
@@ -140,18 +137,18 @@ function arco(x: number, separacion: number, altoPalos: number, altoTravesano: n
   ];
 }
 
-function cancha(clave: ClaveTipoInstalacion, m: Record<string, number>): Pieza[] {
-  const ingoal = m.ingoal ?? 0;
-  const total = m.largo + 2 * ingoal;
-  const mitad = m.largo / 2;
+function cancha(clave: ClaveTipoInstalacion, medidas: Record<string, number>): Pieza[] {
+  const ingoal = medidas.ingoal ?? 0;
+  const total = medidas.largo + 2 * ingoal;
+  const mitad = medidas.largo / 2;
   const piezas = [
-    apoyada(0, 0, [total, ALTO_PISO_CANCHA, m.ancho], COLOR_CANCHA[clave] ?? COLOR_CESPED),
-    ...lineasDeJuego(total, m.ancho),
+    apoyadaEnElPiso(0, 0, [total, ALTO_PISO_CANCHA, medidas.ancho], COLOR_CANCHA[clave] ?? COLOR_CESPED),
+    ...lineasDeJuego(total, medidas.ancho),
   ];
   switch (clave) {
     case "cancha_rugby":
       // Líneas de try y haches: palos de 11 m a 5,6 m, travesaño a 3 m.
-      piezas.push(lineaAncho(-mitad, m.ancho), lineaAncho(mitad, m.ancho));
+      piezas.push(lineaAncho(-mitad, medidas.ancho), lineaAncho(mitad, medidas.ancho));
       piezas.push(...arco(-mitad, 5.6, 11, 3), ...arco(mitad, 5.6, 11, 3));
       break;
     case "cancha_futbol":
@@ -162,10 +159,10 @@ function cancha(clave: ClaveTipoInstalacion, m: Record<string, number>): Pieza[]
       break;
     case "cancha_tenis": {
       // Las medidas incluyen el espacio alrededor: la cancha de juego va al centro.
-      const largoJuego = Math.min(23.77, m.largo);
-      const anchoJuego = Math.min(10.97, m.ancho);
+      const largoJuego = Math.min(23.77, medidas.largo);
+      const anchoJuego = Math.min(10.97, medidas.ancho);
       piezas.push(...lineasDeJuego(largoJuego, anchoJuego).slice(0, 4));
-      piezas.push(apoyada(0, 0, [0.05, 1.07, Math.min(12.8, m.ancho)], "#222222"));
+      piezas.push(apoyadaEnElPiso(0, 0, [0.05, 1.07, Math.min(12.8, medidas.ancho)], "#222222"));
       break;
     }
   }
@@ -175,11 +172,11 @@ function cancha(clave: ClaveTipoInstalacion, m: Record<string, number>): Pieza[]
 export const COLOR_AGUA = "#36a9e1";
 
 /** Las medidas son las de afuera: el borde va adentro y el agua, dentro del borde. */
-function pileta(m: Record<string, number>): Pieza[] {
-  const borde = Math.min(1, m.largo / 6, m.ancho / 6);
+function pileta(medidas: Record<string, number>): Pieza[] {
+  const borde = Math.min(1, medidas.largo / 6, medidas.ancho / 6);
   return [
-    apoyada(0, 0, [m.largo, 0.3, m.ancho], "#e8e2d4"),
-    caja([0, 0.32, 0], [m.largo - 2 * borde, 0.06, m.ancho - 2 * borde], COLOR_AGUA),
+    apoyadaEnElPiso(0, 0, [medidas.largo, 0.3, medidas.ancho], "#e8e2d4"),
+    caja([0, 0.32, 0], [medidas.largo - 2 * borde, 0.06, medidas.ancho - 2 * borde], COLOR_AGUA),
   ];
 }
 
@@ -191,7 +188,8 @@ export function piezasDeInstalacion(
   clave: ClaveTipoInstalacion,
   medidas: Record<string, number>,
 ): Pieza[] {
-  switch (tipoInstalacion(clave).forma) {
+  const forma = tipoInstalacion(clave).forma;
+  switch (forma) {
     case "edificio":
       return edificio(clave, medidas);
     case "cancha":
@@ -199,8 +197,10 @@ export function piezasDeInstalacion(
     case "pileta":
       return pileta(medidas);
     case "bloque":
-      return [apoyada(0, 0, [medidas.largo, medidas.alto, medidas.ancho], "#b8b8b8")];
-    default:
-      return [];
+      return [apoyadaEnElPiso(0, 0, [medidas.largo, medidas.alto, medidas.ancho], COLOR_BLOQUE)];
+    default: {
+      const sinPiezas: never = forma;
+      throw new Error(`Forma de instalación sin piezas 3D: ${String(sinPiezas)}`);
+    }
   }
 }

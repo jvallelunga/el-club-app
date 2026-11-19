@@ -22,11 +22,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/nativos/dialog";
-import type { DatosPredio, OrigenInicial } from "@/dominio/predio";
+import type { DatosPredio, InstalacionDeLaSede, OrigenInicial } from "@/dominio/predio";
 import type { PredioEnVisor } from "@/dominio/predio-3d";
 import { AYUDA_VISOR, MarcoVisorPredio } from "./bloque-predio";
 import type { ResultadoGuardarPredio } from "./editor-predio";
-import type { InstalacionDeLaSede } from "./instalaciones-editor";
 
 const EditorPredio = dynamic(() => import("./editor-predio").then((m) => m.EditorPredio), {
   ssr: false,

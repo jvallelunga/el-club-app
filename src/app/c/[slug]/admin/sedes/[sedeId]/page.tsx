@@ -16,15 +16,11 @@ import {
   sesionRequerida,
 } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
-import {
-  predioEnVisorDeSede,
-  predioParaEditor,
-  tiposDeLaSede,
-} from "@/datos/consultas/predio";
+import { predioEnVisorDeSede, predioParaEditor } from "@/datos/consultas/predio";
 import { sedePorId } from "@/datos/consultas/sedes";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
-import type { DatosPredio } from "@/dominio/predio";
+import { tiposPorInstalacion, type DatosPredio } from "@/dominio/predio";
 import { predioParaVisor } from "@/dominio/predio-3d";
 import { inicialesDesdeNombre } from "@/dominio/slug";
 
@@ -67,7 +63,7 @@ export default async function PaginaSede({
   const predio = sesion.esSuperAdmin
     ? await predioParaEditor({
         sedeId,
-        tiposDeLaSede: tiposDeLaSede(instalaciones),
+        tiposDeLaSede: tiposPorInstalacion(instalaciones),
         mapsUrlSede: sede.maps_url,
         direccionClub: club.direccion,
       })

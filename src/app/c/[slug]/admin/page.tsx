@@ -11,9 +11,7 @@ import {
   sesionRequerida,
 } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
-import { predioEnVisorDeSede } from "@/datos/consultas/predio";
-import { listarSedes, sedePorId } from "@/datos/consultas/sedes";
-import type { PredioEnVisor } from "@/dominio/predio-3d";
+import { predioDeLaUnicaSede } from "@/datos/consultas/predio";
 import { BloquePredio } from "@/ui/features/predio/bloque-predio";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 
@@ -117,17 +115,3 @@ export default async function PaginaAdminClub({
   );
 }
 
-/**
- * Si el club tiene una sola sede y su predio está armado, la Inicio también
- * muestra el predio 3D (#44). Con más de una sede, no.
- */
-async function predioDeLaUnicaSede(
-  clubId: string,
-): Promise<{ sede: { id: string; nombre: string }; predio: PredioEnVisor } | null> {
-  const sedes = await listarSedes(clubId);
-  if (sedes.length !== 1) return null;
-  const sede = await sedePorId(clubId, sedes[0].id);
-  if (!sede) return null;
-  const predio = await predioEnVisorDeSede(sede);
-  return predio ? { sede: { id: sede.id, nombre: sede.nombre }, predio } : null;
-}

@@ -15,7 +15,6 @@ import {
   type FormaInstalacion,
 } from "@/dominio/tipos-instalacion";
 
-export type { InstalacionDeLaSede };
 
 /** Color de la huella en el mapa, según la forma del tipo. */
 export const COLOR_POR_FORMA: Record<FormaInstalacion, string> = {

@@ -283,6 +283,13 @@ export type InstalacionDeLaSede = {
   tipo: ClaveTipoInstalacion;
 };
 
+/** El tipo de cada instalación de la sede, por id. */
+export function tiposPorInstalacion(
+  instalaciones: readonly InstalacionDeLaSede[],
+): ReadonlyMap<string, ClaveTipoInstalacion> {
+  return new Map(instalaciones.map((i) => [i.id, i.tipo]));
+}
+
 /** Una instalación de la sede ubicada en el predio (#43). */
 export type InstalacionUbicada = {
   instalacionId: string;
