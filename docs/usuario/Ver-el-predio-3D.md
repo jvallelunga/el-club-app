@@ -1,6 +1,6 @@
 # Ver el predio 3D
 
-El predio es la sede en 3D: el área del predio con pasto y cada instalación con su forma y sus medidas, en su lugar. Lo ven los Admins del club, en la computadora y en el celular.
+El predio es la sede en 3D: el área del predio con pasto y cada instalación con su forma y sus medidas, en su lugar. Abajo va la leyenda, que explica qué es cada número. Lo ven los Admins del club, en la computadora y en el celular.
 
 ## En la pantalla de la sede
 
@@ -11,6 +11,16 @@ El predio es la sede en 3D: el área del predio con pasto y cada instalación co
    - Para acercarte o alejarte, usá la rueda del mouse o pellizcá la pantalla con dos dedos.
    - Para correrte de lado, arrastrá con el botón derecho del mouse o con dos dedos.
 
+## La leyenda
+
+Algunos elementos del predio llevan un número encima. Abajo del predio, la **leyenda** muestra cada número con su nombre y, si tiene, una descripción corta, en dos columnas en la computadora y en una en el celular.
+
+1. Tocá un número en el predio, o tocá la instalación que lo lleva. Se abre una ficha con el nombre y la descripción.
+2. También podés tocar una línea de la leyenda: se abre la misma ficha y el número se marca en amarillo en el predio.
+3. Para cerrar la ficha, tocá la **X** o cualquier otra parte del predio.
+
+Lo que no tiene número no se puede tocar: es parte del paisaje.
+
 ## En la Inicio del club
 
 Si tu club tiene una sola sede, el predio también aparece en la **Inicio**, abajo. Tocá **Sede** con el nombre de la sede para ir a su pantalla. Si tu club tiene más de una sede, el predio de cada una está solo en la pantalla de esa sede.
@@ -18,5 +28,7 @@ Si tu club tiene una sola sede, el predio también aparece en la **Inicio**, aba
 ## Notas
 
 - El bloque **Predio** aparece solo cuando el predio está armado: tiene el área marcada y al menos una instalación ubicada. Si no, no se muestra.
-- El Admin del club ve el predio pero no lo edita. Lo que cambia en el predio se ve enseguida.
+- El Admin del club ve el predio pero no lo edita: tampoco la leyenda, ni qué lleva número, ni su orden, ni las descripciones. Lo que cambia en el predio se ve enseguida.
+- La descripción de la leyenda no son las notas de la instalación: las notas que cargás en **Instalaciones** no aparecen en el predio.
+- Si no hay nada con número, el predio se ve sin leyenda.
 - Si eliminás una instalación de la sede, sale del predio. Una instalación nueva no aparece en el predio hasta que la ubican.
