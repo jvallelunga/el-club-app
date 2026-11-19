@@ -28,6 +28,7 @@ import {
   type GeoJSONStoreFeatures,
 } from "terra-draw";
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
+import type { ResultadoSimple } from "@/dominio/resultado";
 import { Crosshair, MapPin, MousePointer2, Pencil, Shrink, Trash2, Trees, X } from "lucide-react";
 import { Button } from "@/ui/nativos/button";
 import { cambiarEnLeyenda, moverEnLeyenda, numerosDeLeyenda } from "@/dominio/leyenda";
@@ -91,7 +92,6 @@ const AMARILLO = "#ffd23f";
 
 type LngLat = [number, number];
 
-export type ResultadoGuardarPredio = { ok: true } | { ok: false; error: string };
 
 type Herramienta = "mover" | "area" | "referencias";
 
@@ -311,7 +311,7 @@ export function EditorPredio({
   instalaciones: InstalacionDeLaSede[];
   guardado: DatosPredio | null;
   origenInicial: OrigenInicial;
-  guardar: (datos: DatosPredio) => Promise<ResultadoGuardarPredio>;
+  guardar: (datos: DatosPredio) => Promise<ResultadoSimple>;
   /** Avisa si hay cambios sin guardar. */
   onCambios: (hay: boolean) => void;
   /** Pide cerrar el editor; quien lo abre decide si avisa. */

@@ -12,6 +12,7 @@ import {
   validarDatosNuevoClub,
 } from "@/dominio/nuevo-club";
 import { rutaFallbackClub } from "@/dominio/host";
+import type { ResultadoSimple } from "@/dominio/resultado";
 import {
   errorAlQuitarAdmin,
   errorSiNoPuedeAdministrarAdmins,
@@ -441,8 +442,6 @@ export async function reenviarLinkInvitacionClub(
   }
   return { ok: true };
 }
-
-export type ResultadoSimple = { ok: true } | { ok: false; error: string };
 
 export async function quitarAdminClub(
   clubId: string,

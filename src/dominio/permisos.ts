@@ -130,3 +130,10 @@ export function errorSiNoPuedeEditarPredio(sesion: SesionApp | null): string | n
   if (!sesion.esSuperAdmin) return "Solo el Super Admin puede editar el predio.";
   return null;
 }
+
+/** Mensaje si no puede administrar el catálogo de deportes: solo el Super Admin. */
+export function errorSiNoPuedeAdministrarDeportes(sesion: SesionApp | null): string | null {
+  if (!sesion) return "Tenés que ingresar de nuevo.";
+  if (!sesion.esSuperAdmin) return "Solo el Super Admin puede administrar el catálogo de deportes.";
+  return null;
+}

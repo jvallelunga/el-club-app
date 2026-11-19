@@ -15,5 +15,5 @@ Si un tipo lo usan `datos` y `ui` (o más de un archivo de `ui`), se exporta des
 
 Un comando (`src/datos/comandos/*`) devuelve `{ ok: true } | { ok: false; error: string }`, o la variante con `id`. Ese tipo se escribe una vez y se reutiliza; un comando nuevo o un componente que recibe un comando como prop no declara su propia copia.
 
-- **Hoy:** `ResultadoSimple` y `ResultadoConId` viven en `src/datos/comandos/sedes.ts`. Quedan copias viejas en `src/datos/comandos/clubes.ts` y, por la regla de capas, inline en `ui` (`pantalla-admins.tsx`, `boton-eliminar-instalacion.tsx`, `editor-predio.tsx`).
-- **En el review:** se marca cada copia nueva. Cuando un cambio toque esas copias, los tipos se mueven a `src/dominio/resultado.ts` y todas las capas los importan de ahí.
+- **Dónde:** `ResultadoSimple` y `ResultadoConId` viven en `src/dominio/resultado.ts`, y `datos` y `ui` los importan de ahí.
+- **En el review:** se marca cada copia nueva, también la escrita inline en un prop.

@@ -513,4 +513,3 @@ export type ClubRedSocial = Database["public"]["Tables"]["club_red_social"]["Row
 export type Sede = Database["public"]["Tables"]["sede"]["Row"];
 export type Instalacion = Database["public"]["Tables"]["instalacion"]["Row"];
 export type Predio = Database["public"]["Tables"]["predio"]["Row"];
-export type DeporteFila = Database["public"]["Tables"]["deporte"]["Row"];
