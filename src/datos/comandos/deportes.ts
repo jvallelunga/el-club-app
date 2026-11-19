@@ -22,11 +22,21 @@ function textoForm(formData: FormData, clave: string): string {
   return typeof valor === "string" ? valor : "";
 }
 
+/** La condición viaja como JSON; si no se puede leer, la valida `validarDeporte` como inválida. */
+function jsonForm(formData: FormData, clave: string): unknown {
+  try {
+    return JSON.parse(textoForm(formData, clave));
+  } catch {
+    return null;
+  }
+}
+
 function deporteDesdeForm(formData: FormData): DeporteInput {
   return {
     nombre: textoForm(formData, "nombre"),
     icono: textoForm(formData, "icono"),
     descripcion: textoForm(formData, "descripcion"),
+    condicion: jsonForm(formData, "condicion"),
   };
 }
 

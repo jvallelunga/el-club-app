@@ -4,6 +4,7 @@
  * acepta esas claves (deporte_icono_check).
  */
 
+import { validarCondicion, type Condicion } from "./condicion";
 import { textoOpcional } from "./contacto";
 
 /** El set de íconos, en el orden en que se ofrecen. Cada clave tiene su ícono de lucide en `ui`. */
@@ -34,9 +35,6 @@ export const ICONO_DEPORTE_POR_DEFECTO: ClaveIconoDeporte = "trofeo";
 export const LARGO_MAXIMO_NOMBRE_DEPORTE = 60;
 export const LARGO_MAXIMO_DESCRIPCION_DEPORTE = 280;
 
-/** Lo que muestra la columna «Condición» mientras los deportes no tienen condición (#74). */
-export const TEXTO_SIN_CONDICION = "Sin condición: puede jugar cualquier socio";
-
 export function esClaveIconoDeporte(valor: string): valor is ClaveIconoDeporte {
   return ICONOS_DEPORTE.some((icono) => icono.clave === valor);
 }
@@ -47,6 +45,8 @@ export type Deporte = {
   nombre: string;
   icono: ClaveIconoDeporte;
   descripcion: string;
+  /** Para anotarse en el deporte (#74). Sin chequeos, puede anotarse cualquier socio. */
+  condicion: Condicion;
   borradoEn: string | null;
 };
 
@@ -54,12 +54,15 @@ export type DeporteInput = {
   nombre: string;
   icono: string;
   descripcion: string;
+  /** Sin leer todavía: viene de un form (JSON) y la valida `validarCondicion`. */
+  condicion: unknown;
 };
 
 export type ErroresDeporte = {
   nombre?: string;
   icono?: string;
   descripcion?: string;
+  condicion?: string;
 };
 
 export function validarDeporte(input: DeporteInput): ErroresDeporte {
@@ -76,6 +79,10 @@ export function validarDeporte(input: DeporteInput): ErroresDeporte {
   if (input.descripcion.trim().length > LARGO_MAXIMO_DESCRIPCION_DEPORTE) {
     errores.descripcion = `La descripción puede tener hasta ${LARGO_MAXIMO_DESCRIPCION_DEPORTE} caracteres.`;
   }
+  const condicion = validarCondicion(input.condicion);
+  if (!condicion.ok) {
+    errores.condicion = condicion.error;
+  }
   return errores;
 }
 
@@ -84,14 +91,20 @@ export function deporteParaGuardar(input: DeporteInput): {
   nombre: string;
   icono: ClaveIconoDeporte;
   descripcion: string | null;
+  condicion: Condicion;
 } {
   if (!esClaveIconoDeporte(input.icono)) {
     throw new Error(`Ícono de deporte desconocido: ${input.icono}`);
+  }
+  const condicion = validarCondicion(input.condicion);
+  if (!condicion.ok) {
+    throw new Error(`Condición inválida: ${condicion.error}`);
   }
   return {
     nombre: input.nombre.trim(),
     icono: input.icono,
     descripcion: textoOpcional(input.descripcion),
+    condicion: condicion.condicion,
   };
 }
 

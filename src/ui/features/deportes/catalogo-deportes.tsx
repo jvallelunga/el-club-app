@@ -4,17 +4,22 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import {
+  CONDICION_VACIA,
+  describirCondicion,
+  validarCondicion,
+} from "@/dominio/condicion";
+import {
   ICONO_DEPORTE_POR_DEFECTO,
   ICONOS_DEPORTE,
   LARGO_MAXIMO_DESCRIPCION_DEPORTE,
   LARGO_MAXIMO_NOMBRE_DEPORTE,
   separarBorrados,
   textoClubes,
-  TEXTO_SIN_CONDICION,
   type Deporte,
 } from "@/dominio/deportes";
 import type { ResultadoConId, ResultadoSimple } from "@/dominio/resultado";
 import { DialogoConfirmar } from "@/ui/compartidos/dialogo-confirmar";
+import { EditorCondicion } from "@/ui/compartidos/editor-condicion";
 import { Button } from "@/ui/nativos/button";
 import { Input } from "@/ui/nativos/input";
 import { Label } from "@/ui/nativos/label";
@@ -82,7 +87,13 @@ export function CatalogoDeportes({
           type="button"
           className="h-10"
           onClick={() =>
-            setEditando({ id: null, nombre: "", icono: ICONO_DEPORTE_POR_DEFECTO, descripcion: "" })
+            setEditando({
+              id: null,
+              nombre: "",
+              icono: ICONO_DEPORTE_POR_DEFECTO,
+              descripcion: "",
+              condicion: CONDICION_VACIA,
+            })
           }
         >
           <Plus className="size-4" />
@@ -121,6 +132,7 @@ export function CatalogoDeportes({
                     nombre: deporte.nombre,
                     icono: deporte.icono,
                     descripcion: deporte.descripcion,
+                    condicion: deporte.condicion,
                   })
                 }
                 aria-label={`Editar ${deporte.nombre}`}
@@ -135,7 +147,7 @@ export function CatalogoDeportes({
                   ) : null}
                 </span>
                 <span className="text-xs text-muted-foreground sm:text-sm sm:text-foreground">
-                  {TEXTO_SIN_CONDICION}
+                  {describirCondicion(deporte.condicion)}
                 </span>
               </button>
               <span className="hidden w-20 text-xs text-muted-foreground sm:block">
@@ -243,9 +255,11 @@ function FormularioDeporte({
   const [nombre, setNombre] = useState(inicial.nombre);
   const [icono, setIcono] = useState(inicial.icono);
   const [descripcion, setDescripcion] = useState(inicial.descripcion);
+  const [condicion, setCondicion] = useState(inicial.condicion);
   const [error, setError] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
   const esNuevo = inicial.id === null;
+  const condicionValida = validarCondicion(condicion).ok;
 
   function enviar(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -254,6 +268,7 @@ function FormularioDeporte({
     formData.set("nombre", nombre);
     formData.set("icono", icono);
     formData.set("descripcion", descripcion);
+    formData.set("condicion", JSON.stringify(condicion));
     startTransition(async () => {
       const resultado = await guardar(formData);
       if (!resultado.ok) {
@@ -330,6 +345,15 @@ function FormularioDeporte({
           />
         </div>
 
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">Condición para anotarse</span>
+          <EditorCondicion
+            condicion={condicion}
+            onChange={setCondicion}
+            etiqueta="Condición para anotarse"
+          />
+        </div>
+
         {error ? (
           <p className="text-sm text-destructive" role="alert">
             {error}
@@ -341,7 +365,7 @@ function FormularioDeporte({
         <Button type="button" variant="outline" onClick={onCancelar} disabled={pendiente}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={pendiente || !nombre.trim()}>
+        <Button type="submit" disabled={pendiente || !nombre.trim() || !condicionValida}>
           {pendiente ? "Guardando…" : "Guardar"}
         </Button>
       </SheetFooter>

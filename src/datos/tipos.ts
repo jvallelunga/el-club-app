@@ -318,6 +318,7 @@ export type Database = {
           nombre: string;
           icono: string;
           descripcion: string | null;
+          condicion: Json;
           borrado_en: string | null;
           creado_en: string;
           actualizado_en: string;
@@ -327,6 +328,7 @@ export type Database = {
           nombre: string;
           icono: string;
           descripcion?: string | null;
+          condicion?: Json;
           borrado_en?: string | null;
           creado_en?: string;
           actualizado_en?: string;
@@ -336,6 +338,7 @@ export type Database = {
           nombre?: string;
           icono?: string;
           descripcion?: string | null;
+          condicion?: Json;
           borrado_en?: string | null;
           creado_en?: string;
           actualizado_en?: string;
