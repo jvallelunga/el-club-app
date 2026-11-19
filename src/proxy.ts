@@ -16,6 +16,8 @@ function codigoRedireccion(request: NextRequest): 303 | 307 {
 function esRutaPublica(pathname: string): boolean {
   if (pathname === "/" || pathname === "/ingreso") return true;
   if (pathname.startsWith("/auth/")) return true;
+  // PROTOTIPO (#54): mocks sin sesión, solo fuera de producción.
+  if (pathname.startsWith("/mocks/") && process.env.NODE_ENV !== "production") return true;
   // Worker de MapLibre (archivo estático de la librería).
   if (pathname.startsWith("/maplibre/")) return true;
   return false;
