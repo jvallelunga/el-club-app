@@ -20,6 +20,14 @@ Each issue carries one state label at a time:
 
 The issue closes when the PR (with `Closes #<n>`) is merged.
 
+## Parent issues and their tickets
+
+A **parent** is an issue split into tickets (GitHub sub-issues), like #26 and #41–#48.
+
+- **Label:** the parent keeps `in progress` from the split until its last sub-issue closes; it closes with that last one. It never goes back to no label or to `done` while a sub-issue is open.
+- **Refinement session:** the session where the parent was refined and split. Record it on the parent as a comment «Sesión de refinamiento: <link to the session>».
+- **One subagent per ticket:** every ticket of a parent is worked from the refinement session, never from a separate session. That session takes the next unblocked ticket and hands it to a fresh subagent (Agent tool, `isolation: "worktree"`, in the foreground). The subagent creates its own `claude/<slug>` branch off the latest `desarrollo`, takes the ticket («Tomado. Rama: <rama>»), follows `.claude/skills/implement/SKILL.md`, opens and merges the PR as the README says, moves the ticket to `done`, and reports the PR link. One ticket at a time, in blocker order.
+
 ## Conventions
 
 - **Create an issue**: `gh api repos/jvallelunga/el-club-app/issues -f title="..." -F body=@body.md -f "labels[]=backlog"`.
