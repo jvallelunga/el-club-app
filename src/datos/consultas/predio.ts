@@ -6,10 +6,12 @@ import {
   medidasDelTipo,
   origenInicial,
   type DatosPredio,
+  type InstalacionDeLaSede,
   type InstalacionUbicada,
   type OrigenInicial,
   type Punto,
 } from "@/dominio/predio";
+import { predioParaVisor, type PredioEnVisor } from "@/dominio/predio-3d";
 import type { ClaveTipoInstalacion } from "@/dominio/tipos-instalacion";
 import { coordenadasDeDireccion } from "../geocodificar";
 import { supabaseServidor } from "../supabase-servidor";
@@ -90,4 +92,23 @@ export async function predioParaEditor(params: {
       ciudad: coordenadasClub,
     }),
   };
+}
+
+/** El tipo de cada instalación de la sede, por id (lo pide predioDeSede). */
+export function tiposDeLaSede(
+  instalaciones: readonly InstalacionDeLaSede[],
+): ReadonlyMap<string, ClaveTipoInstalacion> {
+  return new Map(instalaciones.map((i) => [i.id, i.tipo]));
+}
+
+/**
+ * Lo que muestra el visor 3D de una sede, o null si el predio no está armado
+ * (#44). RLS deja leer a los Admins del club.
+ */
+export async function predioEnVisorDeSede(sede: {
+  id: string;
+  instalaciones: readonly InstalacionDeLaSede[];
+}): Promise<PredioEnVisor | null> {
+  const guardado = await predioDeSede(sede.id, tiposDeLaSede(sede.instalaciones));
+  return predioParaVisor(guardado, sede.instalaciones);
 }

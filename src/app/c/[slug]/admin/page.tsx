@@ -11,6 +11,10 @@ import {
   sesionRequerida,
 } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
+import { predioEnVisorDeSede } from "@/datos/consultas/predio";
+import { listarSedes, sedePorId } from "@/datos/consultas/sedes";
+import type { PredioEnVisor } from "@/dominio/predio-3d";
+import { BloquePredio } from "@/ui/features/predio/bloque-predio";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +29,8 @@ export default async function PaginaAdminClub({
   const club = await clubPorSlug(slug);
   if (!club) notFound();
   await adminDelClubRequerido(club.id, `/c/${slug}/admin`);
+
+  const predioDeLaSede = await predioDeLaUnicaSede(club.id);
 
   const clubShell = {
     slug: club.slug,
@@ -97,7 +103,31 @@ export default async function PaginaAdminClub({
             Administrar Admins
           </Link>
         </p>
+
+        {predioDeLaSede ? (
+          <BloquePredio
+            predio={predioDeLaSede.predio}
+            sedeNombre={predioDeLaSede.sede.nombre}
+            hrefSede={`/c/${club.slug}/admin/sedes/${predioDeLaSede.sede.id}`}
+            className="border-t border-border pt-6"
+          />
+        ) : null}
       </div>
     </ShellAdmin>
   );
+}
+
+/**
+ * Si el club tiene una sola sede y su predio está armado, la Inicio también
+ * muestra el predio 3D (#44). Con más de una sede, no.
+ */
+async function predioDeLaUnicaSede(
+  clubId: string,
+): Promise<{ sede: { id: string; nombre: string }; predio: PredioEnVisor } | null> {
+  const sedes = await listarSedes(clubId);
+  if (sedes.length !== 1) return null;
+  const sede = await sedePorId(clubId, sedes[0].id);
+  if (!sede) return null;
+  const predio = await predioEnVisorDeSede(sede);
+  return predio ? { sede: { id: sede.id, nombre: sede.nombre }, predio } : null;
 }
