@@ -4,18 +4,26 @@ Machete para las personas del equipo: qué escribir en cada momento y qué hace 
 
 ## De la idea a desarrollo
 
-1. **Idea nueva.** Se crea un issue en GitHub con la etiqueta `backlog`.
-2. **Refinar.** En una sesión nueva: `/grill-with-docs #<n>`. Te pregunta hasta que no quedan dudas, y anota las decisiones en el issue (con fecha y hora) y los términos en `GLOSSARY.md`. En el camino puede pedirte:
+1. **Idea nueva.** Se crea un issue en GitHub con la etiqueta `backlog`. Mientras esté ahí, nadie lo toca.
+2. **Cuando querés trabajarlo**, lo pasás a `refinement`.
+3. **Refinar.** En una sesión nueva, `/next-issue`, y elegís el issue en el menú. Esa sesión queda como su **sesión de refinamiento** (se anota en el issue). Ahí escribís `/grill-with-docs #<n>`: te pregunta hasta que no quedan dudas, y anota las decisiones en el issue (con fecha y hora) y los términos en `GLOSSARY.md`. En el camino puede usar:
    - `/research` para datos de afuera (una API, precios, límites); trabaja en segundo plano;
    - `/prototype` para mocks: si hay pantallas nuevas, se aprueban antes de programar.
-3. **¿Entra en una sesión?**
-   - **Sí:** el issue pasa a `ready`.
-   - **No:** en la misma sesión, `/to-tickets #<n>`. Lo divide en tickets (sub-issues) con sus bloqueos. El issue padre queda en `in progress` hasta que se cierre su último ticket, y se anota en él la «Sesión de refinamiento».
+4. **¿Entra en una sesión?**
+   - **Sí:** el issue pasa a `ready` y queda como «suelto».
+   - **No:** en la misma sesión, `/to-tickets #<n>`. Lo divide en tickets (sub-issues) con sus bloqueos. El issue padre queda en `in progress` hasta que se cierre su último ticket.
 
-## Desarrollar
+## Desarrollar: siempre con `/next-issue`
 
-- **Un issue suelto:** en una sesión nueva, `/next-issue` (o `/next-issue #<n>`). Te muestra el issue y el camino que propone, y espera tu OK.
-- **Un ticket de un issue padre:** en la **sesión de refinamiento** del padre, `/next-issue`. Esa sesión le pasa el ticket a un subagente y espera su reporte. Se hace de a un ticket, en orden de bloqueos.
+Depende de dónde lo escribas:
+
+- **En la sesión de refinamiento de un padre:** toma el siguiente ticket libre y se lo pasa a un subagente, que lo implementa y te devuelve el PR. Se hace de a un ticket, en orden de bloqueos. Para seguir, otra vez `/next-issue` en la misma sesión.
+- **En una sesión nueva:** te muestra un menú con:
+  - los issues en `refinement`, para refinar;
+  - el siguiente ticket de cada padre en curso: te da el link de su sesión de refinamiento para seguir ahí;
+  - los issues sueltos en `ready`: los implementa en esa misma sesión.
+
+Siempre te muestra el camino que propone y espera tu OK.
 
 Lo que sigue lo hace el agente solo: la rama, el código con tests (`/implement`, que usa `/tdd` y cierra con `/matt-code-review`), las docs de usuario (`/user-docs`), el PR, el CI en verde, el merge a `desarrollo`, la etiqueta `done` y el cierre del issue.
 

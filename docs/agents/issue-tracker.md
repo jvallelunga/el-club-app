@@ -10,8 +10,8 @@ Each issue carries one state label at a time:
 
 | Label | Meaning |
 | --- | --- |
-| `backlog` | Idea, not specified yet. Don't work on it. |
-| `refinement` | Taken out of the backlog to refine it. Don't work on it. |
+| `backlog` | Idea, not specified yet. Don't touch it: a person moves it to `refinement` when it's time. |
+| `refinement` | To be refined. A session takes it from `/next-issue` and refines it (`/grill-with-docs`); don't implement it. |
 | `ready` | Has enough information to be developed. |
 | `in progress` | Being developed. Set when the work is taken (remove `ready`) with a comment «Tomado. Rama: <rama>». |
 | `done` | Development finished and PR open against `desarrollo` (remove `in progress`). |
@@ -25,7 +25,7 @@ The issue closes when the PR (with `Closes #<n>`) is merged.
 A **parent** is an issue split into tickets (GitHub sub-issues), like #26 and #41–#48.
 
 - **Label:** the parent keeps `in progress` from the split until its last sub-issue closes; it closes with that last one. It never goes back to no label or to `done` while a sub-issue is open.
-- **Refinement session:** the session where the parent was refined and split. Record it on the parent as a comment «Sesión de refinamiento: <link to the session>».
+- **Refinement session:** the session that refines an issue, from the moment it takes it out of `refinement`. Record it on the issue right away as a comment «Sesión de refinamiento: <link to the session>». If the issue gets split, that session becomes the parent's session.
 - **One subagent per ticket:** every ticket of a parent is worked from the refinement session, never from a separate session. That session takes the next unblocked ticket and hands it to a fresh subagent (Agent tool, `isolation: "worktree"`, in the foreground). The subagent creates its own `claude/<slug>` branch off the latest `desarrollo`, takes the ticket («Tomado. Rama: <rama>»), follows `.claude/skills/implement/SKILL.md`, opens and merges the PR as the README says, moves the ticket to `done`, and reports the PR link. One ticket at a time, in blocker order.
 
 ## Conventions
