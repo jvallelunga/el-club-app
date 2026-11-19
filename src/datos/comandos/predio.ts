@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { errorSiNoPuedeEditarPredio } from "@/dominio/permisos";
 import { errorDelPredio, predioParaGuardar, type DatosPredio } from "@/dominio/predio";
 import {
+  CLAVE_TIPO_OTRA,
   esClaveTipoInstalacion,
   type ClaveTipoInstalacion,
 } from "@/dominio/tipos-instalacion";
@@ -33,10 +34,12 @@ export async function guardarPredio(
     .maybeSingle();
   if (!sede) return { ok: false, error: "No encontramos esa sede." };
 
-  const tiposDeLaSede = new Map(
-    sede.instalacion
-      .filter((i) => esClaveTipoInstalacion(i.tipo))
-      .map((i) => [i.id, i.tipo as ClaveTipoInstalacion]),
+  // Igual que sedePorId: un tipo que el código no conoce cuenta como «Otra».
+  const tiposDeLaSede = new Map<string, ClaveTipoInstalacion>(
+    sede.instalacion.map((i) => [
+      i.id,
+      esClaveTipoInstalacion(i.tipo) ? i.tipo : CLAVE_TIPO_OTRA,
+    ]),
   );
   // Una instalación borrada mientras se editaba ya no se ubica.
   const enviadas = Array.isArray(datos?.instalaciones) ? datos.instalaciones : [];

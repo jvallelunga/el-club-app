@@ -407,16 +407,6 @@ export type Database = {
         Args: Record<string, never>;
         Returns: undefined;
       };
-      guardar_predio: {
-        Args: {
-          p_sede_id: string;
-          p_origen_lat: number;
-          p_origen_lng: number;
-          p_area: Json;
-          p_instalaciones: Json;
-        };
-        Returns: undefined;
-      };
       guardar_contacto_club: {
         Args: {
           p_club_id: string;
@@ -425,6 +415,16 @@ export type Database = {
           p_direccion: string | null;
           p_web: string | null;
           p_redes: Json;
+        };
+        Returns: undefined;
+      };
+      guardar_predio: {
+        Args: {
+          p_sede_id: string;
+          p_origen_lat: number;
+          p_origen_lng: number;
+          p_area: Json;
+          p_instalaciones: Json;
         };
         Returns: undefined;
       };

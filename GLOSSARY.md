@@ -24,6 +24,12 @@ El polígono, marcado sobre el mapa satelital, que delimita el predio.
 **Origen del predio**:
 El punto (latitud y longitud) desde el que se ubica todo el predio. Arranca en la ubicación de la sede, pero es propio del predio.
 
+**Elemento del predio**:
+Cualquier cosa ubicada en el predio: una instalación de la sede o un elemento de referencia. Tiene posición en metros desde el origen del predio, rotación y medidas según su tipo.
+
+**Instalación sin ubicar**:
+Una instalación de la sede que todavía no está en el predio. Al quitarla del predio vuelve a estar sin ubicar, pero sigue en la sede.
+
 **Elemento de referencia**:
 Algo ubicado en el predio que no es una instalación: árbol, camino, valla, piedra, bebedero.
 _Avoid_: referencia (a secas)
