@@ -1,7 +1,7 @@
 %% El Club — modelo aplicado.
 %% Tablas migradas: club (con dominio_base, escudo_ruta y paleta), usuario, super_admin,
 %% super_admin_invitacion, club_miembro, club_invitacion, club_red_social,
-%% sede, instalacion, predio y elemento_predio.
+%% sede, instalacion, predio, elemento_predio y deporte.
 %% usuario.id coincide con el usuario de Supabase Auth.
 %% rol_club es un enum que por ahora solo tiene el valor admin.
 %%
@@ -51,6 +51,13 @@
 %% Caminos y vallas (#47): en vez de este/norte/rotacion (null) guardan
 %% puntos, una lista jsonb de 2 a 500 puntos [este, norte] en metros desde el
 %% origen; medidas lleva el ancho del camino o el alto de la valla.
+%% deporte (#73) es el catálogo de deportes del Super Admin: nombre (único
+%% entre los no borrados), icono (la clave de un set en código,
+%% src/dominio/deportes.ts; la base solo acepta esas claves) y descripcion.
+%% Borrar es un soft delete: borrado_en queda completo y el deporte ya no se
+%% edita. Escribe solo el Super Admin; leen el Super Admin y los Admins de
+%% cualquier club (interno.es_admin_de_algun_club). Todavía no se relaciona
+%% con otras tablas: los clubes lo eligen en #75.
 %% El email del Super Admin no se guarda en el repo: el alta se hace
 %% directo en la base (ver scripts/sembrar-super-admin.sql).
 erDiagram
@@ -118,6 +125,15 @@ erDiagram
         string descripcion
         int orden_leyenda
         boolean en_leyenda
+        timestamptz creado_en
+        timestamptz actualizado_en
+    }
+    DEPORTE {
+        uuid id PK
+        string nombre UK
+        string icono
+        string descripcion
+        timestamptz borrado_en
         timestamptz creado_en
         timestamptz actualizado_en
     }
