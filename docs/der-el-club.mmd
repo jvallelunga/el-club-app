@@ -37,6 +37,10 @@
 %% el origen, rotacion en grados (sentido horario, 0 a 360) y medidas, un
 %% jsonb con las medidas del tipo. Mismo RLS que predio. Se guarda junto con
 %% el área con public.guardar_predio().
+%% La leyenda (#45): descripcion es un texto corto (hasta 280 caracteres) que
+%% se ve en la leyenda, distinto de las notas de la instalación. orden_leyenda
+%% es el lugar en la leyenda (1, 2, 3…, único por predio) o null si no entra;
+%% en_leyenda se calcula de él. El número que se ve es el puesto en ese orden.
 %% El email del Super Admin no se guarda en el repo: el alta se hace
 %% directo en la base (ver scripts/sembrar-super-admin.sql).
 erDiagram
@@ -98,6 +102,9 @@ erDiagram
         float norte
         float rotacion
         jsonb medidas
+        string descripcion
+        int orden_leyenda
+        boolean en_leyenda
         timestamptz creado_en
         timestamptz actualizado_en
     }

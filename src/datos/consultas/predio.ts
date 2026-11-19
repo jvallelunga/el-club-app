@@ -44,7 +44,7 @@ export async function predioDeSede(
 
   const { data: elementos, error: errorElementos } = await supabase
     .from("elemento_predio")
-    .select("instalacion_id, este, norte, rotacion, medidas")
+    .select("instalacion_id, este, norte, rotacion, medidas, descripcion, orden_leyenda")
     .eq("predio_id", data.id);
   if (errorElementos) throw errorElementos;
 
@@ -61,6 +61,8 @@ export async function predioDeSede(
       posicion: [fila.este, fila.norte],
       rotacion: fila.rotacion,
       medidas: medidasDelTipo(tipo, medidas),
+      descripcion: fila.descripcion,
+      ordenLeyenda: fila.orden_leyenda,
     });
   }
 

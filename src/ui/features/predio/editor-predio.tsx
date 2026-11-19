@@ -1,11 +1,12 @@
 "use client";
 
 /**
- * Editor de predio a pantalla completa (variante B del mock, #42 y #43).
+ * Editor de predio a pantalla completa (variante B del mock, #42, #43 y #45).
  *
  * El área se dibuja con Terra Draw sobre el mapa satelital (MapLibre). Las
  * instalaciones de la sede se ubican, se arrastran y se giran sobre el mapa;
- * su huella sale de las medidas del tipo. El editor tiene el área y los
+ * su huella sale de las medidas del tipo. Cada una puede tener descripción y
+ * entrar en la leyenda, que se reordena. El editor tiene el área y los
  * centros de las instalaciones en lat/lng, y los pasa a metros desde el origen
  * recién al comparar y al guardar: así, mover el origen no corre nada del mapa.
  */
@@ -24,6 +25,7 @@ import {
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import { Crosshair, MapPin, MousePointer2, Pencil, Shrink, Trash2 } from "lucide-react";
 import { Button } from "@/ui/nativos/button";
+import { cambiarEnLeyenda, moverEnLeyenda, numerosDeLeyenda } from "@/dominio/leyenda";
 import type { Coordenadas } from "@/dominio/maps";
 import {
   aCoordenadas,
@@ -43,6 +45,7 @@ import {
   COLOR_POR_FORMA,
   PanelInstalacion,
 } from "./instalaciones-editor";
+import { CamposLeyenda, OrdenLeyenda } from "./leyenda-editor";
 import {
   ATRIBUCION_ESRI,
   esRechazoDeGoogle,
@@ -67,12 +70,17 @@ export type ResultadoGuardarPredio = { ok: true } | { ok: false; error: string }
 
 type Herramienta = "mover" | "area";
 
-/** Una instalación ubicada, como la tiene el editor: el centro en lat/lng. */
+/**
+ * Una instalación ubicada, como la tiene el editor: el centro en lat/lng y la
+ * descripción como se escribe (se limpia al guardar).
+ */
 type EnMapa = {
   instalacionId: string;
   centro: Coordenadas;
   rotacion: number;
   medidas: Record<string, number>;
+  descripcion: string;
+  ordenLeyenda: number | null;
 };
 
 const CAPA_INSTALACIONES = "instalaciones-relleno";
@@ -170,6 +178,8 @@ export function EditorPredio({
       centro: aCoordenadas(guardadoInicial!.origen, i.posicion),
       rotacion: i.rotacion,
       medidas: i.medidas,
+      descripcion: i.descripcion ?? "",
+      ordenLeyenda: i.ordenLeyenda,
     })),
   );
   const [seleccion, setSeleccion] = useState<string | null>(null);
@@ -192,10 +202,13 @@ export function EditorPredio({
         posicion: aMetros(origen, u.centro),
         rotacion: u.rotacion,
         medidas: u.medidas,
+        descripcion: u.descripcion,
+        ordenLeyenda: u.ordenLeyenda,
       })),
     }),
     [origen, anillo, ubicadas],
   );
+  const numeros = useMemo(() => numerosDeLeyenda(ubicadas), [ubicadas]);
   const tiposDeLaSede = useMemo(
     () => new Map(instalaciones.map((i) => [i.id, i.tipo])),
     [instalaciones],
@@ -442,7 +455,7 @@ export function EditorPredio({
     };
   }, [fuente]);
 
-  // Las huellas y los nombres de las instalaciones siguen al estado.
+  // Las huellas, los números y los nombres de las instalaciones siguen al estado.
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa || !mapaListo) return;
@@ -455,27 +468,38 @@ export function EditorPredio({
       const elemento = document.createElement("span");
       elemento.className =
         "pointer-events-none rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-semibold text-white";
-      elemento.textContent = nombres.get(u.instalacionId) ?? "";
+      const numero = numeros.get(u.instalacionId);
+      const nombre = nombres.get(u.instalacionId) ?? "";
+      elemento.textContent = numero ? `${numero} · ${nombre}` : nombre;
       return new maplibregl.Marker({ element: elemento })
         .setLngLat([u.centro.lng, u.centro.lat])
         .addTo(mapa);
     });
-  }, [mapaListo, ubicadas, instalaciones, seleccion]);
+  }, [mapaListo, ubicadas, instalaciones, seleccion, numeros]);
 
   function ubicar(instalacionId: string) {
     const mapa = mapaRef.current;
     const instalacion = instalaciones.find((i) => i.id === instalacionId);
     if (!mapa || !instalacion) return;
     const { lat, lng } = mapa.getCenter();
-    setUbicadas((lista) => [
-      ...lista,
-      {
+    // Una instalación recién ubicada entra en la leyenda, al final.
+    setUbicadas((lista) =>
+      cambiarEnLeyenda(
+        [
+          ...lista,
+          {
+            instalacionId,
+            centro: { lat, lng },
+            rotacion: 0,
+            medidas: medidasDelTipo(instalacion.tipo, null),
+            descripcion: "",
+            ordenLeyenda: null,
+          },
+        ],
         instalacionId,
-        centro: { lat, lng },
-        rotacion: 0,
-        medidas: medidasDelTipo(instalacion.tipo, null),
-      },
-    ]);
+        true,
+      ),
+    );
     elegirHerramienta("mover");
     setSeleccion(instalacionId);
   }
@@ -492,6 +516,14 @@ export function EditorPredio({
     setUbicadas((lista) =>
       lista.map((u) => (u.instalacionId === instalacionId ? { ...u, ...cambio } : u)),
     );
+  }
+
+  function ponerEnLeyenda(instalacionId: string, entra: boolean) {
+    setUbicadas((lista) => cambiarEnLeyenda(lista, instalacionId, entra));
+  }
+
+  function reordenarLeyenda(instalacionId: string, delta: -1 | 1) {
+    setUbicadas((lista) => moverEnLeyenda(lista, instalacionId, delta));
   }
 
   function quitarDelPredio(instalacionId: string) {
@@ -559,6 +591,12 @@ export function EditorPredio({
   const dibujandoArea = herramienta === "area" && !anillo;
   const elegida = ubicadas.find((u) => u.instalacionId === seleccion);
   const instalacionElegida = instalaciones.find((i) => i.id === seleccion);
+  const nombres = new Map(instalaciones.map((i) => [i.id, i.nombre]));
+  const lineasLeyenda = [...numeros].map(([id, numero]) => ({
+    id,
+    numero,
+    nombre: nombres.get(id) ?? "",
+  }));
 
   return (
     <div
@@ -681,6 +719,7 @@ export function EditorPredio({
       {elegida && instalacionElegida ? (
         <PanelInstalacion
           instalacion={instalacionElegida}
+          numero={numeros.get(elegida.instalacionId) ?? null}
           rotacion={elegida.rotacion}
           medidas={elegida.medidas}
           onRotar={(rotacion) => cambiarUbicada(elegida.instalacionId, { rotacion })}
@@ -691,7 +730,25 @@ export function EditorPredio({
           }
           onQuitar={() => quitarDelPredio(elegida.instalacionId)}
           onCerrar={() => setSeleccion(null)}
-        />
+        >
+          <CamposLeyenda
+            descripcion={elegida.descripcion}
+            enLeyenda={elegida.ordenLeyenda !== null}
+            onDescripcion={(descripcion) => cambiarUbicada(elegida.instalacionId, { descripcion })}
+            onEnLeyenda={(entra) => ponerEnLeyenda(elegida.instalacionId, entra)}
+          />
+          <div className="flex flex-col gap-2 border-t border-border pt-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Leyenda
+            </p>
+            <OrdenLeyenda
+              leyenda={lineasLeyenda}
+              seleccion={seleccion}
+              onElegir={elegirInstalacion}
+              onMover={reordenarLeyenda}
+            />
+          </div>
+        </PanelInstalacion>
       ) : null}
 
       {/* Atribución: abajo y sin nada encima (términos de la Map Tiles API). */}

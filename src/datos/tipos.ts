@@ -321,6 +321,9 @@ export type Database = {
           norte: number;
           rotacion: number;
           medidas: Json;
+          descripcion: string | null;
+          orden_leyenda: number | null;
+          en_leyenda: boolean;
           creado_en: string;
           actualizado_en: string;
         };
@@ -332,6 +335,9 @@ export type Database = {
           norte: number;
           rotacion?: number;
           medidas?: Json;
+          descripcion?: string | null;
+          orden_leyenda?: number | null;
+          en_leyenda?: never;
           creado_en?: string;
           actualizado_en?: string;
         };
@@ -343,6 +349,9 @@ export type Database = {
           norte?: number;
           rotacion?: number;
           medidas?: Json;
+          descripcion?: string | null;
+          orden_leyenda?: number | null;
+          en_leyenda?: never;
           creado_en?: string;
           actualizado_en?: string;
         };

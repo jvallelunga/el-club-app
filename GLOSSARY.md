@@ -35,8 +35,11 @@ Algo ubicado en el predio que no es una instalación: árbol, camino, valla, pie
 _Avoid_: referencia (a secas)
 
 **Leyenda**:
-La lista numerada que acompaña el predio 3D y explica qué es cada número.
+La lista numerada que acompaña el predio 3D y explica qué es cada número. Un elemento del predio entra o no en la leyenda; lo que entra lleva un número según el orden de la leyenda, y lo demás es decorado.
 _Avoid_: referencias
+
+**Descripción** (de un elemento del predio):
+Texto corto, de hasta 280 caracteres y sin formato, que se ve en la leyenda y al tocar el número en el 3D. No son las notas internas de la instalación.
 
 **Predio armado**:
 Un predio con área y al menos una instalación ubicada. Solo un predio armado se muestra en el club.

@@ -3,10 +3,10 @@
 /**
  * Piezas del editor de predio para ubicar instalaciones (#43): la barra de
  * instalaciones de la sede (ubicadas y sin ubicar) y el panel de la
- * instalación elegida (rotación, medidas y «Quitar del predio»).
+ * instalación elegida (rotación, medidas, leyenda y «Quitar del predio»).
  */
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Check, Circle, RotateCcw, RotateCw, Trash2, X } from "lucide-react";
 import { Button } from "@/ui/nativos/button";
 import { MEDIDA_MAXIMA, MEDIDA_MINIMA, type InstalacionDeLaSede } from "@/dominio/predio";
@@ -14,7 +14,7 @@ import {
   tipoInstalacion,
   type FormaInstalacion,
 } from "@/dominio/tipos-instalacion";
-
+import { NumeroLeyenda } from "./leyenda-predio";
 
 /** Color de la huella en el mapa, según la forma del tipo. */
 export const COLOR_POR_FORMA: Record<FormaInstalacion, string> = {
@@ -148,31 +148,40 @@ function CampoNumero({
 
 export function PanelInstalacion({
   instalacion,
+  numero,
   rotacion,
   medidas,
   onRotar,
   onMedida,
   onQuitar,
   onCerrar,
+  children,
 }: {
   instalacion: InstalacionDeLaSede;
+  /** Su número en la leyenda, o null si no entra. */
+  numero: number | null;
   rotacion: number;
   medidas: Record<string, number>;
   onRotar: (grados: number) => void;
   onMedida: (clave: string, valor: number) => void;
   onQuitar: () => void;
   onCerrar: () => void;
+  /** La leyenda: descripción, si entra y el orden. */
+  children: ReactNode;
 }) {
   const tipo = tipoInstalacion(instalacion.tipo);
   const girar = (delta: number) => onRotar((((rotacion + delta) % 360) + 360) % 360);
   return (
-    <div className="absolute right-16 top-24 flex w-80 flex-col gap-4 rounded-2xl bg-background/95 p-4 text-sm shadow-lg">
+    <div className="absolute right-16 top-24 flex max-h-[calc(100%-14rem)] w-80 flex-col gap-4 overflow-y-auto rounded-2xl bg-background/95 p-4 text-sm shadow-lg">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
             Instalación · {tipo.nombre}
           </p>
-          <p className="truncate font-medium">{instalacion.nombre}</p>
+          <p className="flex items-center gap-1.5 font-medium">
+            {numero !== null ? <NumeroLeyenda numero={numero} elegido className="size-5" /> : null}
+            <span className="truncate">{instalacion.nombre}</span>
+          </p>
         </div>
         <button
           type="button"
@@ -249,6 +258,8 @@ export function PanelInstalacion({
       <p className="text-xs text-muted-foreground">
         La huella en el mapa sale de estas medidas.
       </p>
+
+      {children}
 
       <Button variant="ghost" className="h-9 justify-start text-destructive" onClick={onQuitar}>
         <Trash2 className="size-4" />

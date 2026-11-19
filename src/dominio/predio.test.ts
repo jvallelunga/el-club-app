@@ -11,6 +11,7 @@ import {
   ORIGEN_POR_DEFECTO,
   origenInicial,
   predioParaGuardar,
+  type InstalacionUbicada,
 } from "./predio";
 
 describe("aMetros y aCoordenadas", () => {
@@ -94,17 +95,21 @@ describe("origenInicial", () => {
 });
 
 describe("hayCambiosEnPredio", () => {
-  const cancha = {
+  const cancha: InstalacionUbicada = {
     instalacionId: "cancha",
     posicion: [40, -60] as [number, number],
     rotacion: 47,
     medidas: { largo: 100, ancho: 70, ingoal: 10 },
+    descripcion: "La cancha principal.",
+    ordenLeyenda: 1,
   };
-  const pileta = {
+  const pileta: InstalacionUbicada = {
     instalacionId: "pileta",
     posicion: [-20, 15] as [number, number],
     rotacion: 0,
     medidas: { largo: 25, ancho: 12 },
+    descripcion: null,
+    ordenLeyenda: 2,
   };
   const guardado = {
     origen: { lat: -37.336, lng: -59.08 },
@@ -119,8 +124,16 @@ describe("hayCambiosEnPredio", () => {
         area: [[0.001, 0], [10, 0.002], [10, 10]],
         instalaciones: [
           // Otro orden, y ruido en la posición, la rotación y las medidas.
-          { ...pileta, posicion: [-20.004, 15], rotacion: 360 },
-          { ...cancha, rotacion: 47.01, medidas: { largo: 100.001, ancho: 70, ingoal: 10 } },
+          // Otro orden de la lista, el orden de la leyenda con huecos y la
+          // descripción con espacios de más tampoco son cambios.
+          { ...pileta, posicion: [-20.004, 15], rotacion: 360, ordenLeyenda: 7, descripcion: " " },
+          {
+            ...cancha,
+            rotacion: 47.01,
+            medidas: { largo: 100.001, ancho: 70, ingoal: 10 },
+            ordenLeyenda: 3,
+            descripcion: " La cancha  principal. ",
+          },
         ],
       }),
     ).toBe(false);
@@ -147,6 +160,17 @@ describe("hayCambiosEnPredio", () => {
     expect(hayCambiosEnPredio(guardado, con({ posicion: [41, -60] }))).toBe(true);
     expect(hayCambiosEnPredio(guardado, con({ rotacion: 50 }))).toBe(true);
     expect(hayCambiosEnPredio(guardado, con({ medidas: { largo: 100, ancho: 68, ingoal: 10 } }))).toBe(true);
+  });
+
+  it("ve otra descripción, algo que entra o sale de la leyenda y la leyenda reordenada", () => {
+    const con = (cambioCancha: Partial<typeof cancha>, cambioPileta: Partial<typeof pileta> = {}) => ({
+      ...guardado,
+      instalaciones: [{ ...cancha, ...cambioCancha }, { ...pileta, ...cambioPileta }],
+    });
+    expect(hayCambiosEnPredio(guardado, con({ descripcion: "Otra cosa." }))).toBe(true);
+    expect(hayCambiosEnPredio(guardado, con({ descripcion: null }))).toBe(true);
+    expect(hayCambiosEnPredio(guardado, con({ ordenLeyenda: null }))).toBe(true);
+    expect(hayCambiosEnPredio(guardado, con({ ordenLeyenda: 2 }, { ordenLeyenda: 1 }))).toBe(true);
   });
 
   it("ve una instalación ubicada o quitada del predio", () => {
@@ -211,6 +235,8 @@ describe("predioParaGuardar con instalaciones", () => {
             posicion: [12.3456, -0.004],
             rotacion,
             medidas: { largo: 100.004, ancho: 69.996 },
+            descripcion: null,
+            ordenLeyenda: null,
           },
         ],
       }).instalaciones[0];
@@ -219,10 +245,39 @@ describe("predioParaGuardar con instalaciones", () => {
       posicion: [12.35, 0],
       rotacion: 47.3,
       medidas: { largo: 100, ancho: 70 },
+      descripcion: null,
+      ordenLeyenda: null,
     });
     expect(guardar(-90).rotacion).toBe(270);
     expect(guardar(450).rotacion).toBe(90);
     expect(guardar(359.97).rotacion).toBe(0);
+  });
+});
+
+describe("predioParaGuardar con la leyenda", () => {
+  it("limpia la descripción y deja el orden de la leyenda corrido desde 1", () => {
+    const ubicada = (instalacionId: string, ordenLeyenda: number | null, descripcion: string | null) => ({
+      instalacionId,
+      posicion: [0, 0] as [number, number],
+      rotacion: 0,
+      medidas: { largo: 25, ancho: 12 },
+      descripcion,
+      ordenLeyenda,
+    });
+    const { instalaciones } = predioParaGuardar({
+      origen: { lat: -37.3, lng: -59.1 },
+      area: [],
+      instalaciones: [
+        ubicada("pileta", 5, "  Pileta \n climatizada "),
+        ubicada("quincho", null, "   "),
+        ubicada("cancha", 2, null),
+      ],
+    });
+    expect(instalaciones.map((i) => [i.instalacionId, i.ordenLeyenda, i.descripcion])).toEqual([
+      ["pileta", 2, "Pileta climatizada"],
+      ["quincho", null, null],
+      ["cancha", 1, null],
+    ]);
   });
 });
 
@@ -237,6 +292,8 @@ describe("errorDelPredio", () => {
     posicion: [40, -60],
     rotacion: 47,
     medidas: { largo: 100, ancho: 70, ingoal: 10 },
+    descripcion: null,
+    ordenLeyenda: 1,
   };
   const conInstalaciones = (instalaciones: unknown[]) =>
     errorDelPredio({ origen, area: [], instalaciones }, tipos);
@@ -266,7 +323,14 @@ describe("errorDelPredio", () => {
     expect(
       conInstalaciones([
         cancha,
-        { instalacionId: "pileta", posicion: [0, 0], rotacion: 0, medidas: { largo: 25, ancho: 12 } },
+        {
+          instalacionId: "pileta",
+          posicion: [0, 0],
+          rotacion: 0,
+          medidas: { largo: 25, ancho: 12 },
+          descripcion: "Climatizada.",
+          ordenLeyenda: null,
+        },
       ]),
     ).toBeNull();
   });
@@ -281,6 +345,18 @@ describe("errorDelPredio", () => {
     expect(conInstalaciones([{ ...cancha, posicion: [0, "x"] }])).toMatch(/posición/);
     expect(conInstalaciones([{ ...cancha, posicion: [4000, 4000] }])).toMatch(/lejos/);
     expect(conInstalaciones([{ ...cancha, rotacion: Number.NaN }])).toMatch(/rotación/);
+  });
+
+  it("rechaza una descripción de más de 280 caracteres o que no es texto", () => {
+    expect(conInstalaciones([{ ...cancha, descripcion: "a".repeat(281) }])).toMatch(/280/);
+    expect(conInstalaciones([{ ...cancha, descripcion: 7 }])).toMatch(/descripción/);
+  });
+
+  it("rechaza un lugar en la leyenda que no es un entero desde 1", () => {
+    expect(conInstalaciones([{ ...cancha, ordenLeyenda: 0 }])).toMatch(/leyenda/);
+    expect(conInstalaciones([{ ...cancha, ordenLeyenda: 1.5 }])).toMatch(/leyenda/);
+    expect(conInstalaciones([{ ...cancha, ordenLeyenda: "1" }])).toMatch(/leyenda/);
+    expect(conInstalaciones([{ ...cancha, ordenLeyenda: undefined }])).toMatch(/leyenda/);
   });
 
   it("pide exactamente las medidas del tipo, cada una entre 0,5 y 300 m", () => {
