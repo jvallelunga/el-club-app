@@ -17,11 +17,7 @@ import {
   WavesLadder,
   type LucideIcon,
 } from "lucide-react";
-import {
-  esClaveIconoDeporte,
-  ICONO_DEPORTE_POR_DEFECTO,
-  type ClaveIconoDeporte,
-} from "@/dominio/deportes";
+import type { ClaveIconoDeporte } from "@/dominio/deportes";
 
 /** El ícono de lucide de cada clave del set (ICONOS_DEPORTE en dominio). */
 const ICONOS: Record<ClaveIconoDeporte, LucideIcon> = {
@@ -47,9 +43,9 @@ export function IconoDeporte({
   clave,
   className,
 }: {
-  clave: string;
+  clave: ClaveIconoDeporte;
   className?: string;
 }) {
-  const Icono = ICONOS[esClaveIconoDeporte(clave) ? clave : ICONO_DEPORTE_POR_DEFECTO];
+  const Icono = ICONOS[clave];
   return <Icono className={className} aria-hidden />;
 }

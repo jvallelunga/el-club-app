@@ -309,10 +309,6 @@ export type ResultadoInvitar =
     }
   | { ok: false; error: string };
 
-export type ResultadoReenviarLink =
-  | { ok: true }
-  | { ok: false; error: string };
-
 async function enviarLinkInvitacion(
   email: string,
   slug: string,
@@ -405,7 +401,7 @@ export async function invitarAdminClub(
 export async function reenviarLinkInvitacionClub(
   clubId: string,
   invitacionId: string,
-): Promise<ResultadoReenviarLink> {
+): Promise<ResultadoSimple> {
   const sesion = await cargarSesion();
   const permiso = errorSiNoPuedeAdministrarAdmins(sesion, clubId);
   if (permiso || !sesion) {

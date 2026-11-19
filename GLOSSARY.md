@@ -56,3 +56,15 @@ Texto corto, de hasta 280 caracteres y sin formato, que se ve en la leyenda y al
 
 **Predio armado**:
 Un predio con área y al menos una instalación ubicada. Solo un predio armado se muestra en el club.
+
+## Deportes
+
+**Deporte**:
+Lo que se juega en un club, con nombre, ícono y descripción; por ejemplo «Rugby masculino». Lo crea el Super Admin y cada club elige los suyos.
+
+**Catálogo de deportes**:
+Todos los deportes que creó el Super Admin. Es el mismo para todos los clubes.
+_Avoid_: lista de deportes, tipos de deporte
+
+**Deporte borrado**:
+Un deporte que el Super Admin sacó del catálogo. No desaparece (soft delete): queda en «Ver borrados», ya no se edita y los clubes no lo pueden elegir.

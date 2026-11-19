@@ -6,7 +6,6 @@ import {
   esClaveIconoDeporte,
   ICONO_DEPORTE_POR_DEFECTO,
   ICONOS_DEPORTE,
-  nombreIconoDeporte,
   separarBorrados,
   textoClubes,
   validarDeporte,
@@ -24,11 +23,6 @@ describe("íconos de deporte", () => {
     expect(esClaveIconoDeporte("rugby")).toBe(true);
     expect(esClaveIconoDeporte("Rugby")).toBe(false);
     expect(esClaveIconoDeporte("pelota")).toBe(false);
-  });
-
-  it("nombra cada ícono, y «Deporte» si la clave no existe", () => {
-    expect(nombreIconoDeporte("natacion")).toBe("Natación");
-    expect(nombreIconoDeporte("pelota")).toBe("Deporte");
   });
 
   it("coincide con la lista que acepta la base (deporte_icono_check)", () => {

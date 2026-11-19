@@ -30,9 +30,9 @@ import { cn } from "@/lib/utils";
 import { IconoDeporte } from "./icono-deporte";
 
 /** Lo que se edita en el panel: un deporte existente o uno nuevo (sin id). */
-type Edicion = { id: string | null; nombre: string; icono: string; descripcion: string };
+type Edicion = Omit<Deporte, "id" | "borradoEn"> & { id: string | null };
 
-const FECHA = new Intl.DateTimeFormat("es-AR", {
+const FORMATO_FECHA = new Intl.DateTimeFormat("es-AR", {
   timeZone: "America/Argentina/Buenos_Aires",
   day: "2-digit",
   month: "2-digit",
@@ -180,7 +180,7 @@ export function CatalogoDeportes({
                   <span className="min-w-0 flex-1 truncate line-through">{deporte.nombre}</span>
                   {deporte.borradoEn ? (
                     <span className="shrink-0 text-xs">
-                      Borrado el {FECHA.format(new Date(deporte.borradoEn))}
+                      Borrado el {FORMATO_FECHA.format(new Date(deporte.borradoEn))}
                     </span>
                   ) : null}
                 </li>

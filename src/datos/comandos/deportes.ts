@@ -15,6 +15,7 @@ const RUTA_CATALOGO = "/super-admin/deportes";
 
 /** Violación de unicidad de Postgres: ya hay un deporte activo con ese nombre. */
 const NOMBRE_REPETIDO = "23505";
+const MENSAJE_NOMBRE_REPETIDO = "Ya hay un deporte con ese nombre.";
 
 function textoForm(formData: FormData, clave: string): string {
   const valor = formData.get(clave);
@@ -35,12 +36,12 @@ function primerMensaje(
   return Object.values(errores).find((valor): valor is string => Boolean(valor));
 }
 
-async function permiso(): Promise<string | null> {
+async function errorDePermiso(): Promise<string | null> {
   return errorSiNoPuedeAdministrarDeportes(await cargarSesion());
 }
 
 export async function crearDeporte(formData: FormData): Promise<ResultadoConId> {
-  const error = await permiso();
+  const error = await errorDePermiso();
   if (error) return { ok: false, error };
 
   const input = deporteDesdeForm(formData);
@@ -55,7 +56,7 @@ export async function crearDeporte(formData: FormData): Promise<ResultadoConId> 
     .single();
   if (errorBase || !data) {
     if (errorBase?.code === NOMBRE_REPETIDO) {
-      return { ok: false, error: "Ya hay un deporte con ese nombre." };
+      return { ok: false, error: MENSAJE_NOMBRE_REPETIDO };
     }
     return { ok: false, error: "No se pudo crear el deporte. Probá de nuevo." };
   }
@@ -68,7 +69,7 @@ export async function editarDeporte(
   deporteId: string,
   formData: FormData,
 ): Promise<ResultadoSimple> {
-  const error = await permiso();
+  const error = await errorDePermiso();
   if (error) return { ok: false, error };
 
   const input = deporteDesdeForm(formData);
@@ -84,7 +85,7 @@ export async function editarDeporte(
     .select("id");
   if (errorBase) {
     if (errorBase.code === NOMBRE_REPETIDO) {
-      return { ok: false, error: "Ya hay un deporte con ese nombre." };
+      return { ok: false, error: MENSAJE_NOMBRE_REPETIDO };
     }
     return { ok: false, error: "No se pudo guardar el deporte. Probá de nuevo." };
   }
@@ -98,7 +99,7 @@ export async function editarDeporte(
 
 /** Soft delete: el deporte queda, marcado como borrado. */
 export async function borrarDeporte(deporteId: string): Promise<ResultadoSimple> {
-  const error = await permiso();
+  const error = await errorDePermiso();
   if (error) return { ok: false, error };
 
   const ahora = new Date().toISOString();

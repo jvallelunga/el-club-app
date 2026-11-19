@@ -41,10 +41,6 @@ export function esClaveIconoDeporte(valor: string): valor is ClaveIconoDeporte {
   return ICONOS_DEPORTE.some((icono) => icono.clave === valor);
 }
 
-export function nombreIconoDeporte(clave: string): string {
-  return ICONOS_DEPORTE.find((icono) => icono.clave === clave)?.nombre ?? "Deporte";
-}
-
 /** Un deporte del catálogo. `borradoEn` es null mientras no se borra (soft delete). */
 export type Deporte = {
   id: string;
