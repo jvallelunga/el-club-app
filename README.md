@@ -56,7 +56,7 @@ npm run dev                  # http://localhost:3000
 
 Otros comandos: `npm run build`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run tipos` (regenera `src/datos/tipos.ts` desde un Supabase local).
 
-Las migraciones y las políticas RLS se prueban en un Postgres 16 común (nunca en Supabase) con `bash scripts/probar-rls.sh`: aplica cada migración dos veces seguidas y corre `supabase/tests/*.sql`. El script explica cómo levantar el Postgres con Docker.
+Las migraciones y las políticas RLS se prueban en un Postgres 16 común (nunca en Supabase) con `bash scripts/probar-rls.sh`: aplica cada migración dos veces seguidas y corre `supabase/tests/*.sql`. El script explica cómo levantar el Postgres con Docker. Al mergear a `desarrollo`, las migraciones nuevas se aplican enseguida en el Supabase de desarrollo (ver «Apply migrations to development» en `docs/agents/issue-tracker.md`); producción, solo con el OK de Jerónimo.
 
 El CI (`.github/workflows/ci.yml`) corre todo esto en cada PR a `desarrollo` o `main`.
 
