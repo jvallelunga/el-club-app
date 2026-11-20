@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { validarCondicion } from "@/dominio/condicion";
 import { errorSiNoPuedeElegirDeportesDelClub } from "@/dominio/permisos";
 import type { ResultadoSimple } from "@/dominio/resultado";
 import { cargarSesion } from "../consultas/sesion";
@@ -60,6 +61,39 @@ export async function quitarDeporteDelClub(
   }
   if (!data?.length) {
     return { ok: false, error: "Ese deporte ya no estaba en el club." };
+  }
+
+  await revalidar(clubId);
+  return { ok: true };
+}
+
+/**
+ * Guarda la condición que el club le suma al deporte (#77). Solo suma: para
+ * anotarse hay que cumplir también la del deporte. Vacía, el club no suma nada.
+ */
+export async function guardarCondicionDelClub(
+  clubId: string,
+  deporteId: string,
+  condicion: unknown,
+): Promise<ResultadoSimple> {
+  const error = errorSiNoPuedeElegirDeportesDelClub(await cargarSesion(), clubId);
+  if (error) return { ok: false, error };
+
+  const validacion = validarCondicion(condicion);
+  if (!validacion.ok) return { ok: false, error: validacion.error };
+
+  const supabase = await supabaseServidor();
+  const { data, error: errorBase } = await supabase
+    .from("club_deporte")
+    .update({ condicion: validacion.condicion })
+    .eq("club_id", clubId)
+    .eq("deporte_id", deporteId)
+    .select("deporte_id");
+  if (errorBase) {
+    return { ok: false, error: "No se pudo guardar la condición. Probá de nuevo." };
+  }
+  if (!data?.length) {
+    return { ok: false, error: "Ese deporte ya no está en el club." };
   }
 
   await revalidar(clubId);
