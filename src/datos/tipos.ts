@@ -205,16 +205,19 @@ export type Database = {
         Row: {
           club_id: string;
           deporte_id: string;
+          condicion: Json;
           creado_en: string;
         };
         Insert: {
           club_id: string;
           deporte_id: string;
+          condicion?: Json;
           creado_en?: string;
         };
         Update: {
           club_id?: string;
           deporte_id?: string;
+          condicion?: Json;
           creado_en?: string;
         };
         Relationships: [

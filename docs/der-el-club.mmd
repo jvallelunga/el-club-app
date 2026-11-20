@@ -66,6 +66,9 @@
 %% Quitar uno borra la fila. Un deporte borrado no se suma
 %% (interno.es_deporte_activo), pero la fila de un club que ya lo tenía queda.
 %% Suman, quitan y leen el Admin del club y el Super Admin.
+%% club_deporte.condicion (#77) es la condición del club: requisitos que el
+%% club suma a la del deporte, con la misma forma (interno.es_condicion_valida).
+%% Hay que cumplir las dos. La cambian el Admin del club y el Super Admin.
 %% El email del Super Admin no se guarda en el repo: el alta se hace
 %% directo en la base (ver scripts/sembrar-super-admin.sql).
 erDiagram
@@ -149,6 +152,7 @@ erDiagram
     CLUB_DEPORTE {
         uuid club_id PK,FK
         uuid deporte_id PK,FK
+        jsonb condicion
         timestamptz creado_en
     }
     USUARIO {
