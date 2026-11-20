@@ -16,12 +16,13 @@ export type ResultadoGuardarSede =
 export function FormularioSede({
   inicial,
   destino,
-  destinoCreada,
+  rutaSedes,
   guardar,
 }: {
   inicial?: { nombre: string; direccion: string; mapsUrl: string };
   destino: string;
-  destinoCreada?: (id: string) => string;
+  /** Al crear, se va a `${rutaSedes}/${id}`. Es texto y no una función porque la página es un Server Component. */
+  rutaSedes?: string;
   guardar: (formData: FormData) => Promise<ResultadoGuardarSede>;
 }) {
   const router = useRouter();
@@ -57,8 +58,8 @@ export function FormularioSede({
             return;
           }
           const url =
-            resultado.id && destinoCreada
-              ? destinoCreada(resultado.id)
+            resultado.id && rutaSedes
+              ? `${rutaSedes}/${resultado.id}`
               : destino;
           router.push(url);
           router.refresh();

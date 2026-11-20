@@ -3,22 +3,16 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
+import type { ResultadoSimple } from "@/dominio/resultado";
+import { DialogoConfirmar } from "@/ui/compartidos/dialogo-confirmar";
 import { Button } from "@/ui/nativos/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/ui/nativos/dialog";
 
 export function BotonEliminarInstalacion({
   nombre,
   eliminar,
 }: {
   nombre: string;
-  eliminar: () => Promise<{ ok: true } | { ok: false; error: string }>;
+  eliminar: () => Promise<ResultadoSimple>;
 }) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
@@ -26,7 +20,6 @@ export function BotonEliminarInstalacion({
   const [pending, startTransition] = useTransition();
 
   function confirmar() {
-    if (pending) return;
     startTransition(async () => {
       const resultado = await eliminar();
       // Cerrar siempre: el error se muestra junto al botón, fuera del diálogo.
@@ -58,39 +51,15 @@ export function BotonEliminarInstalacion({
         </p>
       ) : null}
 
-      <Dialog
-        open={abierto}
-        onOpenChange={(valor) => {
-          if (!pending) setAbierto(valor);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>¿Eliminar «{nombre}»?</DialogTitle>
-            <DialogDescription>
-              Esta acción no se puede deshacer.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setAbierto(false)}
-              disabled={pending}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={confirmar}
-              disabled={pending}
-            >
-              {pending ? "Eliminando…" : "Eliminar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DialogoConfirmar
+        abierto={abierto}
+        onCerrar={() => setAbierto(false)}
+        titulo={`¿Eliminar «${nombre}»?`}
+        accion="Eliminar"
+        accionPendiente="Eliminando…"
+        pendiente={pending}
+        onConfirmar={confirmar}
+      />
     </div>
   );
 }

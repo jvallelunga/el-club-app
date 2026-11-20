@@ -201,6 +201,42 @@ export type Database = {
           },
         ];
       };
+      club_deporte: {
+        Row: {
+          club_id: string;
+          deporte_id: string;
+          condicion: Json;
+          creado_en: string;
+        };
+        Insert: {
+          club_id: string;
+          deporte_id: string;
+          condicion?: Json;
+          creado_en?: string;
+        };
+        Update: {
+          club_id?: string;
+          deporte_id?: string;
+          condicion?: Json;
+          creado_en?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "club_deporte_club_id_fkey";
+            columns: ["club_id"];
+            isOneToOne: false;
+            referencedRelation: "club";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "club_deporte_deporte_id_fkey";
+            columns: ["deporte_id"];
+            isOneToOne: false;
+            referencedRelation: "deporte";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       club_red_social: {
         Row: {
           id: string;
@@ -311,6 +347,39 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      deporte: {
+        Row: {
+          id: string;
+          nombre: string;
+          icono: string;
+          descripcion: string | null;
+          condicion: Json;
+          borrado_en: string | null;
+          creado_en: string;
+          actualizado_en: string;
+        };
+        Insert: {
+          id?: string;
+          nombre: string;
+          icono: string;
+          descripcion?: string | null;
+          condicion?: Json;
+          borrado_en?: string | null;
+          creado_en?: string;
+          actualizado_en?: string;
+        };
+        Update: {
+          id?: string;
+          nombre?: string;
+          icono?: string;
+          descripcion?: string | null;
+          condicion?: Json;
+          borrado_en?: string | null;
+          creado_en?: string;
+          actualizado_en?: string;
+        };
+        Relationships: [];
       };
       elemento_predio: {
         Row: {

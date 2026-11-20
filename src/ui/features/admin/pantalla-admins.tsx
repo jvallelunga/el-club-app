@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import type { ResultadoSimple } from "@/dominio/resultado";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/ui/nativos/button";
 import { Input } from "@/ui/nativos/input";
@@ -88,9 +89,9 @@ export function PantallaAdminsReal({
       }
     | { ok: false; error: string }
   >;
-  quitar: (usuarioId: string) => Promise<{ ok: true } | { ok: false; error: string }>;
-  cancelar: (id: string) => Promise<{ ok: true } | { ok: false; error: string }>;
-  reenviar: (id: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+  quitar: (usuarioId: string) => Promise<ResultadoSimple>;
+  cancelar: (id: string) => Promise<ResultadoSimple>;
+  reenviar: (id: string) => Promise<ResultadoSimple>;
 }) {
   const router = useRouter();
   const pathname = usePathname();

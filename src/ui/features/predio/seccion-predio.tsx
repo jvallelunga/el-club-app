@@ -25,7 +25,7 @@ import {
 import type { DatosPredio, InstalacionDeLaSede, OrigenInicial } from "@/dominio/predio";
 import type { PredioEnVisor } from "@/dominio/predio-3d";
 import { ayudaVisor, MarcoVisorPredio } from "./bloque-predio";
-import type { ResultadoGuardarPredio } from "./editor-predio";
+import type { ResultadoSimple } from "@/dominio/resultado";
 
 const EditorPredio = dynamic(() => import("./editor-predio").then((m) => m.EditorPredio), {
   ssr: false,
@@ -55,7 +55,7 @@ export function SeccionPredio({
   /** Lo que muestra el visor 3D, o null si el predio no está armado. */
   visor: PredioEnVisor | null;
   origenInicial: OrigenInicial;
-  guardar: (datos: DatosPredio) => Promise<ResultadoGuardarPredio>;
+  guardar: (datos: DatosPredio) => Promise<ResultadoSimple>;
 }) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);

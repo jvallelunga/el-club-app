@@ -3,7 +3,9 @@ import {
   destinoTrasIngreso,
   errorAlQuitarAdmin,
   errorSiNoPuedeAdministrarAdmins,
+  errorSiNoPuedeAdministrarDeportes,
   errorSiNoPuedeEditarClub,
+  errorSiNoPuedeElegirDeportesDelClub,
   errorSiNoPuedeEditarPredio,
   puedeAdministrarClub,
   puedeEditarRutasDelClub,
@@ -194,5 +196,38 @@ describe("errorSiNoPuedeEditarPredio", () => {
 
   it("sin sesión pide ingresar", () => {
     expect(errorSiNoPuedeEditarPredio(null)).toMatch(/ingresar/);
+  });
+});
+
+describe("errorSiNoPuedeAdministrarDeportes", () => {
+  it("solo el Super Admin administra el catálogo", () => {
+    expect(errorSiNoPuedeAdministrarDeportes(sesion({ esSuperAdmin: true }))).toBeNull();
+  });
+
+  it("un Admin de un club no lo administra", () => {
+    expect(errorSiNoPuedeAdministrarDeportes(sesion({ membresias: [norte] }))).toMatch(
+      /Super Admin/,
+    );
+  });
+
+  it("sin sesión pide ingresar", () => {
+    expect(errorSiNoPuedeAdministrarDeportes(null)).toMatch(/ingresar/);
+  });
+});
+
+describe("errorSiNoPuedeElegirDeportesDelClub", () => {
+  it("el Admin del club y el Super Admin eligen los deportes", () => {
+    expect(errorSiNoPuedeElegirDeportesDelClub(sesion({ membresias: [norte] }), norte.clubId)).toBeNull();
+    expect(errorSiNoPuedeElegirDeportesDelClub(sesion({ esSuperAdmin: true }), norte.clubId)).toBeNull();
+  });
+
+  it("el Admin de otro club no", () => {
+    expect(
+      errorSiNoPuedeElegirDeportesDelClub(sesion({ membresias: [norte] }), "otro-club"),
+    ).toMatch(/permiso/);
+  });
+
+  it("sin sesión pide ingresar", () => {
+    expect(errorSiNoPuedeElegirDeportesDelClub(null, norte.clubId)).toMatch(/ingresar/);
   });
 });

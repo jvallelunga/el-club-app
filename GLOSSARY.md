@@ -56,3 +56,33 @@ Texto corto, de hasta 280 caracteres y sin formato, que se ve en la leyenda y al
 
 **Predio armado**:
 Un predio con área y al menos una instalación ubicada. Solo un predio armado se muestra en el club.
+
+## Deportes
+
+**Deporte**:
+Lo que se juega en un club, con nombre, ícono y descripción; por ejemplo «Rugby masculino». Lo crea el Super Admin y cada club elige los suyos.
+
+**Catálogo de deportes**:
+Todos los deportes que creó el Super Admin. Es el mismo para todos los clubes.
+_Avoid_: lista de deportes, tipos de deporte
+
+**Deportes del club**:
+Los deportes del catálogo que eligió un club. Los elige su Admin: sumar un deporte lo agrega al club y quitarlo lo saca (con confirmación). Si el Super Admin borra del catálogo un deporte que el club tenía, el club lo sigue viendo, marcado como borrado, y no lo puede volver a sumar.
+_Avoid_: deportes habilitados, deportes activos
+
+**Condición**:
+Lo que tiene que cumplir un socio para anotarse, por ejemplo en un deporte: chequeos unidos por Y (todos) u O (alguno), con como máximo un subnivel, un grupo de chequeos con su propio Y/O. Sin chequeos, puede anotarse cualquier socio. Se lee en texto: «Masculino y 16 años o más». Es la misma para deportes, clubes y categorías.
+_Avoid_: requisito, regla, filtro
+
+**Condición del club**:
+La condición que un club le suma a un deporte que eligió, por ejemplo «6 años o más» en un deporte que dice «hasta 12 años». La carga su Admin. Solo agrega chequeos: hay que cumplir la del deporte y la del club, así que no puede aflojar la del Super Admin. Sin chequeos, el club no suma nada. Quitar el deporte del club la borra.
+_Avoid_: condición propia, condición local
+
+**Condición efectiva**:
+Todo lo que tiene que cumplir un socio para anotarse en un deporte de un club: la condición del deporte y la del club (y, con las categorías, la de la categoría). Se lee «Hasta 12 años, y además 6 años o más».
+
+**Chequeo**:
+Una pregunta de una condición sobre un dato del socio: el sexo, la edad que cumple en el año (año actual menos año de nacimiento) o el año de nacimiento. La edad y el año llevan desde, hasta o los dos.
+
+**Deporte borrado**:
+Un deporte que el Super Admin sacó del catálogo. No desaparece (soft delete): queda en «Ver borrados», ya no se edita y los clubes no lo pueden elegir.
