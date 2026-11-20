@@ -4,7 +4,14 @@
  * acepta esas claves (deporte_icono_check).
  */
 
-import { validarCondicion, type Condicion } from "./condicion";
+import {
+  CONDICION_VACIA,
+  describirCondicion,
+  describirCondicionEnFrase,
+  esCondicionVacia,
+  validarCondicion,
+  type Condicion,
+} from "./condicion";
 import { textoOpcional } from "./contacto";
 
 /** El set de íconos, en el orden en que se ofrecen. Cada clave tiene su ícono de lucide en `ui`. */
@@ -135,8 +142,14 @@ export function separarBorrados(deportes: Deporte[]): {
   };
 }
 
-/** Un deporte como lo ve un club: `enClub` dice si el club lo eligió. */
-export type DeporteDelClub = Deporte & { enClub: boolean };
+/** Un deporte que eligió el club, con la condición que el club le suma (#77). */
+export type DeporteElegido = { deporteId: string; condicion: Condicion };
+
+/**
+ * Un deporte como lo ve un club: `enClub` dice si el club lo eligió y
+ * `condicionClub` es lo que el club le suma (vacía si no lo eligió).
+ */
+export type DeporteDelClub = Deporte & { enClub: boolean; condicionClub: Condicion };
 
 /**
  * La lista de deportes de la pantalla del club: todo el catálogo activo, con
@@ -145,14 +158,32 @@ export type DeporteDelClub = Deporte & { enClub: boolean };
  */
 export function deportesDelClub(
   catalogo: Deporte[],
-  idsDelClub: readonly string[],
+  elegidos: readonly DeporteElegido[],
 ): DeporteDelClub[] {
-  const delClub = new Set(idsDelClub);
+  const delClub = new Map(elegidos.map((elegido) => [elegido.deporteId, elegido.condicion]));
+  const comoDelClub = (deporte: Deporte): DeporteDelClub => ({
+    ...deporte,
+    enClub: delClub.has(deporte.id),
+    condicionClub: delClub.get(deporte.id) ?? CONDICION_VACIA,
+  });
   const { activos, borrados } = separarBorrados(catalogo);
   return [
-    ...activos.map((deporte) => ({ ...deporte, enClub: delClub.has(deporte.id) })),
-    ...borrados
-      .filter((deporte) => delClub.has(deporte.id))
-      .map((deporte) => ({ ...deporte, enClub: true })),
+    ...activos.map(comoDelClub),
+    ...borrados.filter((deporte) => delClub.has(deporte.id)).map(comoDelClub),
   ];
+}
+
+/** Cómo empieza la línea de la lista si el deporte no pide nada pero el club sí. */
+const SIN_CONDICION_DEL_DEPORTE = "Cualquier socio";
+
+/**
+ * La línea de la lista: «Hasta 12 años · Club: 6 años o más». Si el club no
+ * suma nada (o no eligió el deporte), solo la del deporte.
+ */
+export function textoCondicionEnElClub(deporte: DeporteDelClub): string {
+  if (esCondicionVacia(deporte.condicionClub)) return describirCondicion(deporte.condicion);
+  const delDeporte = esCondicionVacia(deporte.condicion)
+    ? SIN_CONDICION_DEL_DEPORTE
+    : describirCondicion(deporte.condicion);
+  return `${delDeporte} · Club: ${describirCondicionEnFrase(deporte.condicionClub)}`;
 }

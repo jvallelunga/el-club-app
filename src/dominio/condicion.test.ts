@@ -6,8 +6,11 @@ import {
   cambiarChequeo,
   cambiarConector,
   CONDICION_VACIA,
+  condicionEfectiva,
   cumpleCondicion,
+  cumpleCondicionEfectiva,
   describirCondicion,
+  describirCondicionEfectiva,
   edadEnElAnio,
   quitarItem,
   TEXTO_SIN_CONDICION,
@@ -182,6 +185,70 @@ describe("describirCondicion", () => {
     expect(texto({ campo: "anio", desde: 2010, hasta: 2012 })).toBe("Nacidos de 2010 a 2012");
     expect(texto({ campo: "anio", desde: 2010, hasta: 2010 })).toBe("Nacidos en 2010");
     expect(texto({ campo: "sexo", valor: "F" })).toBe("Femenino");
+  });
+});
+
+describe("condición efectiva", () => {
+  const hasta12: Condicion = { conector: "Y", items: [{ campo: "edad", hasta: 12 }] };
+  const desde6: Condicion = { conector: "Y", items: [{ campo: "edad", desde: 6 }] };
+
+  it("pide cumplir todas las condiciones: la del deporte y la del club", () => {
+    const efectiva = condicionEfectiva(hasta12, desde6);
+    expect(cumpleCondicionEfectiva(efectiva, persona("M", "2016-01-01"), 2026)).toBe(true);
+    // Cumple la del deporte, no la del club.
+    expect(cumpleCondicionEfectiva(efectiva, persona("M", "2021-01-01"), 2026)).toBe(false);
+    // Cumple la del club, no la del deporte.
+    expect(cumpleCondicionEfectiva(efectiva, persona("M", "2010-01-01"), 2026)).toBe(false);
+  });
+
+  it("no afloja una condición con O: cada una se cumple por separado", () => {
+    // Con un solo «O» arriba, un varón de 30 cumpliría; juntas con Y, no.
+    const efectiva = condicionEfectiva(natacionMaster, {
+      conector: "Y",
+      items: [{ campo: "sexo", valor: "F" }],
+    });
+    expect(cumpleCondicionEfectiva(efectiva, persona("M", "1996-01-01"), 2026)).toBe(false);
+    expect(cumpleCondicionEfectiva(efectiva, persona("F", "1996-01-01"), 2026)).toBe(true);
+  });
+
+  it("sin condición del club, queda la del deporte", () => {
+    const efectiva = condicionEfectiva(hasta12, CONDICION_VACIA);
+    expect(efectiva).toEqual([hasta12]);
+    expect(cumpleCondicionEfectiva(efectiva, persona("F", "2010-01-01"), 2026)).toBe(false);
+    expect(describirCondicionEfectiva(efectiva)).toBe("Hasta 12 años");
+  });
+
+  it("sin condición del deporte, queda la del club", () => {
+    const efectiva = condicionEfectiva(CONDICION_VACIA, desde6);
+    expect(efectiva).toEqual([desde6]);
+    expect(cumpleCondicionEfectiva(efectiva, persona("F", "2021-01-01"), 2026)).toBe(false);
+    expect(describirCondicionEfectiva(efectiva)).toBe("6 años o más");
+  });
+
+  it("sin ninguna, puede anotarse cualquier socio", () => {
+    const efectiva = condicionEfectiva(CONDICION_VACIA, CONDICION_VACIA);
+    expect(efectiva).toEqual([]);
+    expect(cumpleCondicionEfectiva(efectiva, persona("F", "1950-01-01"), 2026)).toBe(true);
+    expect(describirCondicionEfectiva(efectiva)).toBe(TEXTO_SIN_CONDICION);
+  });
+
+  it("se lee como la primera «y además» las siguientes", () => {
+    expect(describirCondicionEfectiva(condicionEfectiva(hasta12, desde6))).toBe(
+      "Hasta 12 años, y además 6 años o más",
+    );
+    expect(describirCondicionEfectiva(condicionEfectiva(masculino16, natacionMaster))).toBe(
+      "Masculino y 16 años o más, y además 25 años o más o (femenino y 20 años o más)",
+    );
+  });
+
+  it("suma más de dos condiciones (la de la categoría, #57)", () => {
+    const masculino: Condicion = { conector: "Y", items: [{ campo: "sexo", valor: "M" }] };
+    const efectiva = condicionEfectiva(hasta12, desde6, masculino);
+    expect(cumpleCondicionEfectiva(efectiva, persona("M", "2016-01-01"), 2026)).toBe(true);
+    expect(cumpleCondicionEfectiva(efectiva, persona("F", "2016-01-01"), 2026)).toBe(false);
+    expect(describirCondicionEfectiva(efectiva)).toBe(
+      "Hasta 12 años, y además 6 años o más, y además masculino",
+    );
   });
 });
 

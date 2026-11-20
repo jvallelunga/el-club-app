@@ -1,18 +1,20 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { CONDICION_VACIA } from "./condicion";
+import { CONDICION_VACIA, type Condicion } from "./condicion";
 import {
   deporteParaGuardar,
   esClaveIconoDeporte,
   ICONO_DEPORTE_POR_DEFECTO,
   deportesDelClub,
+  textoCondicionEnElClub,
   ICONOS_DEPORTE,
   separarBorrados,
   textoClubes,
   textoUso,
   validarDeporte,
   type Deporte,
+  type DeporteElegido,
 } from "./deportes";
 
 describe("íconos de deporte", () => {
@@ -136,20 +138,33 @@ describe("separarBorrados", () => {
   });
 });
 
+const deporte = (
+  nombre: string,
+  borradoEn: string | null = null,
+  condicion: Condicion = CONDICION_VACIA,
+): Deporte => ({
+  id: nombre,
+  nombre,
+  icono: "trofeo",
+  descripcion: "",
+  condicion,
+  borradoEn,
+});
+
+const elegido = (deporteId: string, condicion: Condicion = CONDICION_VACIA): DeporteElegido => ({
+  deporteId,
+  condicion,
+});
+
+const hasta12: Condicion = { conector: "Y", items: [{ campo: "edad", hasta: 12 }] };
+const desde6: Condicion = { conector: "Y", items: [{ campo: "edad", desde: 6 }] };
+
 describe("deportesDelClub", () => {
-  const deporte = (nombre: string, borradoEn: string | null = null): Deporte => ({
-    id: nombre,
-    nombre,
-    icono: "trofeo",
-    descripcion: "",
-    condicion: CONDICION_VACIA,
-    borradoEn,
-  });
 
   it("ofrece todo el catálogo activo, marcando los que el club ya tiene", () => {
     const lista = deportesDelClub(
       [deporte("Rugby"), deporte("Hockey"), deporte("Atletismo")],
-      ["Hockey"],
+      [elegido("Hockey")],
     );
     expect(lista.map((d) => [d.nombre, d.enClub])).toEqual([
       ["Atletismo", false],
@@ -165,7 +180,7 @@ describe("deportesDelClub", () => {
         deporte("Rugby"),
         deporte("Básquet", "2026-11-18T12:00:00Z"),
       ],
-      ["Vóley"],
+      [elegido("Vóley")],
     );
     expect(lista.map((d) => [d.nombre, d.enClub, d.borradoEn !== null])).toEqual([
       ["Rugby", false, false],
@@ -173,10 +188,47 @@ describe("deportesDelClub", () => {
     ]);
   });
 
+  it("trae la condición del club de cada deporte elegido", () => {
+    const lista = deportesDelClub(
+      [deporte("Rugby", null, hasta12), deporte("Hockey")],
+      [elegido("Rugby", desde6)],
+    );
+    expect(lista.map((d) => [d.nombre, d.condicionClub])).toEqual([
+      ["Hockey", CONDICION_VACIA],
+      ["Rugby", desde6],
+    ]);
+  });
+
   it("ignora ids del club que no están en el catálogo", () => {
-    expect(deportesDelClub([deporte("Rugby")], ["Fantasma"]).map((d) => d.nombre)).toEqual([
+    expect(deportesDelClub([deporte("Rugby")], [elegido("Fantasma")]).map((d) => d.nombre)).toEqual([
       "Rugby",
     ]);
+  });
+});
+
+const delClub = (condicionDeporte: Condicion, condicionClub: Condicion) =>
+  deportesDelClub([deporte("Rugby", null, condicionDeporte)], [elegido("Rugby", condicionClub)])[0];
+
+describe("textoCondicionEnElClub", () => {
+  it("muestra la del deporte y, si el club sumó una, «· Club: …»", () => {
+    expect(textoCondicionEnElClub(delClub(hasta12, desde6))).toBe(
+      "Hasta 12 años · Club: 6 años o más",
+    );
+  });
+
+  it("sin condición del club, solo la del deporte", () => {
+    expect(textoCondicionEnElClub(delClub(hasta12, CONDICION_VACIA))).toBe("Hasta 12 años");
+  });
+
+  it("un deporte que el club no eligió muestra solo la del deporte", () => {
+    const [fuera] = deportesDelClub([deporte("Rugby", null, hasta12)], []);
+    expect(textoCondicionEnElClub(fuera)).toBe("Hasta 12 años");
+  });
+
+  it("sin condición del deporte, dice que es cualquier socio", () => {
+    expect(textoCondicionEnElClub(delClub(CONDICION_VACIA, desde6))).toBe(
+      "Cualquier socio · Club: 6 años o más",
+    );
   });
 });
 

@@ -2,13 +2,14 @@ import { notFound } from "next/navigation";
 import { etiquetaDeportesDelClub, ShellAdmin } from "@/ui/compartidos/shell-admin";
 import { DeportesDelClub } from "@/ui/features/deportes/deportes-del-club";
 import {
+  guardarCondicionDelClub,
   quitarDeporteDelClub,
   sumarDeporteAlClub,
 } from "@/datos/comandos/deportes-del-club";
 import { adminDelClubRequerido, sesionRequerida } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
 import { listarDeportes } from "@/datos/consultas/deportes";
-import { idsDeportesDelClub } from "@/datos/consultas/deportes-del-club";
+import { deportesElegidosPorElClub } from "@/datos/consultas/deportes-del-club";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 import { deportesDelClub } from "@/dominio/deportes";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
@@ -27,9 +28,9 @@ export default async function PaginaDeportesDelClub({
   const club = await clubPorSlug(slug);
   if (!club) notFound();
   await adminDelClubRequerido(club.id, ruta);
-  const [catalogo, idsDelClub] = await Promise.all([
+  const [catalogo, elegidos] = await Promise.all([
     listarDeportes(),
-    idsDeportesDelClub(club.id),
+    deportesElegidosPorElClub(club.id),
   ]);
 
   const clubShell = {
@@ -54,9 +55,10 @@ export default async function PaginaDeportesDelClub({
     >
       <DeportesDelClub
         nombreClub={club.nombre}
-        deportes={deportesDelClub(catalogo, idsDelClub)}
+        deportes={deportesDelClub(catalogo, elegidos)}
         sumar={sumarDeporteAlClub.bind(null, club.id)}
         quitar={quitarDeporteDelClub.bind(null, club.id)}
+        guardarCondicion={guardarCondicionDelClub.bind(null, club.id)}
       />
     </ShellAdmin>
   );

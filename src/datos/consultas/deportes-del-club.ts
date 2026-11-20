@@ -1,17 +1,28 @@
 import "server-only";
 
-import type { ClubesPorDeporte } from "@/dominio/deportes";
+import { CONDICION_VACIA, validarCondicion } from "@/dominio/condicion";
+import type { ClubesPorDeporte, DeporteElegido } from "@/dominio/deportes";
 import { supabaseServidor } from "../supabase-servidor";
 
-/** Los ids de los deportes que eligió el club, borrados del catálogo incluidos. */
-export async function idsDeportesDelClub(clubId: string): Promise<string[]> {
+/**
+ * Los deportes que eligió el club, borrados del catálogo incluidos, con la
+ * condición que el club les suma (#77).
+ */
+export async function deportesElegidosPorElClub(clubId: string): Promise<DeporteElegido[]> {
   const supabase = await supabaseServidor();
   const { data, error } = await supabase
     .from("club_deporte")
-    .select("deporte_id")
+    .select("deporte_id, condicion")
     .eq("club_id", clubId);
   if (error) throw error;
-  return (data ?? []).map((fila) => fila.deporte_id);
+  return (data ?? []).map((fila) => {
+    // La base ya valida la forma (club_deporte_condicion_check); esto solo tipa el jsonb.
+    const condicion = validarCondicion(fila.condicion);
+    return {
+      deporteId: fila.deporte_id,
+      condicion: condicion.ok ? condicion.condicion : CONDICION_VACIA,
+    };
+  });
 }
 
 /**

@@ -3,8 +3,9 @@
  * nacimiento de una persona, unidos por Y u O, con como máximo un subnivel
  * (un grupo de chequeos con su propio Y/O, sin otro grupo adentro).
  *
- * No depende de quién la usa: hoy la tiene el deporte; la van a usar la
- * condición del club (#77) y las categorías (#57). La base valida la misma
+ * No depende de quién la usa: la tienen el deporte y el club (#77), y la van
+ * a usar las categorías (#57). Para anotarse hay que cumplirlas todas: ver
+ * `condicionEfectiva`. La base valida la misma
  * forma con interno.es_condicion_valida.
  */
 
@@ -64,6 +65,11 @@ export const RANGOS: Record<ChequeoRango["campo"], Rango> = {
 
 export function esSubgrupo(item: Chequeo | Subgrupo): item is Subgrupo {
   return "items" in item;
+}
+
+/** Sin chequeos: puede anotarse cualquier socio. */
+export function esCondicionVacia(condicion: Condicion): boolean {
+  return condicion.items.length === 0;
 }
 
 export function tieneSubgrupo(condicion: Condicion): boolean {
@@ -222,7 +228,7 @@ export function cumpleCondicion(
   persona: Persona,
   anioActual: number,
 ): boolean {
-  if (condicion.items.length === 0) return true;
+  if (esCondicionVacia(condicion)) return true;
   return combinar(
     condicion.conector,
     condicion.items.map((item) =>
@@ -262,10 +268,13 @@ function unir(conector: Conector, partes: string[]): string {
   return partes.join(conector === "Y" ? " y " : " o ");
 }
 
-/** «Masculino y 16 años o más», «25 años o más o (femenino y 20 años o más)». */
-export function describirCondicion(condicion: Condicion): string {
-  if (condicion.items.length === 0) return TEXTO_SIN_CONDICION;
-  const texto = unir(
+function conMayuscula(texto: string): string {
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+/** El texto de una condición con chequeos, en minúscula, para seguir una frase. */
+export function describirCondicionEnFrase(condicion: Condicion): string {
+  return unir(
     condicion.conector,
     condicion.items.map((item) =>
       esSubgrupo(item)
@@ -273,7 +282,44 @@ export function describirCondicion(condicion: Condicion): string {
         : describirChequeo(item),
     ),
   );
-  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+/** «Masculino y 16 años o más», «25 años o más o (femenino y 20 años o más)». */
+export function describirCondicion(condicion: Condicion): string {
+  if (esCondicionVacia(condicion)) return TEXTO_SIN_CONDICION;
+  return conMayuscula(describirCondicionEnFrase(condicion));
+}
+
+// ---------------------------------------------------------------------------
+// Condición efectiva (#77): varias condiciones que hay que cumplir todas.
+// ---------------------------------------------------------------------------
+
+/**
+ * Lo que de verdad tiene que cumplir un socio para anotarse: la condición del
+ * deporte Y la del club (#77) y, con #57, la de la categoría. No se junta en
+ * una sola `Condicion`: cada una puede tener su O y su subgrupo, y unirlas
+ * pediría un segundo subnivel. Va en orden y sin las vacías.
+ */
+export type CondicionEfectiva = readonly Condicion[];
+
+/** Junta condiciones con Y, en el orden dado: primero la más general (el deporte). */
+export function condicionEfectiva(...condiciones: Condicion[]): CondicionEfectiva {
+  return condiciones.filter((condicion) => !esCondicionVacia(condicion));
+}
+
+/** Tiene que cumplir cada una. Sin ninguna, la cumple cualquiera. */
+export function cumpleCondicionEfectiva(
+  efectiva: CondicionEfectiva,
+  persona: Persona,
+  anioActual: number,
+): boolean {
+  return efectiva.every((condicion) => cumpleCondicion(condicion, persona, anioActual));
+}
+
+/** «Hasta 12 años, y además 6 años o más». */
+export function describirCondicionEfectiva(efectiva: CondicionEfectiva): string {
+  if (efectiva.length === 0) return TEXTO_SIN_CONDICION;
+  return conMayuscula(efectiva.map(describirCondicionEnFrase).join(", y además "));
 }
 
 // ---------------------------------------------------------------------------
