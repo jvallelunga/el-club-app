@@ -1,7 +1,8 @@
 -- Pruebas de RLS de la condición del club (#77).
 -- El Admin del club y el Super Admin cambian la condición que el club le suma
 -- a un deporte; el Admin de otro club no la lee ni la cambia. La base valida
--- la forma (interno.es_condicion_valida) y solo deja cambiar esa columna.
+-- la forma (interno.es_condicion_valida), solo deja cambiar esa columna y no
+-- la deja cambiar si el deporte se borró del catálogo.
 -- Corre dentro de una transacción que hace rollback. No deja datos atrás.
 
 begin;
@@ -209,6 +210,27 @@ begin
   end if;
 end;
 $$;
+
+-- Si el Super Admin borra el deporte del catálogo, la condición del club
+-- queda como estaba: nadie la cambia.
+select pg_temp.entrar('super');
+update public.deporte set borrado_en = now() where id = pg_temp.id('rugby');
+select pg_temp.salir();
+
+select pg_temp.entrar('admin');
+do $$
+declare
+  v_n int;
+begin
+  update public.club_deporte set condicion = '{"conector": "Y", "items": []}'
+  where club_id = pg_temp.id('club') and deporte_id = pg_temp.id('rugby');
+  get diagnostics v_n = row_count;
+  if v_n <> 0 then
+    raise exception 'No debería poder cambiarse la condición del club de un deporte borrado';
+  end if;
+end;
+$$;
+select pg_temp.salir();
 
 select 'Pruebas de RLS de la condición del club: ok' as resultado;
 

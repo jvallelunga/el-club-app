@@ -6,12 +6,11 @@
 
 import {
   CONDICION_VACIA,
-  condicionEfectiva,
   describirCondicion,
-  describirEnMinuscula,
+  describirCondicionEnFrase,
+  esCondicionVacia,
   validarCondicion,
   type Condicion,
-  type CondicionEfectiva,
 } from "./condicion";
 import { textoOpcional } from "./contacto";
 
@@ -174,15 +173,17 @@ export function deportesDelClub(
   ];
 }
 
-/** Para anotarse en el deporte en este club: la condición del deporte Y la del club. */
-export function condicionEfectivaEnElClub(deporte: DeporteDelClub): CondicionEfectiva {
-  return condicionEfectiva(deporte.condicion, deporte.condicionClub);
-}
+/** Cómo empieza la línea de la lista si el deporte no pide nada pero el club sí. */
+const SIN_CONDICION_DEL_DEPORTE = "Cualquier socio";
 
-/** La línea de la lista: «Hasta 12 años · Club: 6 años o más». */
+/**
+ * La línea de la lista: «Hasta 12 años · Club: 6 años o más». Si el club no
+ * suma nada (o no eligió el deporte), solo la del deporte.
+ */
 export function textoCondicionEnElClub(deporte: DeporteDelClub): string {
-  if (deporte.condicionClub.items.length === 0) return describirCondicion(deporte.condicion);
-  const delDeporte =
-    deporte.condicion.items.length === 0 ? "Cualquier socio" : describirCondicion(deporte.condicion);
-  return `${delDeporte} · Club: ${describirEnMinuscula(deporte.condicionClub)}`;
+  if (esCondicionVacia(deporte.condicionClub)) return describirCondicion(deporte.condicion);
+  const delDeporte = esCondicionVacia(deporte.condicion)
+    ? SIN_CONDICION_DEL_DEPORTE
+    : describirCondicion(deporte.condicion);
+  return `${delDeporte} · Club: ${describirCondicionEnFrase(deporte.condicionClub)}`;
 }

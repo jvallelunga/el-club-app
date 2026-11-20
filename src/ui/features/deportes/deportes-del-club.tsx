@@ -6,6 +6,7 @@ import {
   condicionEfectiva,
   describirCondicion,
   describirCondicionEfectiva,
+  esCondicionVacia,
   validarCondicion,
   type Condicion,
 } from "@/dominio/condicion";
@@ -83,7 +84,7 @@ export function DeportesDelClub({
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <p className="max-w-xl text-sm text-muted-foreground">
         Elegí del catálogo los deportes que se practican en {nombreClub}. Tocá un deporte
-        del club para sumarle requisitos propios.
+        del club para sumarle una condición del club.
       </p>
 
       {errorSumar ? (
@@ -109,9 +110,7 @@ export function DeportesDelClub({
                 <span className="block text-xs text-muted-foreground">
                   {borrado
                     ? "Borrado del catálogo: ya no se puede volver a sumar."
-                    : deporte.enClub
-                      ? textoCondicionEnElClub(deporte)
-                      : describirCondicion(deporte.condicion)}
+                    : textoCondicionEnElClub(deporte)}
                 </span>
               </>
             );
@@ -192,7 +191,7 @@ export function DeportesDelClub({
         onConfirmar={confirmarQuitar}
       >
         <p>Deja de estar entre los deportes del club. Lo podés volver a sumar del catálogo.</p>
-        {aQuitar && aQuitar.condicionClub.items.length > 0 ? (
+        {aQuitar && !esCondicionVacia(aQuitar.condicionClub) ? (
           <p>
             También se pierde la condición que sumó el club: «
             {describirCondicion(aQuitar.condicionClub)}».
@@ -247,7 +246,7 @@ function PanelCondicionClub({
           {deporte.nombre}
         </SheetTitle>
         <SheetDescription>
-          {deporte.descripcion || `Los requisitos para anotarse en ${nombreClub}.`}
+          {deporte.descripcion || `La condición para anotarse en ${nombreClub}.`}
         </SheetDescription>
       </SheetHeader>
 
@@ -265,7 +264,7 @@ function PanelCondicionClub({
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium">Condición del club</span>
           <p className="text-xs text-muted-foreground">
-            Requisitos que suma {nombreClub}. Se suman a los del deporte: hay que cumplir los dos.
+            Lo que suma {nombreClub} a la del deporte: hay que cumplir las dos.
           </p>
           <EditorCondicion
             condicion={condicion}

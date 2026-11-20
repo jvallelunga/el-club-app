@@ -6,7 +6,6 @@ import {
   deporteParaGuardar,
   esClaveIconoDeporte,
   ICONO_DEPORTE_POR_DEFECTO,
-  condicionEfectivaEnElClub,
   deportesDelClub,
   textoCondicionEnElClub,
   ICONOS_DEPORTE,
@@ -210,16 +209,6 @@ describe("deportesDelClub", () => {
 const delClub = (condicionDeporte: Condicion, condicionClub: Condicion) =>
   deportesDelClub([deporte("Rugby", null, condicionDeporte)], [elegido("Rugby", condicionClub)])[0];
 
-describe("condicionEfectivaEnElClub", () => {
-  it("es la del deporte y después la del club", () => {
-    expect(condicionEfectivaEnElClub(delClub(hasta12, desde6))).toEqual([hasta12, desde6]);
-  });
-
-  it("sin condición del club, es solo la del deporte", () => {
-    expect(condicionEfectivaEnElClub(delClub(hasta12, CONDICION_VACIA))).toEqual([hasta12]);
-  });
-});
-
 describe("textoCondicionEnElClub", () => {
   it("muestra la del deporte y, si el club sumó una, «· Club: …»", () => {
     expect(textoCondicionEnElClub(delClub(hasta12, desde6))).toBe(
@@ -229,6 +218,11 @@ describe("textoCondicionEnElClub", () => {
 
   it("sin condición del club, solo la del deporte", () => {
     expect(textoCondicionEnElClub(delClub(hasta12, CONDICION_VACIA))).toBe("Hasta 12 años");
+  });
+
+  it("un deporte que el club no eligió muestra solo la del deporte", () => {
+    const [fuera] = deportesDelClub([deporte("Rugby", null, hasta12)], []);
+    expect(textoCondicionEnElClub(fuera)).toBe("Hasta 12 años");
   });
 
   it("sin condición del deporte, dice que es cualquier socio", () => {

@@ -67,6 +67,11 @@ export function esSubgrupo(item: Chequeo | Subgrupo): item is Subgrupo {
   return "items" in item;
 }
 
+/** Sin chequeos: puede anotarse cualquier socio. */
+export function esCondicionVacia(condicion: Condicion): boolean {
+  return condicion.items.length === 0;
+}
+
 export function tieneSubgrupo(condicion: Condicion): boolean {
   return condicion.items.some(esSubgrupo);
 }
@@ -223,7 +228,7 @@ export function cumpleCondicion(
   persona: Persona,
   anioActual: number,
 ): boolean {
-  if (condicion.items.length === 0) return true;
+  if (esCondicionVacia(condicion)) return true;
   return combinar(
     condicion.conector,
     condicion.items.map((item) =>
@@ -268,7 +273,7 @@ function conMayuscula(texto: string): string {
 }
 
 /** El texto de una condición con chequeos, en minúscula, para seguir una frase. */
-export function describirEnMinuscula(condicion: Condicion): string {
+export function describirCondicionEnFrase(condicion: Condicion): string {
   return unir(
     condicion.conector,
     condicion.items.map((item) =>
@@ -281,8 +286,8 @@ export function describirEnMinuscula(condicion: Condicion): string {
 
 /** «Masculino y 16 años o más», «25 años o más o (femenino y 20 años o más)». */
 export function describirCondicion(condicion: Condicion): string {
-  if (condicion.items.length === 0) return TEXTO_SIN_CONDICION;
-  return conMayuscula(describirEnMinuscula(condicion));
+  if (esCondicionVacia(condicion)) return TEXTO_SIN_CONDICION;
+  return conMayuscula(describirCondicionEnFrase(condicion));
 }
 
 // ---------------------------------------------------------------------------
@@ -299,7 +304,7 @@ export type CondicionEfectiva = readonly Condicion[];
 
 /** Junta condiciones con Y, en el orden dado: primero la más general (el deporte). */
 export function condicionEfectiva(...condiciones: Condicion[]): CondicionEfectiva {
-  return condiciones.filter((condicion) => condicion.items.length > 0);
+  return condiciones.filter((condicion) => !esCondicionVacia(condicion));
 }
 
 /** Tiene que cumplir cada una. Sin ninguna, la cumple cualquiera. */
@@ -314,7 +319,7 @@ export function cumpleCondicionEfectiva(
 /** «Hasta 12 años, y además 6 años o más». */
 export function describirCondicionEfectiva(efectiva: CondicionEfectiva): string {
   if (efectiva.length === 0) return TEXTO_SIN_CONDICION;
-  return conMayuscula(efectiva.map(describirEnMinuscula).join(", y además "));
+  return conMayuscula(efectiva.map(describirCondicionEnFrase).join(", y además "));
 }
 
 // ---------------------------------------------------------------------------

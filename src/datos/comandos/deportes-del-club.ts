@@ -93,7 +93,8 @@ export async function guardarCondicionDelClub(
     return { ok: false, error: "No se pudo guardar la condición. Probá de nuevo." };
   }
   if (!data?.length) {
-    return { ok: false, error: "Ese deporte ya no está en el club." };
+    // La RLS tampoco deja cambiarla si el deporte se borró del catálogo.
+    return { ok: false, error: "Ese deporte ya no está en el club o se borró del catálogo." };
   }
 
   await revalidar(clubId);

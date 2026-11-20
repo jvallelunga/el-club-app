@@ -75,7 +75,7 @@ Lo que tiene que cumplir un socio para anotarse, por ejemplo en un deporte: cheq
 _Avoid_: requisito, regla, filtro
 
 **Condición del club**:
-La condición que un club le suma a un deporte que eligió, por ejemplo «6 años o más» en un deporte que dice «hasta 12 años». La carga su Admin. Solo agrega requisitos: hay que cumplir la del deporte y la del club, así que no puede aflojar la del Super Admin. Sin chequeos, el club no suma nada. Quitar el deporte del club la borra.
+La condición que un club le suma a un deporte que eligió, por ejemplo «6 años o más» en un deporte que dice «hasta 12 años». La carga su Admin. Solo agrega chequeos: hay que cumplir la del deporte y la del club, así que no puede aflojar la del Super Admin. Sin chequeos, el club no suma nada. Quitar el deporte del club la borra.
 _Avoid_: condición propia, condición local
 
 **Condición efectiva**:
