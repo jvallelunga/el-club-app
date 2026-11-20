@@ -63,7 +63,7 @@ export default async function PaginaNuevaSede({
         </p>
         <FormularioSede
           destino={`/c/${slugClub}/admin/sedes`}
-          destinoCreada={(id) => `/c/${slugClub}/admin/sedes/${id}`}
+          rutaSedes={`/c/${slugClub}/admin/sedes`}
           guardar={guardar}
         />
       </div>
