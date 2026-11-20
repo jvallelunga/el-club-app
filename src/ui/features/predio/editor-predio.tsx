@@ -83,9 +83,11 @@ import {
 // Turbopack no resuelve el worker de MapLibre: va copiado en public/maplibre/.
 maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
-/** Logo de Google para fondos que no son blancos (la foto satelital). */
-const LOGO_GOOGLE =
-  "https://developers.google.com/static/maps/documentation/images/google_on_non_white.png";
+/**
+ * Logo oficial de Google Maps con contorno oscuro, el que se lee sobre la foto
+ * satelital (assets de la política de la Map Tiles API, sin modificar).
+ */
+const LOGO_GOOGLE_MAPS = "/google/google-maps-logo-contorno-oscuro.svg";
 
 const AMARILLO = "#ffd23f";
 
@@ -384,7 +386,6 @@ export function EditorPredio({
   const [trazando, setTrazando] = useState<ClaveTipoLinea | null>(null);
   const [fuente, setFuente] = useState<FuenteSatelital | null>(null);
   const [copyright, setCopyright] = useState("");
-  const [sinLogo, setSinLogo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recienGuardado, setRecienGuardado] = useState(false);
   const [guardando, startGuardar] = useTransition();
@@ -1253,16 +1254,13 @@ export function EditorPredio({
       {/* Atribución: abajo y sin nada encima (términos de la Map Tiles API). */}
       {fuente?.proveedor === "google" ? (
         <>
-          <div className="pointer-events-none absolute bottom-2 left-2">
-            {sinLogo ? (
-              <span className="text-sm font-medium text-white drop-shadow">Google Maps</span>
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element -- logo de Google sin modificar
-              <img src={LOGO_GOOGLE} alt="Google" className="h-[18px] w-auto" onError={() => setSinLogo(true)} />
-            )}
+          {/* Alto entre 16 y 19 y aire libre de 10 a los costados y arriba, 5 abajo. */}
+          <div className="pointer-events-none absolute bottom-[5px] left-[10px]">
+            {/* eslint-disable-next-line @next/next/no-img-element -- logo de Google sin modificar */}
+            <img src={LOGO_GOOGLE_MAPS} alt="Google Maps" className="h-[18px] w-auto" />
           </div>
           <p className="absolute bottom-0 right-0 max-w-[60%] bg-white/80 px-1.5 py-0.5 text-right text-[11px] text-neutral-800">
-            {copyright || "Google"}
+            {copyright || "Google Maps"}
           </p>
         </>
       ) : fuente?.proveedor === "esri" ? (
