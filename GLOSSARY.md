@@ -2,6 +2,27 @@
 
 La app del club: el club organiza sus torneos y, más adelante, su día a día. Las funcionalidades son las mismas para todos los clubes; cada uno personaliza su marca.
 
+## Acceso
+
+**Super Admin**:
+Quien administra la app para todos los clubes: crea clubes y arma el catálogo de deportes. Puede entrar a cualquier club y ahí ve lo mismo que su Admin, más lo que solo hace el Super Admin (por ejemplo, editar el predio).
+
+**Admin**:
+Quien administra un club. Una persona puede ser Admin de varios clubes.
+_Avoid_: administrador del club
+
+**Panel del Super Admin**:
+Donde el Super Admin gestiona lo que es de todos los clubes: Clubes (crear y entrar) y el catálogo de deportes. Solo lo ve el Super Admin.
+_Avoid_: dashboard, sección Super Admin, modo Super Admin
+
+**Panel del club**:
+Donde se gestiona un club: Inicio, Club, Sedes, Deportes y Admins. Es el mismo para su Admin y para el Super Admin. Lo que solo hace el Super Admin aparece únicamente para él, marcado «Solo Super Admin».
+_Avoid_: dashboard, admin del club, modo club
+
+**Selector de panel**:
+Está en la cabecera del menú y sirve para cambiar de panel, como los perfiles de un navegador. Al Super Admin le muestra el Panel del Super Admin y todos los clubes; al Admin, sus clubes. Si alguien tiene un solo panel, la cabecera solo lo muestra.
+_Avoid_: selector de club, switch
+
 ## Sedes y predios
 
 **Sede**:
