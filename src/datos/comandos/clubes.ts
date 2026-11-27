@@ -18,6 +18,7 @@ import {
   errorSiNoPuedeAdministrarAdmins,
   errorSiNoPuedeEditarClub,
   errorSiNoPuedeEliminarClub,
+  MENSAJE_NO_QUITARSE,
   puedeEditarRutasDelClub,
 } from "@/dominio/permisos";
 import { cargarSesion } from "../consultas/sesion";
@@ -476,7 +477,7 @@ export async function quitarAdminClub(
   if (error) {
     if (error.code === "P0001") {
       // La base tampoco deja que un Admin se quite a sí mismo.
-      return { ok: false, error: "No te podés quitar a vos mismo." };
+      return { ok: false, error: MENSAJE_NO_QUITARSE };
     }
     return { ok: false, error: "No se pudo quitar. Probá de nuevo." };
   }
@@ -530,46 +531,43 @@ export async function cancelarInvitacionClub(
 
 /** Soft delete: el club queda, marcado como eliminado. Solo el Super Admin. */
 export async function eliminarClub(clubId: string): Promise<ResultadoSimple> {
-  return marcarClubEliminado(clubId, new Date().toISOString());
-}
-
-/** Deshace la eliminación: el club vuelve a estar activo. Solo el Super Admin. */
-export async function restaurarClub(clubId: string): Promise<ResultadoSimple> {
-  return marcarClubEliminado(clubId, null);
-}
-
-async function marcarClubEliminado(
-  clubId: string,
-  borradoEn: string | null,
-): Promise<ResultadoSimple> {
   const permiso = errorSiNoPuedeEliminarClub(await cargarSesion());
   if (permiso) return { ok: false, error: permiso };
 
   const supabase = await supabaseServidor();
-  const consulta = supabase
+  const { data, error } = await supabase
     .from("club")
-    .update({ borrado_en: borradoEn })
-    .eq("id", clubId);
-  const { data, error } = await (borradoEn
-    ? consulta.is("borrado_en", null)
-    : consulta.not("borrado_en", "is", null)
-  ).select("slug");
-  if (error) {
-    return {
-      ok: false,
-      error: borradoEn
-        ? "No se pudo eliminar el club. Probá de nuevo."
-        : "No se pudo restaurar el club. Probá de nuevo.",
-    };
-  }
-  if (!data?.length) {
-    return {
-      ok: false,
-      error: borradoEn ? "Ese club ya estaba eliminado." : "Ese club ya estaba activo.",
-    };
-  }
+    .update({ borrado_en: new Date().toISOString() })
+    .eq("id", clubId)
+    .is("borrado_en", null)
+    .select("slug");
+  if (error) return { ok: false, error: "No se pudo eliminar el club. Probá de nuevo." };
+  if (!data?.length) return { ok: false, error: "Ese club ya estaba eliminado." };
 
-  revalidatePath("/super-admin");
-  revalidatePath(`/c/${data[0].slug}`, "layout");
+  revalidarClub(data[0].slug);
   return { ok: true };
+}
+
+/** Deshace la eliminación: el club vuelve a estar activo. Solo el Super Admin. */
+export async function restaurarClub(clubId: string): Promise<ResultadoSimple> {
+  const permiso = errorSiNoPuedeEliminarClub(await cargarSesion());
+  if (permiso) return { ok: false, error: permiso };
+
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase
+    .from("club")
+    .update({ borrado_en: null })
+    .eq("id", clubId)
+    .not("borrado_en", "is", null)
+    .select("slug");
+  if (error) return { ok: false, error: "No se pudo restaurar el club. Probá de nuevo." };
+  if (!data?.length) return { ok: false, error: "Ese club ya estaba activo." };
+
+  revalidarClub(data[0].slug);
+  return { ok: true };
+}
+
+function revalidarClub(slug: string) {
+  revalidatePath("/super-admin");
+  revalidatePath(`/c/${slug}`, "layout");
 }

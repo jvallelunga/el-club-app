@@ -116,6 +116,9 @@ export function errorSiNoPuedeAdministrarAdmins(
   return null;
 }
 
+/** El aviso cuando un Admin intenta quitarse a sí mismo (también lo da la base). */
+export const MENSAJE_NO_QUITARSE = "No te podés quitar a vos mismo.";
+
 /**
  * Mensaje si no se puede quitar a ese Admin, o null si se puede. Un Admin
  * puede quitar a los otros Admins del club pero no a sí mismo; el Super
@@ -128,7 +131,7 @@ export function errorAlQuitarAdmin(params: {
 }): string | null {
   if (params.esSuperAdmin) return null;
   if (params.actorUsuarioId === params.objetivoUsuarioId) {
-    return "No te podés quitar a vos mismo.";
+    return MENSAJE_NO_QUITARSE;
   }
   return null;
 }

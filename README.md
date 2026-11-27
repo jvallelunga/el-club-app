@@ -5,8 +5,8 @@ App de gestión de clubes. Es multi-club: todos los clubes tienen las mismas fun
 ## Qué hace hoy
 
 - **Ingreso** solo por invitación, con Google o con un link por email.
-- **Super Admin**: se carga a mano en la base (plantilla en `scripts/sembrar-super-admin.sql`, sin el email real). Crea clubes con nombre, identificador, escudo, colores y dominio opcional, y les asigna Admins.
-- **Admin del club**: edita la estética (nombre, escudo y colores), el contacto y las redes de su club, y agrega o quita otros Admins de ese club (no se puede quitar al último).
+- **Super Admin**: se carga a mano en la base (plantilla en `scripts/sembrar-super-admin.sql`, sin el email real). Crea, edita y elimina clubes (con nombre, identificador, escudo, colores y dominio opcional) y les asigna Admins. Un club eliminado se puede restaurar. Entra a cualquier club y lo usa como su Admin; el selector de panel de la cabecera lo lleva de su panel a un club y de vuelta.
+- **Admin del club**: edita la estética (nombre, escudo y colores), el contacto y las redes de su club, y agrega o quita otros Admins de ese club (no se puede quitar a sí mismo). Si es Admin de varios clubes, cambia de club con el selector de panel.
 - **Sedes del club**, cada una con nombre, dirección, link de Google Maps e instalaciones (tipo, nombre y notas).
 
 Permisos: un Admin opera solo sobre su club; el Super Admin, sobre todos. Está reforzado con RLS en Supabase.

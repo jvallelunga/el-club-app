@@ -22,7 +22,8 @@
 %% Super Admin puede quitar a cualquiera (trigger evitar_quitarse_a_si_mismo).
 %% club.borrado_en es el soft delete de un club: solo el Super Admin lo
 %% completa o lo vacía. Un club eliminado no existe para sus Admins
-%% (interno.es_admin_club da false) ni tiene marca pública.
+%% (interno.es_admin_club, puede_ver_usuario y es_admin_de_algun_club no
+%% lo cuentan), no tiene marca pública y no habilita el link de ingreso.
 %% Un Admin también puede actualizar los datos estéticos de su club
 %% (nombre, escudo_ruta, paleta) y el contacto (telefono, email,
 %% direccion, web y club_red_social). slug y dominio_base solo los

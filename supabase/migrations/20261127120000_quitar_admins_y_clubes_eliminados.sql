@@ -1,4 +1,4 @@
--- Quitar Admins y eliminar clubes (#85).
+-- Quitar Admins y clubes eliminados (#85).
 -- Idempotente. Se aplica solo en el proyecto de desarrollo
 -- (paacpcdurdcmbamdhcmt). No tocar producción.
 --
@@ -92,6 +92,9 @@ as $$
     );
 $$;
 
+comment on function interno.es_admin_club(uuid) is
+  'True si es Super Admin o Admin de ese club, y el club no está eliminado. SECURITY DEFINER para usarla en RLS sin recursión.';
+
 -- Solo el Super Admin cambia el identificador, el dominio o si el club está
 -- eliminado.
 create or replace function interno.impedir_cambio_de_rutas_del_club()
@@ -166,3 +169,103 @@ as $$
     )
   limit 1;
 $$;
+
+comment on function public.marca_publica_del_club(text, text) is
+  'Devuelve la marca pública de un club activo (nombre, escudo, paleta) por slug o dominio base. Un club eliminado no tiene. Para el ingreso y el tema, también sin sesión.';
+
+-- Los Admins de un club eliminado ya no se ven entre sí.
+create or replace function interno.puede_ver_usuario(p_usuario_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = pg_catalog, public
+as $$
+  select
+    p_usuario_id = auth.uid()
+    or exists (
+      select 1
+      from public.super_admin
+      where usuario_id = auth.uid()
+    )
+    or exists (
+      select 1
+      from public.club_miembro yo
+      join public.club_miembro otro on otro.club_id = yo.club_id
+      join public.club c on c.id = yo.club_id
+      where yo.usuario_id = auth.uid()
+        and yo.rol = 'admin'
+        and otro.usuario_id = p_usuario_id
+        and c.borrado_en is null
+    );
+$$;
+
+comment on function interno.puede_ver_usuario(uuid) is
+  'True si puede ver el perfil: es esa persona, es Super Admin, o comparte como Admin un club que no está eliminado.';
+
+-- Ser Admin solo de clubes eliminados no cuenta (por ejemplo, para leer el
+-- catálogo de deportes).
+create or replace function interno.es_admin_de_algun_club()
+returns boolean
+language sql
+stable
+security definer
+set search_path = pg_catalog, public
+as $$
+  select exists (
+    select 1
+    from public.club_miembro m
+    join public.club c on c.id = m.club_id
+    where m.usuario_id = auth.uid()
+      and m.rol = 'admin'
+      and c.borrado_en is null
+  );
+$$;
+
+comment on function interno.es_admin_de_algun_club() is
+  'True si la persona autenticada es Admin de al menos un club que no está eliminado. SECURITY DEFINER para usarla en RLS sin recursión.';
+
+-- Pedir el link de ingreso por email: una invitación o una membresía en un
+-- club eliminado no alcanza.
+create or replace function public.puede_solicitar_ingreso_email(p_email text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = pg_catalog, public
+as $$
+  select
+    p_email is not null
+    and length(trim(p_email)) > 0
+    and (
+      exists (
+        select 1
+        from public.super_admin_invitacion i
+        where i.email = lower(trim(p_email))
+      )
+      or exists (
+        select 1
+        from public.club_invitacion i
+        join public.club c on c.id = i.club_id
+        where i.email = lower(trim(p_email))
+          and c.borrado_en is null
+      )
+      or exists (
+        select 1
+        from public.usuario u
+        join public.super_admin s on s.usuario_id = u.id
+        where u.email = lower(trim(p_email))
+      )
+      or exists (
+        select 1
+        from public.usuario u
+        join public.club_miembro m on m.usuario_id = u.id
+        join public.club c on c.id = m.club_id
+        where u.email = lower(trim(p_email))
+          and c.borrado_en is null
+      )
+    );
+$$;
+
+comment on function public.puede_solicitar_ingreso_email(text) is
+  'True si el email tiene invitación (pendiente o aceptada) a un club activo, es Super Admin o es miembro de un club activo. No expone más datos.';
