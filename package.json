@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
+    "worktree": "bash scripts/levantar-worktree.sh",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

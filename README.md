@@ -54,6 +54,8 @@ npm install
 npm run dev                  # http://localhost:3000
 ```
 
+Para levantar un worktree de `.claude/worktrees`: `npm run worktree` lista los que hay y `npm run worktree <nombre>` levanta uno. Enlaza el `.env.local` de la carpeta principal si falta, usa el Node de `.nvmrc` e instala las dependencias si hace falta.
+
 Otros comandos: `npm run build`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run tipos` (regenera `src/datos/tipos.ts` desde un Supabase local).
 
 Las migraciones y las políticas RLS se prueban en un Postgres 16 común (nunca en Supabase) con `bash scripts/probar-rls.sh`: aplica cada migración dos veces seguidas y corre `supabase/tests/*.sql`. El script explica cómo levantar el Postgres con Docker. Cada push a `desarrollo` o a una rama `issue/*` que trae migraciones las aplica solo en el Supabase de desarrollo (workflow «Migraciones en desarrollo», con `scripts/aplicar-migraciones-desarrollo.sh`); producción, solo con el OK de Jerónimo.
