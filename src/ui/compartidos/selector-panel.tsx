@@ -6,7 +6,7 @@ import { Check, ChevronsUpDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoElClub } from "@/ui/marca/logo-el-club";
 import { EscudoClub } from "./escudo-club";
-import type { OpcionesSelector } from "./shell-admin";
+import { NOMBRE_PANEL_SUPER_ADMIN, type OpcionesSelector } from "./shell-admin";
 
 /**
  * Selector de panel: la cabecera del menú abre un desplegable con el Panel
@@ -71,7 +71,7 @@ export function SelectorPanel({
             <>
               <Opcion href={opciones.panelSuperAdmin.href} activo={opciones.panelSuperAdmin.activo} onElegir={cerrar}>
                 <LogoElClub className="size-7" />
-                <span className="min-w-0 flex-1 truncate">Panel del Super Admin</span>
+                <span className="min-w-0 flex-1 truncate">{NOMBRE_PANEL_SUPER_ADMIN}</span>
               </Opcion>
               <div className="border-t border-border" />
             </>

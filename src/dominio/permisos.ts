@@ -116,17 +116,28 @@ export function errorSiNoPuedeAdministrarAdmins(
   return null;
 }
 
-/** Mensaje si no se puede quitar a ese Admin, o null si se puede. */
+/**
+ * Mensaje si no se puede quitar a ese Admin, o null si se puede. Un Admin
+ * puede quitar a los otros Admins del club pero no a sí mismo; el Super
+ * Admin puede quitar a cualquiera.
+ */
 export function errorAlQuitarAdmin(params: {
   actorUsuarioId: string;
   objetivoUsuarioId: string;
-  cantidadAdmins: number;
+  esSuperAdmin: boolean;
 }): string | null {
-  if (params.cantidadAdmins > 1) return null;
+  if (params.esSuperAdmin) return null;
   if (params.actorUsuarioId === params.objetivoUsuarioId) {
-    return "No podés quitarte: sos el último Admin de este club.";
+    return "No te podés quitar a vos mismo.";
   }
-  return "No se puede quitar al último Admin del club.";
+  return null;
+}
+
+/** Mensaje si no puede eliminar o restaurar un club: solo el Super Admin. */
+export function errorSiNoPuedeEliminarClub(sesion: SesionApp | null): string | null {
+  if (!sesion) return "Tenés que ingresar de nuevo.";
+  if (!sesion.esSuperAdmin) return "Solo el Super Admin puede eliminar o restaurar un club.";
+  return null;
 }
 
 /** Mensaje si no puede administrar sedes o instalaciones de ese club. */

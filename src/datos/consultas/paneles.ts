@@ -15,6 +15,7 @@ export async function panelesDeLaSesion(sesion: SesionApp): Promise<PanelesSesio
   let consulta = supabase
     .from("club")
     .select("slug, nombre, escudo_ruta")
+    .is("borrado_en", null)
     .order("nombre", { ascending: true });
   if (!sesion.esSuperAdmin) {
     consulta = consulta.in(

@@ -17,6 +17,7 @@ import {
   errorAlQuitarAdmin,
   errorSiNoPuedeAdministrarAdmins,
   errorSiNoPuedeEditarClub,
+  errorSiNoPuedeEliminarClub,
   puedeEditarRutasDelClub,
 } from "@/dominio/permisos";
 import { cargarSesion } from "../consultas/sesion";
@@ -456,21 +457,13 @@ export async function quitarAdminClub(
     return { ok: false, error: "No encontramos ese club." };
   }
 
-  const { count, error: errorConteo } = await supabase
-    .from("club_miembro")
-    .select("id", { count: "exact", head: true })
-    .eq("club_id", clubId)
-    .eq("rol", "admin");
-  if (errorConteo) {
-    return { ok: false, error: "No se pudo quitar. Probá de nuevo." };
-  }
-  const mensajeUltimo = errorAlQuitarAdmin({
+  const noSePuede = errorAlQuitarAdmin({
     actorUsuarioId: sesion.usuarioId,
     objetivoUsuarioId: usuarioId,
-    cantidadAdmins: count ?? 0,
+    esSuperAdmin: sesion.esSuperAdmin,
   });
-  if (mensajeUltimo) {
-    return { ok: false, error: mensajeUltimo };
+  if (noSePuede) {
+    return { ok: false, error: noSePuede };
   }
 
   const { data: borrados, error } = await supabase
@@ -482,8 +475,8 @@ export async function quitarAdminClub(
 
   if (error) {
     if (error.code === "P0001") {
-      // La base no deja quitar al último Admin (otro quitó al resto mientras tanto).
-      return { ok: false, error: "No se puede quitar al último Admin del club." };
+      // La base tampoco deja que un Admin se quite a sí mismo.
+      return { ok: false, error: "No te podés quitar a vos mismo." };
     }
     return { ok: false, error: "No se pudo quitar. Probá de nuevo." };
   }
@@ -532,5 +525,51 @@ export async function cancelarInvitacionClub(
   }
 
   revalidatePath(`/c/${club.slug}/admin/admins`);
+  return { ok: true };
+}
+
+/** Soft delete: el club queda, marcado como eliminado. Solo el Super Admin. */
+export async function eliminarClub(clubId: string): Promise<ResultadoSimple> {
+  return marcarClubEliminado(clubId, new Date().toISOString());
+}
+
+/** Deshace la eliminación: el club vuelve a estar activo. Solo el Super Admin. */
+export async function restaurarClub(clubId: string): Promise<ResultadoSimple> {
+  return marcarClubEliminado(clubId, null);
+}
+
+async function marcarClubEliminado(
+  clubId: string,
+  borradoEn: string | null,
+): Promise<ResultadoSimple> {
+  const permiso = errorSiNoPuedeEliminarClub(await cargarSesion());
+  if (permiso) return { ok: false, error: permiso };
+
+  const supabase = await supabaseServidor();
+  const consulta = supabase
+    .from("club")
+    .update({ borrado_en: borradoEn })
+    .eq("id", clubId);
+  const { data, error } = await (borradoEn
+    ? consulta.is("borrado_en", null)
+    : consulta.not("borrado_en", "is", null)
+  ).select("slug");
+  if (error) {
+    return {
+      ok: false,
+      error: borradoEn
+        ? "No se pudo eliminar el club. Probá de nuevo."
+        : "No se pudo restaurar el club. Probá de nuevo.",
+    };
+  }
+  if (!data?.length) {
+    return {
+      ok: false,
+      error: borradoEn ? "Ese club ya estaba eliminado." : "Ese club ya estaba activo.",
+    };
+  }
+
+  revalidatePath("/super-admin");
+  revalidatePath(`/c/${data[0].slug}`, "layout");
   return { ok: true };
 }

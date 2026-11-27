@@ -271,20 +271,20 @@ begin
 end;
 $$;
 
--- Admin A no puede quitarse si es el último Admin del club.
+-- Admin A no se puede quitar a sí mismo.
 do $$
 begin
   delete from public.club_miembro
   where club_id = (select id from _t where clave = 'club_a')
     and usuario_id = (select id from _t where clave = 'admin_a');
-  raise exception 'No debería poderse quitar al último Admin';
+  raise exception 'No debería poderse quitar a sí mismo';
 exception
   when others then
     if sqlerrm like 'No debería%' then
       raise;
     end if;
-    if sqlerrm not like '%último Admin%' then
-      raise exception 'Error inesperado al quitar al último Admin: %', sqlerrm;
+    if sqlerrm <> 'No te podés quitar a vos mismo.' then
+      raise exception 'Error inesperado al quitarse a sí mismo: %', sqlerrm;
     end if;
 end;
 $$;
@@ -1434,6 +1434,93 @@ begin
     where instalacion_id = (select id from _t where clave = 'inst_cancha')
   ) then
     raise exception 'Borrar la instalación debería sacarla del predio';
+  end if;
+end;
+$$;
+select pg_temp.salir();
+
+-- Clubes eliminados (soft delete, #85).
+
+-- Admin B no puede eliminar su club: solo el Super Admin.
+select pg_temp.entrar('admin_b');
+do $$
+begin
+  update public.club set borrado_en = now()
+  where id = (select id from _t where clave = 'club_b');
+  raise exception 'Un Admin no debería poder eliminar su club';
+exception
+  when others then
+    if sqlerrm like 'Un Admin no debería%' then
+      raise;
+    end if;
+    if sqlerrm <> 'Solo el Super Admin puede eliminar o restaurar un club.' then
+      raise exception 'Error inesperado al eliminar el club como Admin: %', sqlerrm;
+    end if;
+end;
+$$;
+select pg_temp.salir();
+
+-- El Super Admin elimina el club B.
+select pg_temp.entrar('super');
+update public.club set borrado_en = now()
+where id = (select id from _t where clave = 'club_b');
+select pg_temp.salir();
+
+-- Con el club eliminado, Admin B ya no lo ve ni lo administra.
+select pg_temp.entrar('admin_b');
+do $$
+begin
+  if exists (select 1 from public.club where id = (select id from _t where clave = 'club_b')) then
+    raise exception 'Admin B no debería ver su club eliminado';
+  end if;
+  if interno.es_admin_club((select id from _t where clave = 'club_b')) then
+    raise exception 'Admin B no debería administrar su club eliminado';
+  end if;
+end;
+$$;
+select pg_temp.salir();
+
+-- Un club eliminado no tiene marca pública.
+do $$
+begin
+  if exists (
+    select 1 from public.marca_publica_del_club(
+      (select slug from public.club where id = (select id from _t where clave = 'club_b'))
+    )
+  ) then
+    raise exception 'Un club eliminado no debería tener marca pública';
+  end if;
+end;
+$$;
+
+-- El Super Admin lo restaura y Admin B lo vuelve a ver.
+select pg_temp.entrar('super');
+update public.club set borrado_en = null
+where id = (select id from _t where clave = 'club_b');
+select pg_temp.salir();
+
+select pg_temp.entrar('admin_b');
+do $$
+begin
+  if not interno.es_admin_club((select id from _t where clave = 'club_b')) then
+    raise exception 'Admin B debería volver a administrar su club restaurado';
+  end if;
+end;
+$$;
+select pg_temp.salir();
+
+-- El Super Admin puede quitar al último Admin de un club.
+select pg_temp.entrar('super');
+do $$
+begin
+  delete from public.club_miembro
+  where club_id = (select id from _t where clave = 'club_b')
+    and usuario_id = (select id from _t where clave = 'admin_b');
+  if exists (
+    select 1 from public.club_miembro
+    where club_id = (select id from _t where clave = 'club_b')
+  ) then
+    raise exception 'El Super Admin debería poder quitar al último Admin';
   end if;
 end;
 $$;

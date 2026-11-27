@@ -23,6 +23,10 @@ _Avoid_: dashboard, admin del club, modo club
 Está en la cabecera del menú y sirve para cambiar de panel, como los perfiles de un navegador. Al Super Admin le muestra el Panel del Super Admin y todos los clubes; al Admin, sus clubes. Si alguien tiene un solo panel, la cabecera solo lo muestra.
 _Avoid_: selector de club, switch
 
+**Club eliminado**:
+Un club que el Super Admin eliminó desde su panel (soft delete). Sus datos quedan, pero sus Admins ya no lo ven ni lo administran y no tiene sitio a la vista. El Super Admin lo restaura desde «Ver eliminados».
+_Avoid_: club borrado, club dado de baja
+
 ## Sedes y predios
 
 **Sede**:

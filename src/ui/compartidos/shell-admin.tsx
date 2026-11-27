@@ -38,6 +38,9 @@ export const RUTAS_SHELL_APP: RutasShell = {
   admins: (slug) => `/c/${slug}/admin/admins`,
 };
 
+/** El nombre del Panel del Super Admin, como lo muestran la cabecera y el selector. */
+export const NOMBRE_PANEL_SUPER_ADMIN = "Panel del Super Admin";
+
 /** Cabeceras de escritorio (sidebar y barra superior): misma altura fija para que el borde inferior quede alineado. */
 const CABECERA_ESCRITORIO =
   "flex h-[72px] shrink-0 items-center border-b border-border";
@@ -133,7 +136,7 @@ function CabeceraBarra({
       {club ? <EscudoClub club={club} tamano="sm" /> : <LogoElClub className="size-10" />}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm leading-snug font-medium">
-          {club ? club.nombre : "Panel del Super Admin"}
+          {club ? club.nombre : NOMBRE_PANEL_SUPER_ADMIN}
         </p>
         <p className="text-xs text-muted-foreground">{textoRol(paneles)}</p>
       </div>
@@ -240,7 +243,7 @@ export function ShellAdmin({
   pie?: React.ReactNode;
 }) {
   const items = itemsNav({ club, activo, rutas });
-  const tituloMenu = club?.nombre ?? "Panel del Super Admin";
+  const tituloMenu = club?.nombre ?? NOMBRE_PANEL_SUPER_ADMIN;
   const descripcionMenu = textoRol(paneles);
   const propsBarra = { club, paneles, rutas, items };
 

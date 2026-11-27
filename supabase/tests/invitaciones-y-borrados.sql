@@ -194,7 +194,8 @@ exception
 end;
 $$;
 
--- 6) La salvaguarda sigue: no se puede quitar al último Admin directamente.
+-- 6) Sin sesión (procesos del servidor), quitar al último Admin se puede:
+-- la única regla es que un Admin no se quite a sí mismo.
 insert into public.club (slug, nombre, color_principal, color_claro)
 values ('inv-club-2', 'Club Invitaciones 2', '#1c1917', '#ffffff');
 insert into public.club_miembro (club_id, usuario_id, rol)
@@ -202,16 +203,17 @@ select c.id, u.id, 'admin'
 from public.club c, public.usuario u
 where c.slug = 'inv-club-2' and u.email = 'inv-admin-2@ejemplo.test';
 
+delete from public.club_miembro
+where club_id = (select id from public.club where slug = 'inv-club-2');
+
 do $$
 begin
-  delete from public.club_miembro
-  where club_id = (select id from public.club where slug = 'inv-club-2');
-  raise exception 'No debería poderse quitar al último Admin';
-exception
-  when raise_exception then
-    if sqlerrm <> 'No se puede quitar al último Admin del club.' then
-      raise;
-    end if;
+  if exists (
+    select 1 from public.club_miembro
+    where club_id = (select id from public.club where slug = 'inv-club-2')
+  ) then
+    raise exception 'Quitar al último Admin sin sesión debería poder hacerse';
+  end if;
 end;
 $$;
 

@@ -18,7 +18,11 @@
 %% escudo y paleta para el ingreso y el tema, también sin sesión.
 %%
 %% Un Admin puede invitar y quitar Admins solo de su club
-%% (interno.es_admin_club). No se puede quitar al último Admin.
+%% (interno.es_admin_club), pero no se puede quitar a sí mismo; el
+%% Super Admin puede quitar a cualquiera (trigger evitar_quitarse_a_si_mismo).
+%% club.borrado_en es el soft delete de un club: solo el Super Admin lo
+%% completa o lo vacía. Un club eliminado no existe para sus Admins
+%% (interno.es_admin_club da false) ni tiene marca pública.
 %% Un Admin también puede actualizar los datos estéticos de su club
 %% (nombre, escudo_ruta, paleta) y el contacto (telefono, email,
 %% direccion, web y club_red_social). slug y dominio_base solo los
@@ -87,6 +91,7 @@ erDiagram
         string direccion
         string web
         timestamptz creado_en
+        timestamptz borrado_en
     }
     CLUB_RED_SOCIAL {
         uuid id PK

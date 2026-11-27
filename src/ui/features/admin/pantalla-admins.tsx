@@ -301,7 +301,7 @@ export function PantallaAdminsReal({
                 {errorAlQuitarAdmin({
                   actorUsuarioId: usuarioId,
                   objetivoUsuarioId: admin.usuarioId,
-                  cantidadAdmins: admins.length,
+                  esSuperAdmin: paneles.esSuperAdmin,
                 }) ? null : (
                   <Button
                     type="button"

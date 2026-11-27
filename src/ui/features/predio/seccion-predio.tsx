@@ -152,8 +152,9 @@ export function SeccionPredio({
 
   return (
     // En el celular solo se ve el visor: sin predio armado, no hay bloque.
+    // Borde punteado y etiqueta: este bloque es solo del Super Admin.
     <section
-      className={`flex-col gap-4 border-t border-border pt-8 ${visor ? "flex" : "hidden lg:flex"}`}
+      className={`flex-col gap-4 rounded-xl border border-dashed border-amber-400 p-4 lg:p-6 dark:border-amber-700 ${visor ? "flex" : "hidden lg:flex"}`}
     >
       <div className="flex items-end justify-between gap-4">
         <div>

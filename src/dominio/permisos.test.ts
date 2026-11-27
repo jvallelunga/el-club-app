@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   destinoTrasIngreso,
   errorAlQuitarAdmin,
+  errorSiNoPuedeEliminarClub,
   errorSiNoPuedeAdministrarAdmins,
   errorSiNoPuedeAdministrarDeportes,
   errorSiNoPuedeEditarClub,
@@ -135,30 +136,24 @@ describe("errorSiNoPuedeAdministrarAdmins", () => {
 });
 
 describe("errorAlQuitarAdmin", () => {
-  it("bloquea quitarse si es el último Admin, y también quitar al último", () => {
+  it("un Admin puede quitar a otro Admin, aunque sea el último que queda además de él", () => {
     expect(
-      errorAlQuitarAdmin({
-        actorUsuarioId: "u1",
-        objetivoUsuarioId: "u1",
-        cantidadAdmins: 1,
-      }),
-    ).toMatch(/último Admin de este club/);
-    expect(
-      errorAlQuitarAdmin({
-        actorUsuarioId: "super",
-        objetivoUsuarioId: "u1",
-        cantidadAdmins: 1,
-      }),
-    ).toMatch(/último Admin del club/);
+      errorAlQuitarAdmin({ actorUsuarioId: "u1", objetivoUsuarioId: "u2", esSuperAdmin: false }),
+    ).toBeNull();
   });
 
-  it("permite quitar si queda al menos otro Admin", () => {
+  it("un Admin no se puede quitar a sí mismo", () => {
     expect(
-      errorAlQuitarAdmin({
-        actorUsuarioId: "u1",
-        objetivoUsuarioId: "u2",
-        cantidadAdmins: 2,
-      }),
+      errorAlQuitarAdmin({ actorUsuarioId: "u1", objetivoUsuarioId: "u1", esSuperAdmin: false }),
+    ).toBe("No te podés quitar a vos mismo.");
+  });
+
+  it("el Super Admin puede quitar a cualquier Admin, también si es el último", () => {
+    expect(
+      errorAlQuitarAdmin({ actorUsuarioId: "super", objetivoUsuarioId: "u1", esSuperAdmin: true }),
+    ).toBeNull();
+    expect(
+      errorAlQuitarAdmin({ actorUsuarioId: "super", objetivoUsuarioId: "super", esSuperAdmin: true }),
     ).toBeNull();
   });
 });
@@ -229,5 +224,15 @@ describe("errorSiNoPuedeElegirDeportesDelClub", () => {
 
   it("sin sesión pide ingresar", () => {
     expect(errorSiNoPuedeElegirDeportesDelClub(null, norte.clubId)).toMatch(/ingresar/);
+  });
+});
+
+describe("errorSiNoPuedeEliminarClub", () => {
+  it("solo el Super Admin elimina o restaura un club", () => {
+    expect(errorSiNoPuedeEliminarClub(sesion({ esSuperAdmin: true }))).toBeNull();
+    expect(errorSiNoPuedeEliminarClub(sesion({ membresias: [norte] }))).toBe(
+      "Solo el Super Admin puede eliminar o restaurar un club.",
+    );
+    expect(errorSiNoPuedeEliminarClub(null)).toMatch(/ingresar/);
   });
 });
