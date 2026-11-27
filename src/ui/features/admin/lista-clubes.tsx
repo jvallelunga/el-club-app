@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import type { ResultadoSimple } from "@/dominio/resultado";
 import { DialogoConfirmar } from "@/ui/compartidos/dialogo-confirmar";
 import { EscudoClub } from "@/ui/compartidos/escudo-club";
@@ -20,9 +20,9 @@ export type ClubDeLaLista = {
 };
 
 /**
- * Los clubes del Panel del Super Admin: cada uno se edita, se entra o se
- * elimina (soft delete, con confirmación). Los eliminados quedan en «Ver
- * eliminados» y se pueden restaurar.
+ * Los clubes del Panel del Super Admin: cada uno se edita o se elimina (soft
+ * delete, con confirmación); para entrar está el selector de panel. Los
+ * eliminados quedan en «Ver eliminados» y se pueden restaurar.
  */
 export function ListaClubes({
   clubes,
@@ -78,34 +78,38 @@ export function ListaClubes({
       ) : (
         <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {clubes.map((club) => (
-            <li key={club.id} className="overflow-hidden rounded-xl border border-border bg-card">
-              <Link
-                href={`/super-admin/clubes/${club.slug}/editar`}
-                aria-label={`Editar ${club.nombre}`}
-                className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/50"
-              >
-                <EscudoClub club={club} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{club.nombre}</p>
-                  <p className="text-xs text-muted-foreground">{club.textoAdmins}</p>
-                </div>
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-              </Link>
-              <div className="flex border-t border-border">
-                <Button asChild variant="ghost" className="h-11 flex-1 rounded-none text-sm">
-                  <Link href={`/c/${club.slug}/admin`}>Entrar</Link>
+            <li
+              key={club.id}
+              className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-3"
+            >
+              <EscudoClub club={club} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{club.nombre}</p>
+                <p className="text-xs text-muted-foreground">{club.textoAdmins}</p>
+              </div>
+              <div className="flex shrink-0 gap-1">
+                <Button asChild variant="ghost" size="icon" className="size-10">
+                  <Link
+                    href={`/super-admin/clubes/${club.slug}/editar`}
+                    aria-label={`Editar ${club.nombre}`}
+                    title="Editar"
+                  >
+                    <Pencil />
+                  </Link>
                 </Button>
-                <div className="w-px bg-border" />
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-11 flex-1 rounded-none text-sm text-destructive hover:text-destructive"
+                  size="icon"
+                  className="size-10 text-destructive hover:text-destructive"
+                  aria-label={`Eliminar ${club.nombre}`}
+                  title="Eliminar"
                   onClick={() => {
                     setErrorEliminar(null);
                     setAEliminar(club);
                   }}
                 >
-                  Eliminar
+                  <Trash2 />
                 </Button>
               </div>
             </li>
