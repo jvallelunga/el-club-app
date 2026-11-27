@@ -3,22 +3,41 @@ import "server-only";
 import type { Club } from "../tipos";
 import { supabaseServidor } from "../supabase-servidor";
 
+const COLUMNAS_CLUB =
+  "id, slug, nombre, dominio_base, escudo_ruta, color_principal, color_claro, color_2, color_3, telefono, email, direccion, web, creado_en, borrado_en";
+
+/** Los clubes activos, por nombre. */
 export async function listarClubes(): Promise<Club[]> {
   const supabase = await supabaseServidor();
   const { data, error } = await supabase
     .from("club")
-    .select("id, slug, nombre, dominio_base, escudo_ruta, color_principal, color_claro, color_2, color_3, telefono, email, direccion, web, creado_en")
+    .select(COLUMNAS_CLUB)
+    .is("borrado_en", null)
     .order("nombre", { ascending: true });
   if (error) throw error;
   return data ?? [];
 }
 
+/** Los clubes que eliminó el Super Admin, el último primero. */
+export async function listarClubesEliminados(): Promise<Club[]> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase
+    .from("club")
+    .select(COLUMNAS_CLUB)
+    .not("borrado_en", "is", null)
+    .order("borrado_en", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** Un club activo por su identificador; uno eliminado no se encuentra. */
 export async function clubPorSlug(slug: string): Promise<Club | null> {
   const supabase = await supabaseServidor();
   const { data, error } = await supabase
     .from("club")
-    .select("id, slug, nombre, dominio_base, escudo_ruta, color_principal, color_claro, color_2, color_3, telefono, email, direccion, web, creado_en")
+    .select(COLUMNAS_CLUB)
     .eq("slug", slug)
+    .is("borrado_en", null)
     .maybeSingle();
   if (error) throw error;
   return data;

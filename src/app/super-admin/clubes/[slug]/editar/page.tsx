@@ -5,6 +5,7 @@ import {
 import { FormularioNuevoClubReal } from "@/ui/features/admin/formulario-nuevo-club";
 import { actualizarClub } from "@/datos/comandos/clubes";
 import { superAdminRequerido } from "@/datos/consultas/acceso";
+import { panelesDeLaSesion } from "@/datos/consultas/paneles";
 import { clubPorSlug } from "@/datos/consultas/clubes";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
@@ -16,7 +17,8 @@ export default async function PaginaEditarClub({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  await superAdminRequerido("/super-admin");
+  const sesion = await superAdminRequerido("/super-admin");
+  const paneles = await panelesDeLaSesion(sesion);
   const { slug } = await params;
   const club = await clubPorSlug(slug);
   if (!club) notFound();
@@ -33,7 +35,7 @@ export default async function PaginaEditarClub({
       titulo="Editar club"
       subtitulo={club.nombre}
       atras={{ href: "/super-admin", etiqueta: "Volver a clubes" }}
-      rol="super-admin"
+      paneles={paneles}
       activo="clubes"
       salirEnMobile={false}
     >

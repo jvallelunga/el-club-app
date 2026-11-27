@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { etiquetaDeportesDelClub, ShellAdmin } from "@/ui/compartidos/shell-admin";
+import { ShellAdmin } from "@/ui/compartidos/shell-admin";
 import { DeportesDelClub } from "@/ui/features/deportes/deportes-del-club";
 import {
   guardarCondicionDelClub,
@@ -8,6 +8,7 @@ import {
 } from "@/datos/comandos/deportes-del-club";
 import { adminDelClubRequerido, sesionRequerida } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
+import { panelesDeLaSesion } from "@/datos/consultas/paneles";
 import { listarDeportes } from "@/datos/consultas/deportes";
 import { deportesElegidosPorElClub } from "@/datos/consultas/deportes-del-club";
 import { urlYClaveAnon } from "@/datos/env-supabase";
@@ -28,9 +29,10 @@ export default async function PaginaDeportesDelClub({
   const club = await clubPorSlug(slug);
   if (!club) notFound();
   await adminDelClubRequerido(club.id, ruta);
-  const [catalogo, elegidos] = await Promise.all([
+  const [catalogo, elegidos, paneles] = await Promise.all([
     listarDeportes(),
     deportesElegidosPorElClub(club.id),
+    panelesDeLaSesion(sesion),
   ]);
 
   const clubShell = {
@@ -39,18 +41,15 @@ export default async function PaginaDeportesDelClub({
     iniciales: inicialesDesdeNombre(club.nombre),
     escudo: urlEscudoPublico(urlYClaveAnon().url, club.escudo_ruta),
   };
-  const esSuperAdmin = sesion.esSuperAdmin;
-  const rol = esSuperAdmin ? "super-admin" : "admin";
 
   return (
     <ShellAdmin
-      titulo={etiquetaDeportesDelClub(rol)}
+      titulo="Deportes"
       subtitulo={club.nombre}
       atras={{ href: `/c/${club.slug}/admin`, etiqueta: "Volver al inicio" }}
       club={clubShell}
-      rol={rol}
+      paneles={paneles}
       activo="deportes-club"
-      esMultiClub={!esSuperAdmin && sesion.membresias.length > 1}
       salirEnMobile={false}
     >
       <DeportesDelClub

@@ -8,6 +8,7 @@ import {
 } from "@/ui/compartidos/shell-admin";
 import { VistaPreviaClub } from "@/ui/features/club/vista-previa-club";
 import { superAdminRequerido } from "@/datos/consultas/acceso";
+import { panelesDeLaSesion } from "@/datos/consultas/paneles";
 import { clubPorSlug } from "@/datos/consultas/clubes";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 import { derivarPaleta } from "@/dominio/paleta";
@@ -20,7 +21,8 @@ export default async function PaginaClubCreado({
 }: {
   searchParams: Promise<{ slug?: string }>;
 }) {
-  await superAdminRequerido("/super-admin");
+  const sesion = await superAdminRequerido("/super-admin");
+  const paneles = await panelesDeLaSesion(sesion);
   const params = await searchParams;
   const slug = params.slug ?? "";
   if (!slug) redirect("/super-admin");
@@ -40,7 +42,7 @@ export default async function PaginaClubCreado({
       titulo="Club creado"
       subtitulo="Super Admin"
       atras={{ href: "/super-admin", etiqueta: "Volver a clubes" }}
-      rol="super-admin"
+      paneles={paneles}
       activo="clubes"
       salirEnMobile={false}
     >

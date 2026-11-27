@@ -9,6 +9,7 @@ import {
   sesionRequerida,
 } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
+import { panelesDeLaSesion } from "@/datos/consultas/paneles";
 import { instalacionPorId, sedePorId } from "@/datos/consultas/sedes";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
@@ -31,6 +32,7 @@ export default async function PaginaEditarInstalacion({
     club.id,
     `/c/${slug}/admin/sedes/${sedeId}/instalaciones/${instalacionId}`,
   );
+  const paneles = await panelesDeLaSesion(sesion);
   const sede = await sedePorId(club.id, sedeId);
   const instalacion = await instalacionPorId(club.id, sedeId, instalacionId);
   if (!sede || !instalacion) notFound();
@@ -57,9 +59,8 @@ export default async function PaginaEditarInstalacion({
         etiqueta: "Volver a la sede",
       }}
       club={clubShell}
-      rol={sesion.esSuperAdmin ? "super-admin" : "admin"}
+      paneles={paneles}
       activo="sedes"
-      esMultiClub={!sesion.esSuperAdmin && sesion.membresias.length > 1}
       salirEnMobile={false}
     >
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">

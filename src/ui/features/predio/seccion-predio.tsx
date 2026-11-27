@@ -24,6 +24,7 @@ import {
 } from "@/ui/nativos/dialog";
 import type { DatosPredio, InstalacionDeLaSede, OrigenInicial } from "@/dominio/predio";
 import type { PredioEnVisor } from "@/dominio/predio-3d";
+import { EtiquetaSoloSuperAdmin } from "@/ui/compartidos/etiqueta-solo-super-admin";
 import { ayudaVisor, MarcoVisorPredio } from "./bloque-predio";
 import type { ResultadoSimple } from "@/dominio/resultado";
 
@@ -151,12 +152,16 @@ export function SeccionPredio({
 
   return (
     // En el celular solo se ve el visor: sin predio armado, no hay bloque.
+    // Borde punteado y etiqueta: este bloque es solo del Super Admin.
     <section
-      className={`flex-col gap-4 border-t border-border pt-8 ${visor ? "flex" : "hidden lg:flex"}`}
+      className={`flex-col gap-4 rounded-xl border border-dashed border-amber-400 p-4 lg:p-6 dark:border-amber-700 ${visor ? "flex" : "hidden lg:flex"}`}
     >
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h2 className="text-lg font-medium tracking-tight">Predio</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-medium tracking-tight">Predio</h2>
+            <EtiquetaSoloSuperAdmin />
+          </div>
           <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground lg:hidden">
             {ayudaVisor(visor)} El predio se edita desde una computadora.
           </p>

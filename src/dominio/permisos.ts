@@ -17,6 +17,23 @@ export type SesionApp = {
   membresias: MembresiaClub[];
 };
 
+/** Un club al que se puede ir con el selector de panel. */
+export type ClubDelSelector = {
+  slug: string;
+  nombre: string;
+  iniciales: string;
+  escudo: string | null;
+};
+
+/**
+ * Los paneles a los que puede ir quien está en sesión: el Panel del Super
+ * Admin (si lo es) y el Panel de cada club de la lista.
+ */
+export type PanelesSesion = {
+  esSuperAdmin: boolean;
+  clubes: ClubDelSelector[];
+};
+
 export function puedeAdministrarClub(
   sesion: SesionApp,
   clubId: string,
@@ -99,17 +116,31 @@ export function errorSiNoPuedeAdministrarAdmins(
   return null;
 }
 
-/** Mensaje si no se puede quitar a ese Admin, o null si se puede. */
+/** El aviso cuando un Admin intenta quitarse a sí mismo (también lo da la base). */
+export const MENSAJE_NO_QUITARSE = "No te podés quitar a vos mismo.";
+
+/**
+ * Mensaje si no se puede quitar a ese Admin, o null si se puede. Un Admin
+ * puede quitar a los otros Admins del club pero no a sí mismo; el Super
+ * Admin puede quitar a cualquiera.
+ */
 export function errorAlQuitarAdmin(params: {
   actorUsuarioId: string;
   objetivoUsuarioId: string;
-  cantidadAdmins: number;
+  esSuperAdmin: boolean;
 }): string | null {
-  if (params.cantidadAdmins > 1) return null;
+  if (params.esSuperAdmin) return null;
   if (params.actorUsuarioId === params.objetivoUsuarioId) {
-    return "No podés quitarte: sos el último Admin de este club.";
+    return MENSAJE_NO_QUITARSE;
   }
-  return "No se puede quitar al último Admin del club.";
+  return null;
+}
+
+/** Mensaje si no puede eliminar o restaurar un club: solo el Super Admin. */
+export function errorSiNoPuedeEliminarClub(sesion: SesionApp | null): string | null {
+  if (!sesion) return "Tenés que ingresar de nuevo.";
+  if (!sesion.esSuperAdmin) return "Solo el Super Admin puede eliminar o restaurar un club.";
+  return null;
 }
 
 /** Mensaje si no puede administrar sedes o instalaciones de ese club. */

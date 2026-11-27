@@ -30,6 +30,7 @@ export type Database = {
           direccion: string | null;
           web: string | null;
           creado_en: string;
+          borrado_en: string | null;
         };
         Insert: {
           id?: string;
@@ -46,6 +47,7 @@ export type Database = {
           direccion?: string | null;
           web?: string | null;
           creado_en?: string;
+          borrado_en?: string | null;
         };
         Update: {
           id?: string;
@@ -62,6 +64,7 @@ export type Database = {
           direccion?: string | null;
           web?: string | null;
           creado_en?: string;
+          borrado_en?: string | null;
         };
         Relationships: [];
       };

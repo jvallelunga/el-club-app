@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Plus } from "lucide-react";
-import { EscudoClub } from "@/ui/compartidos/escudo-club";
+import { Plus } from "lucide-react";
 import { BotonPrincipal } from "@/ui/compartidos/marco";
 import {
   ShellAdmin,
@@ -9,11 +8,16 @@ import { Button } from "@/ui/nativos/button";
 import { inicialesDesdeNombre } from "@/dominio/slug";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
 import { superAdminRequerido } from "@/datos/consultas/acceso";
+import { panelesDeLaSesion } from "@/datos/consultas/paneles";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 import {
   cantidadAdminsPorClub,
   listarClubes,
+  listarClubesEliminados,
 } from "@/datos/consultas/clubes";
+import { eliminarClub, restaurarClub } from "@/datos/comandos/clubes";
+import type { Club } from "@/datos/tipos";
+import { ListaClubes, type ClubDeLaLista } from "@/ui/features/admin/lista-clubes";
 
 export const dynamic = "force-dynamic";
 
@@ -33,10 +37,22 @@ const botonCrear = (
 );
 
 export default async function PaginaSuperAdmin() {
-  await superAdminRequerido("/super-admin");
-  const clubes = await listarClubes();
+  const sesion = await superAdminRequerido("/super-admin");
+  const paneles = await panelesDeLaSesion(sesion);
+  const [clubes, eliminados] = await Promise.all([
+    listarClubes(),
+    listarClubesEliminados(),
+  ]);
   const conteo = await cantidadAdminsPorClub(clubes.map((club) => club.id));
   const supabaseUrl = urlYClaveAnon().url;
+  const clubDeLaLista = (club: Club): ClubDeLaLista => ({
+    id: club.id,
+    slug: club.slug,
+    nombre: club.nombre,
+    iniciales: inicialesDesdeNombre(club.nombre),
+    escudo: urlEscudoPublico(supabaseUrl, club.escudo_ruta),
+    textoAdmins: textoAdmins(conteo[club.id] ?? 0),
+  });
 
   return (
     <ShellAdmin
@@ -44,7 +60,7 @@ export default async function PaginaSuperAdmin() {
       subtitulo="Super Admin"
       tituloMobile="Super Admin"
       subtituloMobile="Todos los clubes"
-      rol="super-admin"
+      paneles={paneles}
       activo="clubes"
       accion={botonCrear}
     >
@@ -69,63 +85,12 @@ export default async function PaginaSuperAdmin() {
           </BotonPrincipal>
         </div>
 
-        {clubes.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Todavía no hay clubes. Creá el primero para empezar.
-          </p>
-        ) : (
-          <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {clubes.map((club) => {
-              const cantidad = conteo[club.id] ?? 0;
-              return (
-                <li
-                  key={club.id}
-                  className="overflow-hidden rounded-xl border border-border bg-card"
-                >
-                  <Link
-                    href={`/super-admin/clubes/${club.slug}/editar`}
-                    aria-label={`Editar ${club.nombre}`}
-                    className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/50"
-                  >
-                    <EscudoClub
-                      club={{
-                        nombre: club.nombre,
-                        iniciales: inicialesDesdeNombre(club.nombre),
-                        escudo: urlEscudoPublico(supabaseUrl, club.escudo_ruta),
-                      }}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{club.nombre}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {textoAdmins(cantidad)}
-                      </p>
-                    </div>
-                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                  </Link>
-                  <div className="flex border-t border-border">
-                    <Button
-                      asChild
-                      variant="ghost"
-                      className="h-11 flex-1 rounded-none text-sm"
-                    >
-                      <Link href={`/c/${club.slug}/admin`}>Entrar</Link>
-                    </Button>
-                    <div className="w-px bg-border" />
-                    <Button
-                      asChild
-                      variant="ghost"
-                      className="h-11 flex-1 rounded-none text-sm"
-                    >
-                      <Link href={`/c/${club.slug}/admin/admins`}>
-                        Admins
-                      </Link>
-                    </Button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        <ListaClubes
+          clubes={clubes.map(clubDeLaLista)}
+          eliminados={eliminados.map(clubDeLaLista)}
+          eliminar={eliminarClub}
+          restaurar={restaurarClub}
+        />
       </div>
     </ShellAdmin>
   );

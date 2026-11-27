@@ -10,6 +10,7 @@ import {
   sesionRequerida,
 } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
+import { panelesDeLaSesion } from "@/datos/consultas/paneles";
 import { listarSedes } from "@/datos/consultas/sedes";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
@@ -27,6 +28,7 @@ export default async function PaginaSedes({
   const club = await clubPorSlug(slug);
   if (!club) notFound();
   await adminDelClubRequerido(club.id, `/c/${slug}/admin/sedes`);
+  const paneles = await panelesDeLaSesion(sesion);
   const sedes = await listarSedes(club.id);
 
   const clubShell = {
@@ -42,9 +44,8 @@ export default async function PaginaSedes({
       subtitulo={club.nombre}
       atras={{ href: `/c/${club.slug}/admin`, etiqueta: "Volver al inicio" }}
       club={clubShell}
-      rol={sesion.esSuperAdmin ? "super-admin" : "admin"}
+      paneles={paneles}
       activo="sedes"
-      esMultiClub={!sesion.esSuperAdmin && sesion.membresias.length > 1}
       salirEnMobile={false}
       accion={
         <Button asChild className="h-11 rounded-xl px-4">
