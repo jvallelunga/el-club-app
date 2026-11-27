@@ -66,21 +66,21 @@ export function SelectorPanel({
       </button>
 
       {abierto ? (
-        <div className="absolute top-[calc(100%+0.75rem)] left-0 z-50 flex max-h-[70svh] w-full min-w-64 flex-col overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-xl lg:w-72">
+        <div className="absolute top-[calc(100%+0.75rem)] left-0 z-50 flex max-h-[70svh] w-full min-w-64 flex-col overflow-hidden rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-xl lg:w-72">
           {opciones.panelSuperAdmin ? (
             <>
               <Opcion href={opciones.panelSuperAdmin.href} activo={opciones.panelSuperAdmin.activo} onElegir={cerrar}>
                 <LogoElClub className="size-7" />
                 <span className="min-w-0 flex-1 truncate">{NOMBRE_PANEL_SUPER_ADMIN}</span>
               </Opcion>
-              <div className="border-t border-border" />
+              <div className="-mx-1 my-1 border-t border-border" />
             </>
           ) : null}
-          <p className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+          <p className="px-2 pt-1.5 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
             Clubes
           </p>
           {opciones.conBuscador ? (
-            <div className="px-2 pb-1">
+            <div className="pb-1">
               <label className="flex items-center gap-2 rounded-lg border border-border px-2 py-1.5 text-sm">
                 <Search className="size-4 shrink-0 text-muted-foreground" />
                 <input
@@ -94,7 +94,7 @@ export function SelectorPanel({
               </label>
             </div>
           ) : null}
-          <div className="overflow-y-auto pb-1">
+          <div className="overflow-y-auto">
             {visibles.map((club) => (
               <Opcion key={club.slug} href={club.href} activo={club.activo} onElegir={cerrar}>
                 <EscudoClub club={club} tamano="xs" />
@@ -102,7 +102,7 @@ export function SelectorPanel({
               </Opcion>
             ))}
             {visibles.length === 0 ? (
-              <p className="px-3 py-2 text-sm text-muted-foreground">Ningún club se llama así.</p>
+              <p className="px-2 py-2 text-sm text-muted-foreground">Ningún club se llama así.</p>
             ) : null}
           </div>
         </div>
@@ -128,7 +128,7 @@ function Opcion({
       onClick={onElegir}
       aria-current={activo ? "page" : undefined}
       className={cn(
-        "mx-1 flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm hover:bg-muted",
+        "flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm hover:bg-muted",
         activo && "font-medium",
       )}
     >
