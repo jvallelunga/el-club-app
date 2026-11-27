@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MembresiaClub, SesionApp } from "@/dominio/permisos";
 import type { Database } from "../tipos";
@@ -27,22 +28,23 @@ export async function cargarSesion(
     email.split("@")[0] ??
     "Usuario";
 
-  const { data: perfil } = await supabase
-    .from("usuario")
-    .select("id, nombre, email")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const { data: superAdmin } = await supabase
-    .from("super_admin")
-    .select("usuario_id")
-    .eq("usuario_id", user.id)
-    .maybeSingle();
-
-  const { data: filas } = await supabase
-    .from("club_miembro")
-    .select("club_id, rol, club:club_id (id, slug, nombre)")
-    .eq("usuario_id", user.id);
+  const [{ data: perfil }, { data: superAdmin }, { data: filas }] =
+    await Promise.all([
+      supabase
+        .from("usuario")
+        .select("id, nombre, email")
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("super_admin")
+        .select("usuario_id")
+        .eq("usuario_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("club_miembro")
+        .select("club_id, rol, club:club_id (id, slug, nombre)")
+        .eq("usuario_id", user.id),
+    ]);
 
   const membresias: MembresiaClub[] = [];
   for (const fila of filas ?? []) {
@@ -64,3 +66,10 @@ export async function cargarSesion(
     membresias,
   };
 }
+
+/**
+ * La sesión del pedido en curso, cargada una sola vez aunque la pidan varias
+ * guardas (`sesionRequerida`, `adminDelClubRequerido`, …) en el mismo render.
+ * Las rutas que traen su propio cliente usan `cargarSesion(cliente)`.
+ */
+export const sesionDelPedido = cache(() => cargarSesion());
