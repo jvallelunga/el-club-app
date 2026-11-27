@@ -2,10 +2,10 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 import { puedeAdministrarClub, type SesionApp } from "@/dominio/permisos";
-import { cargarSesion } from "./sesion";
+import { sesionDelPedido } from "./sesion";
 
 export async function sesionRequerida(siguiente?: string): Promise<SesionApp> {
-  const sesion = await cargarSesion();
+  const sesion = await sesionDelPedido();
   if (!sesion) {
     const dest = siguiente
       ? `/ingreso?siguiente=${encodeURIComponent(siguiente)}`
