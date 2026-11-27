@@ -11,6 +11,7 @@ import {
   sesionRequerida,
 } from "@/datos/consultas/acceso";
 import { adminsYInvitaciones, clubPorSlug } from "@/datos/consultas/clubes";
+import { panelesDeLaSesion } from "@/datos/consultas/paneles";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
 
@@ -26,6 +27,7 @@ export default async function PaginaAdminsDelClub({
   const club = await clubPorSlug(slug);
   if (!club) notFound();
   await adminDelClubRequerido(club.id, `/c/${slug}/admin/admins`);
+  const paneles = await panelesDeLaSesion(sesion);
 
   const clubId = club.id;
   const clubVisible = {
@@ -63,13 +65,8 @@ export default async function PaginaAdminsDelClub({
       admins={admins}
       invitaciones={invitaciones}
       usuarioId={sesion.usuarioId}
-      rol={sesion.esSuperAdmin ? "super-admin" : "admin"}
-      atras={
-        sesion.esSuperAdmin
-          ? { href: "/super-admin", etiqueta: "Volver a clubes" }
-          : { href: `/c/${club.slug}/admin`, etiqueta: "Volver al inicio" }
-      }
-      esMultiClub={!sesion.esSuperAdmin && sesion.membresias.length > 1}
+      paneles={paneles}
+      atras={{ href: `/c/${club.slug}/admin`, etiqueta: "Volver al inicio" }}
       invitar={invitar}
       quitar={quitar}
       cancelar={cancelar}

@@ -4,18 +4,20 @@ import {
 import { FormularioNuevoClubReal } from "@/ui/features/admin/formulario-nuevo-club";
 import { crearClub } from "@/datos/comandos/clubes";
 import { superAdminRequerido } from "@/datos/consultas/acceso";
+import { panelesDeLaSesion } from "@/datos/consultas/paneles";
 
 export const dynamic = "force-dynamic";
 
 export default async function PaginaNuevoClub() {
-  await superAdminRequerido("/super-admin/nuevo-club");
+  const sesion = await superAdminRequerido("/super-admin/nuevo-club");
+  const paneles = await panelesDeLaSesion(sesion);
 
   return (
     <ShellAdmin
       titulo="Crear club"
       subtitulo="Super Admin"
       atras={{ href: "/super-admin", etiqueta: "Volver a clubes" }}
-      rol="super-admin"
+      paneles={paneles}
       activo="clubes"
       salirEnMobile={false}
     >

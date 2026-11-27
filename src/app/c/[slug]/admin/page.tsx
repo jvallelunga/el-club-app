@@ -11,6 +11,7 @@ import {
   sesionRequerida,
 } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
+import { panelesDeLaSesion } from "@/datos/consultas/paneles";
 import { predioDeLaUnicaSede } from "@/datos/consultas/predio";
 import { BloquePredio } from "@/ui/features/predio/bloque-predio";
 import { urlYClaveAnon } from "@/datos/env-supabase";
@@ -27,6 +28,7 @@ export default async function PaginaAdminClub({
   const club = await clubPorSlug(slug);
   if (!club) notFound();
   await adminDelClubRequerido(club.id, `/c/${slug}/admin`);
+  const paneles = await panelesDeLaSesion(sesion);
 
   const predioDeLaSede = await predioDeLaUnicaSede(club.id);
 
@@ -48,9 +50,8 @@ export default async function PaginaAdminClub({
       tituloMobile={club.nombre}
       subtituloMobile="Inicio"
       club={clubShell}
-      rol={sesion.esSuperAdmin ? "super-admin" : "admin"}
+      paneles={paneles}
       activo="inicio"
-      esMultiClub={!sesion.esSuperAdmin && sesion.membresias.length > 1}
     >
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <div className="flex items-center gap-3">

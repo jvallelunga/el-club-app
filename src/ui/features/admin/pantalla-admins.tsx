@@ -16,12 +16,9 @@ import {
 } from "@/ui/nativos/dialog";
 import { BotonPrincipal } from "@/ui/compartidos/marco";
 import { EscudoClub } from "@/ui/compartidos/escudo-club";
-import {
-  ShellAdmin,
-  type RolShell,
-} from "@/ui/compartidos/shell-admin";
+import { ShellAdmin } from "@/ui/compartidos/shell-admin";
 import { avisoTrasInvitar } from "@/dominio/ingreso-email";
-import { errorAlQuitarAdmin } from "@/dominio/permisos";
+import { errorAlQuitarAdmin, type PanelesSesion } from "@/dominio/permisos";
 import { inicialesDesdeNombre } from "@/dominio/slug";
 
 export type AdminVisible = {
@@ -63,9 +60,8 @@ export function PantallaAdminsReal({
   admins,
   invitaciones,
   usuarioId,
-  rol,
+  paneles,
   atras,
-  esMultiClub = false,
   invitar,
   quitar,
   cancelar,
@@ -75,9 +71,8 @@ export function PantallaAdminsReal({
   admins: AdminVisible[];
   invitaciones: InvitacionVisible[];
   usuarioId: string;
-  rol: RolShell;
+  paneles: PanelesSesion;
   atras: { href: string; etiqueta: string };
-  esMultiClub?: boolean;
   invitar: (
     email: string,
   ) => Promise<
@@ -226,9 +221,8 @@ export function PantallaAdminsReal({
       subtitulo={club.nombre}
       atras={atras}
       club={clubShell}
-      rol={rol}
+      paneles={paneles}
       activo="admins"
-      esMultiClub={esMultiClub}
       salirEnMobile={false}
     >
       <div className="flex max-w-3xl flex-col gap-6">

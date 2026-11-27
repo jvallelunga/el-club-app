@@ -24,6 +24,7 @@ import {
 } from "@/ui/nativos/dialog";
 import type { DatosPredio, InstalacionDeLaSede, OrigenInicial } from "@/dominio/predio";
 import type { PredioEnVisor } from "@/dominio/predio-3d";
+import { EtiquetaSoloSuperAdmin } from "@/ui/compartidos/etiqueta-solo-super-admin";
 import { ayudaVisor, MarcoVisorPredio } from "./bloque-predio";
 import type { ResultadoSimple } from "@/dominio/resultado";
 
@@ -156,7 +157,10 @@ export function SeccionPredio({
     >
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h2 className="text-lg font-medium tracking-tight">Predio</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-medium tracking-tight">Predio</h2>
+            <EtiquetaSoloSuperAdmin />
+          </div>
           <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground lg:hidden">
             {ayudaVisor(visor)} El predio se edita desde una computadora.
           </p>

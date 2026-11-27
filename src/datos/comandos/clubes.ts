@@ -294,8 +294,6 @@ export async function actualizarClub(
   revalidatePath("/super-admin");
   revalidatePath(`/c/${club.slug}/admin`);
   revalidatePath(`/c/${club.slug}/admin/club`);
-  revalidatePath(`/super-admin/clubes/${club.slug}/editar`);
-  revalidatePath(`/super-admin/clubes/${club.slug}/admins`);
   revalidatePath(`/c/${club.slug}/admin/admins`);
   return { ok: true, slug: club.slug };
 }
@@ -386,7 +384,6 @@ export async function invitarAdminClub(
     return { ok: false, error: "No se pudo agregar. Probá de nuevo." };
   }
 
-  revalidatePath(`/super-admin/clubes/${club.slug}/admins`);
   revalidatePath(`/c/${club.slug}/admin/admins`);
   revalidatePath(`/c/${club.slug}/admin`);
 
@@ -494,7 +491,6 @@ export async function quitarAdminClub(
     return { ok: false, error: "Esa persona ya no es Admin de este club." };
   }
 
-  revalidatePath(`/super-admin/clubes/${club.slug}/admins`);
   revalidatePath(`/c/${club.slug}/admin/admins`);
   revalidatePath(`/c/${club.slug}/admin`);
   return { ok: true };
@@ -535,7 +531,6 @@ export async function cancelarInvitacionClub(
     return { ok: false, error: "No encontramos esa invitación pendiente." };
   }
 
-  revalidatePath(`/super-admin/clubes/${club.slug}/admins`);
   revalidatePath(`/c/${club.slug}/admin/admins`);
   return { ok: true };
 }

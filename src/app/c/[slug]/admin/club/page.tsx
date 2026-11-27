@@ -9,6 +9,7 @@ import {
   sesionRequerida,
 } from "@/datos/consultas/acceso";
 import { clubPorSlug } from "@/datos/consultas/clubes";
+import { panelesDeLaSesion } from "@/datos/consultas/paneles";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
 import { puedeEditarRutasDelClub } from "@/dominio/permisos";
@@ -29,6 +30,7 @@ export default async function PaginaDatosDelClub({
   const club = await clubPorSlug(slug);
   if (!club) notFound();
   await adminDelClubRequerido(club.id, `/c/${slug}/admin/club`);
+  const paneles = await panelesDeLaSesion(sesion);
 
   const clubId = club.id;
   const contacto = await contactoDelClub(clubId);
@@ -58,9 +60,8 @@ export default async function PaginaDatosDelClub({
       subtitulo={club.nombre}
       atras={{ href: `/c/${club.slug}/admin`, etiqueta: "Volver al inicio" }}
       club={clubShell}
-      rol={sesion.esSuperAdmin ? "super-admin" : "admin"}
+      paneles={paneles}
       activo="club"
-      esMultiClub={!sesion.esSuperAdmin && sesion.membresias.length > 1}
       salirEnMobile={false}
     >
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">

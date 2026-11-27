@@ -9,6 +9,7 @@ import { Button } from "@/ui/nativos/button";
 import { inicialesDesdeNombre } from "@/dominio/slug";
 import { urlEscudoPublico } from "@/dominio/nuevo-club";
 import { superAdminRequerido } from "@/datos/consultas/acceso";
+import { panelesDeLaSesion } from "@/datos/consultas/paneles";
 import { urlYClaveAnon } from "@/datos/env-supabase";
 import {
   cantidadAdminsPorClub,
@@ -33,7 +34,8 @@ const botonCrear = (
 );
 
 export default async function PaginaSuperAdmin() {
-  await superAdminRequerido("/super-admin");
+  const sesion = await superAdminRequerido("/super-admin");
+  const paneles = await panelesDeLaSesion(sesion);
   const clubes = await listarClubes();
   const conteo = await cantidadAdminsPorClub(clubes.map((club) => club.id));
   const supabaseUrl = urlYClaveAnon().url;
@@ -44,7 +46,7 @@ export default async function PaginaSuperAdmin() {
       subtitulo="Super Admin"
       tituloMobile="Super Admin"
       subtituloMobile="Todos los clubes"
-      rol="super-admin"
+      paneles={paneles}
       activo="clubes"
       accion={botonCrear}
     >
@@ -83,8 +85,8 @@ export default async function PaginaSuperAdmin() {
                   className="overflow-hidden rounded-xl border border-border bg-card"
                 >
                   <Link
-                    href={`/super-admin/clubes/${club.slug}/editar`}
-                    aria-label={`Editar ${club.nombre}`}
+                    href={`/c/${club.slug}/admin`}
+                    aria-label={`Entrar a ${club.nombre}`}
                     className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/50"
                   >
                     <EscudoClub
@@ -100,27 +102,11 @@ export default async function PaginaSuperAdmin() {
                         {textoAdmins(cantidad)}
                       </p>
                     </div>
-                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="flex shrink-0 items-center gap-1 text-sm text-muted-foreground">
+                      Entrar
+                      <ChevronRight className="size-4" />
+                    </span>
                   </Link>
-                  <div className="flex border-t border-border">
-                    <Button
-                      asChild
-                      variant="ghost"
-                      className="h-11 flex-1 rounded-none text-sm"
-                    >
-                      <Link href={`/c/${club.slug}/admin`}>Entrar</Link>
-                    </Button>
-                    <div className="w-px bg-border" />
-                    <Button
-                      asChild
-                      variant="ghost"
-                      className="h-11 flex-1 rounded-none text-sm"
-                    >
-                      <Link href={`/c/${club.slug}/admin/admins`}>
-                        Admins
-                      </Link>
-                    </Button>
-                  </div>
                 </li>
               );
             })}

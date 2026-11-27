@@ -17,6 +17,23 @@ export type SesionApp = {
   membresias: MembresiaClub[];
 };
 
+/** Un club al que se puede ir con el selector de panel. */
+export type ClubDelSelector = {
+  slug: string;
+  nombre: string;
+  iniciales: string;
+  escudo: string | null;
+};
+
+/**
+ * Los paneles a los que puede ir quien está en sesión: el Panel del Super
+ * Admin (si lo es) y el Panel de cada club de la lista.
+ */
+export type PanelesSesion = {
+  esSuperAdmin: boolean;
+  clubes: ClubDelSelector[];
+};
+
 export function puedeAdministrarClub(
   sesion: SesionApp,
   clubId: string,
